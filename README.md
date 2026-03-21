@@ -1,40 +1,44 @@
-# 📂 VIBE KERNEL (v1.0)
+# 📂 VIBE KERNEL (v2.2)
 **The Industrial-Strength Standalone Agent Engine.**
 
-The Vibe Kernel is a "Dumb Fortress" architecture designed to process human intent into high-fidelity strategic assets. It eliminates "SaaS Ghosting" and "PM Hallucination" through strict cognitive isolation and a dynamic milestone registry.
+The Vibe Kernel is a "Dumb Fortress" architecture designed to process human intent into high-fidelity strategic assets. It eliminates "SaaS Ghosting" and "PM Hallucination" through strict cognitive isolation, a self-cleaning state, and a dynamic milestone registry.
 
 ---
 
-## 🏛️ THE ARCHITECTURAL PILLARS
-The Kernel operates on a 4-block hierarchy to prevent instruction saturation and state decay.
-
-1. THE LAW (Machine): Immutable physical constraints. Native Vertex AI SDK only.
-2. THE LENS (Expertise): Strategic perspective. ELI Protocol, Anti-Interrogation Lens.
-3. THE TRUTH (State): Validated Knowledge Bricks + Volatile Chat Context.
-4. THE WORK ORDER (Command): The specific trigger pointing a LENS at a TRUTH.
+## 🏛️ THE 5 ARCHITECTURAL PILLARS
+1. **THE LAW (Machine):** Immutable physical constraints (Native Vertex SDK, 32k token cutoff).
+2. **THE LENS (Expertise):** Dynamic Exo-brains (Personas & Strategy Protocols).
+3. **THE TRUTH (State):** Validated Knowledge Bricks (Firestore) + Volatile Chat.
+4. **THE WORK ORDER (Command):** The foreman's trigger for a specific Turn.
+5. **THE CLOCK (Maintenance):** Automatic compression of the Truth to prevent context bloat.
 
 ---
 
 ## 🏗️ DIRECTORY STRUCTURE
-- core/        # The Brain Stem (Factory, Orchestrator, Utils, PromptBuilder)
-- pods/        # Isolated Assembly Line Units (Social, Strike, Synthesis)
+- core/        # Factory, Orchestrator, PromptBuilder, The Clock
+- pods/        # Social, Strike Team, Synthesis, Maintenance (The Janitor)
 - registry/    # The "VHS Tapes" (Milestones & Personas)
-- schema/      # Pydantic Contracts (The Universal Briefcase)
+- lab/         # Persona Sandbox and API Stress Tests
 - Brain/       # The Constitution & Scar Tissue Ledger
 
 ---
 
 ## 🚀 THE ASSEMBLY LINE
-1. TURN A (Social): Clerk audits chat against UI checklist. Gate stays RED until proprietary logic is found.
-2. TURN B (Strike): Parallel Hounds (Google Search) + Specialist ELI Reports.
-3. TURN C (Synthesis): Editor welds reports into Truth Bricks (Handles Text & Visual Specs).
-4. THE WELD: Python-side regex physically injects Markdown links into prose.
+1. **TURN A (Social):** Cynical Clerk audits chat. Gate stays RED until "Proprietary Logic" is found.
+2. **TURN B (Strike):** Parallel Hounds (Google Search) + Specialist ELI Reports.
+3. **TURN C (Synthesis):** Editor welds reports into Truth Bricks (Handles TEXT & VISUAL_SPEC).
+4. **THE WELD:** Python physically injects Markdown links into prose to prevent corruption.
+
+---
+
+## 📜 THE LAWS OF PHYSICS
+*   **The De-loading Law:** Social agents are physically blinded to raw research data.
+*   **The Proprietary Logic Rule:** If a Hound can find it on Google, it’s not a "Spark."
+*   **The 3-Brick Anchor:** The Clock keeps the last 3 bricks verbatim and compresses the rest.
 
 ---
 
 ## 🛠️ GETTING STARTED
-- Run Engine: python3 main.py (FastAPI on port 8080)
-- Test Logic: python3 main_test.py (3-turn industrial stress test)
-
----
-Note: This Kernel is milestone-agnostic. To add capabilities, edit the JSON contracts in /registry/milestones/.
+- **Run Server:** `python3 main.py` (FastAPI on port 8080)
+- **Lab Sandbox:** `python3 lab/lab_runner.py`
+- **Integration Test:** `python3 lab/final_box_test.py`

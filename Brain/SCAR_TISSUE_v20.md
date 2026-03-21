@@ -236,3 +236,20 @@
 **Entry 082: The Foundation Collision (Armor)**
 *   **Symptom:** Generic move commands (e.g., "Moving to Paper 2") caused the Clerk to overwrite the "Core Idea" spark with the string "Paper 2," triggering a logic crash.
 *   **Fix:** **Spark Armor.** Implement a physical code-gate in the orchestrator: only allow the `core_idea` bucket to be updated if the new incoming text is significantly more detailed (longer) than the existing foundation.
+**Entry 083: The People-Pleaser Pivot (Clerk)**
+*   **Symptom:** The Clerk approved a vague "beer app" idea immediately despite the "Lightning Strike" requirement.
+*   **Lesson:** Clinical models (IQ) default to "helpfulness" (The SaaS Ghost). They will hallucinate approval to keep the process moving.
+*   **Fix:** The "Cynical Auditor" Mandate. Hard-coded the "Proprietary Logic Rule": The Clerk stays RED if the user provides info a Hound can find on Google.
+
+**Entry 084: The Narrator/Visionary Conflict**
+*   **Symptom:** During Turn 3, the PM ignored the research and hallucinated a new mission ("Project Alchemist").
+*   **Lesson:** Persona-driven models with "Momentum" optimization will leap to the *next* milestone if not strictly anchored.
+*   **Fix:** The "Post-Op" Anchor. The Orchestrator now mutes the PM during research and anchors the "Reporting" turn strictly to the "Established Truth" bricks.
+
+**Entry 085: The "Spec-Brick" Dependency**
+*   **Problem:** Directly generating images/audio inside the Kernel creates a hard dependency on specific APIs (Midjourney/Flux), breaking the "Headless" rule.
+*   **Fix:** Generative Intent Specs. Specialists output a "Technical Spec" (Markdown/JSON). The Kernel remains text-only; a separate "Renderer" service handles the binary creation.
+
+**Entry 086: The Infinite Project (Context Drift)**
+*   **Problem:** Long-running projects cause "Instruction Drift" as the Knowledge Bricks ledger exceeds the model's attention window.
+*   **Fix:** "The Clock." Automatic compression of historical bricks into a "FOUNDATIONAL_CONTEXT" block while keeping the 3 most recent bricks verbatim.
