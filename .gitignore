@@ -1,0 +1,14 @@
+# Secrets
+.env
+
+# Python junk
+__pycache__/
+*.py[cod]
+*.class
+.venv/
+env/
+build/
+dist/
+
+# System junk
+.DS_Store

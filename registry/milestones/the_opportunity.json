@@ -1,0 +1,15 @@
+{
+  "milestone_id": "THE_OPPORTUNITY",
+  "label": "The Opportunity",
+  "purpose": "To map the market battlefield and identify exactly where we have an unfair advantage.",
+  "pm_checklist_prompt": "Extract market size, current players, and why the timing is right specifically for this founder.",
+  "research_summary_structure": [
+    {"id": "THE_MARKET", "type": "TEXT"},
+    {"id": "THE_GAP", "type": "TEXT"},
+    {"id": "THE_PLAYERS", "type": "TEXT"},
+    {"id": "THE_TIMING", "type": "TEXT"},
+    {"id": "OUR_EDGE", "type": "TEXT"},
+    {"id": "USER_JOURNEY_MAP", "type": "VISUAL_SPEC"}
+  ],
+  "specialists": ["MARKET_ANALYST", "COMPETITIVE_INTEL", "SYNTHESIZER"]
+}

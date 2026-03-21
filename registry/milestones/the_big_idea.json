@@ -1,0 +1,16 @@
+{
+  "milestone_id": "THE_BIG_IDEA",
+  "label": "The Big Idea",
+  "purpose": "To lock the product's reason for existence. What it is, why it will work, and what it must never become.",
+  "pm_checklist_prompt": "Get a visceral feel for the soul of the idea. Identify the 'lightning strike' that makes this non-boring. Once you feel the spark is strong enough for specialists to hunt, stop probing and send the team.",
+  "research_summary_structure": [
+    "THE_INSIGHT",
+    "THE_ONE_SENTENCE",
+    "THE_PROBLEM",
+    "THE_MONEY",
+    "WHAT_MUST_BE_TRUE",
+    "THE_ANTI_VISION",
+    "THE_UNFAIR_ADVANTAGE"
+  ],
+  "specialists": ["COMMERCIAL_LEAD", "PRODUCT_REALIST", "SYNTHESIZER", "VISIONARY_ARCHITECT"]
+}
