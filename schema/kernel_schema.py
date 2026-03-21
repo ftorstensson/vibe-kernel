@@ -12,7 +12,8 @@ class AgentEnvelope(BaseModel):
     """The Universal 'Briefcase' that moves between pods."""
     manifest: ProjectManifest
     history: List[Dict[str, str]] = Field(default_factory=list)
-    knowledge_bricks: List[Dict[str, Any]] = Field(default_factory=list)
+    # Changed from List to Dict to support the [ID] -> Content mapping
+    knowledge_bricks: Dict[str, str] = Field(default_factory=dict)
     physics_open: bool = False
     kaiser_mandate: str = "Proceed with discovery."
     internal_thought: str = ""
