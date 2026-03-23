@@ -8,42 +8,42 @@ from schema.kernel_schema import AgentEnvelope
 class MasterOrchestrator:
     @staticmethod
     async def process_turn(envelope: AgentEnvelope, user_input: str):
-        # --- THE CLOCK (Automatic Maintenance) ---
+        # 1. The Clock (Self-Cleaning)
         await TheClock.maintenance_pulse(envelope)
         
-        # 1. UPDATE SOCIAL HISTORY
+        # 2. Add input to internal history
         envelope.history.append({"role": "user", "content": user_input})
         
-        # Identify "Go" signal
-        is_go_signal = any(word in user_input.lower() for word in ["yes", "go", "do it", "fire", "start", "launch"])
+        # 3. Detect Ignition (regex)
+        is_go_signal = any(word in user_input.lower() for word in ["yes", "go", "fire", "start", "launch"])
         
         if is_go_signal and envelope.physics_open:
-            print("[ORCHESTRATOR] Strike Team Authorized.")
+            print(f"[ORCHESTRATOR] Strike Team Authorized.")
             
-            # 2. RUN STRIKE TEAM (Turn B) 
+            # Turn B: Parallel Hunt
             strike_results = await StrikeEngine.run_industrial_strike(envelope)
             
-            # 3. RUN SYNTHESIS (Turn C)
+            # Turn C: Synthesis
             new_truth = await SynthesisEngine.forge_truth(
                 specialist_outputs=strike_results['reports'],
-                milestone_config=envelope.manifest.milestone_config
+                milestone_config=envelope.milestone_config
             )
             
-            # 4. THE WELD (Citations)
+            # The Weld (Inject Links)
             for key, content in new_truth.items():
                 if isinstance(content, str):
                     new_truth[key] = MasterOrchestrator.weld_links(content, strike_results['treasure_chest'])
             
-            # 5. THE CONTEXT CHOKE (De-loading)
+            # Update Knowledge
             envelope.knowledge_bricks.update(new_truth)
             envelope.kaiser_mandate = "RESEARCH COMPLETE. Discuss the new findings."
             
-            # 6. SOCIAL RESPONSE
+            # Social Turn
             response = await SocialEngine.run_turn(envelope)
             return {"social_response": response, "data_patch": new_truth, "status": "STABLE"}
 
         else:
-            # Standard social turn
+            # Turn A: Social
             response = await SocialEngine.run_turn(envelope)
             status = "AUTHORIZED" if envelope.physics_open else "PROBING"
             return {"social_response": response, "status": status}
