@@ -1,44 +1,49 @@
-# 📂 VIBE KERNEL (v2.2)
-**The Industrial-Strength Standalone Agent Engine.**
+# VIBE KERNEL (v21.1)
+The Sovereign Standalone Agent Engine.
 
-The Vibe Kernel is a "Dumb Fortress" architecture designed to process human intent into high-fidelity strategic assets. It eliminates "SaaS Ghosting" and "PM Hallucination" through strict cognitive isolation, a self-cleaning state, and a dynamic milestone registry.
-
----
-
-## 🏛️ THE 5 ARCHITECTURAL PILLARS
-1. **THE LAW (Machine):** Immutable physical constraints (Native Vertex SDK, 32k token cutoff).
-2. **THE LENS (Expertise):** Dynamic Exo-brains (Personas & Strategy Protocols).
-3. **THE TRUTH (State):** Validated Knowledge Bricks (Firestore) + Volatile Chat.
-4. **THE WORK ORDER (Command):** The foreman's trigger for a specific Turn.
-5. **THE CLOCK (Maintenance):** Automatic compression of the Truth to prevent context bloat.
+The Vibe Kernel is a Dumb Fortress that processes human intent through an isolated assembly line. It is Sovereign, meaning it fetches its own configurations and project state directly from Firestore based on an App Registry Map (ARM).
 
 ---
 
-## 🏗️ DIRECTORY STRUCTURE
-- core/        # Factory, Orchestrator, PromptBuilder, The Clock
-- pods/        # Social, Strike Team, Synthesis, Maintenance (The Janitor)
-- registry/    # The "VHS Tapes" (Milestones & Personas)
-- lab/         # Persona Sandbox and API Stress Tests
-- Brain/       # The Constitution & Scar Tissue Ledger
+## THE ARCHITECTURAL PILLARS
+1. THE LAW (Machine): Immutable physical constraints (Native Vertex SDK, 32k token cutoff).
+2. THE LENS (Expertise): Dynamic DNA and SOPs fetched internally from the agency_registry.
+3. THE TRUTH (State): User-approved Knowledge Bricks and Manifesto facts fetched via project ID.
+4. THE MAP (Cartography): A master index at _kernel_registry/{app_id} that tells the Kernel how to navigate the database.
 
 ---
 
-## 🚀 THE ASSEMBLY LINE
-1. **TURN A (Social):** Cynical Clerk audits chat. Gate stays RED until "Proprietary Logic" is found.
-2. **TURN B (Strike):** Parallel Hounds (Google Search) + Specialist ELI Reports.
-3. **TURN C (Synthesis):** Editor welds reports into Truth Bricks (Handles TEXT & VISUAL_SPEC).
-4. **THE WELD:** Python physically injects Markdown links into prose to prevent corruption.
+## THE ASSEMBLY LINE (Execution Flow)
+- Bootstrap 0: Kernel fetches the ARM to get its Eyes.
+- Bootstrap 1: Kernel fetches Milestone SOPs and Agent DNA in parallel.
+- Bootstrap 2: Kernel fetches Project Ledger and enforces the De-loading Law.
+- Turn A (Social): Cynical Clerk audits chat against the dynamic Map-driven checklist.
+- Turn B (Strike): Parallel Hounds (Google Search) + Specialist ELI Reports.
+- Turn C (Synthesis): Editor welds reports into Truth Bricks (TEXT or VISUAL_SPEC).
+- The Weld: Python regex physically injects Markdown links into prose.
 
 ---
 
-## 📜 THE LAWS OF PHYSICS
-*   **The De-loading Law:** Social agents are physically blinded to raw research data.
-*   **The Proprietary Logic Rule:** If a Hound can find it on Google, it’s not a "Spark."
-*   **The 3-Brick Anchor:** The Clock keeps the last 3 bricks verbatim and compresses the rest.
+## DIRECTORY STRUCTURE
+- core/: Bootloader, Orchestrator, Clock, PromptBuilder
+- pods/: Social, Strike Team, Synthesis, Maintenance
+- registry/: (Deprecated) Milestones now live in Firestore
+- lab/: Vault Scanners, Map Seeders, API Stress Tests
+- Brain/: The Constitution and Scar Tissue Ledger
 
 ---
 
-## 🛠️ GETTING STARTED
-- **Run Server:** `python3 main.py` (FastAPI on port 8080)
-- **Lab Sandbox:** `python3 lab/lab_runner.py`
-- **Integration Test:** `python3 lab/final_box_test.py`
+## GETTING STARTED
+
+1. Environment Setup:
+pip install -r requirements.txt
+gcloud auth application-default login
+
+2. Seeding the Map:
+python3 lab/seed_map.py
+
+3. Running the Engine:
+python3 main.py
+
+---
+Safety Valve: If no Map is found for an app_id, the Kernel throws a 502 Map Error (Kernel is Blind).
