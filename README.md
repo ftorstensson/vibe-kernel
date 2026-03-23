@@ -1,5 +1,5 @@
-# VIBE KERNEL (v21.1)
-The Sovereign Standalone Agent Engine.
+# VIBE KERNEL (v21.2)
+The Hardened Sovereign Agent Engine.
 
 The Vibe Kernel is a Dumb Fortress that processes human intent through an isolated assembly line. It is Sovereign, meaning it fetches its own configurations and project state directly from Firestore based on an App Registry Map (ARM).
 
@@ -13,7 +13,31 @@ The Vibe Kernel is a Dumb Fortress that processes human intent through an isolat
 
 ---
 
-## THE ASSEMBLY LINE (Execution Flow)
+## INTERFACE GROUND TRUTH (API Contract)
+
+### Endpoint: POST /kernel/invoke
+
+#### Request Schema (What the App sends):
+{
+  "app_id": "vibe_design_lab",
+  "project_id": "YOUR_PROJECT_DOC_ID",
+  "milestone_id": "the_big_idea",
+  "user_message": "string",
+  "agent_id": "master_pm"
+}
+
+#### Response Schema (What the Kernel returns):
+{
+  "social_response": "string (Display to user)",
+  "status": "PROBING | AUTHORIZED | STABLE",
+  "data_patch": {
+    "BRICK_ID": "Strategic content to merge into Firestore"
+  }
+}
+
+---
+
+## THE ASSEMBLY LINE
 - Bootstrap 0: Kernel fetches the ARM to get its Eyes.
 - Bootstrap 1: Kernel fetches Milestone SOPs and Agent DNA in parallel.
 - Bootstrap 2: Kernel fetches Project Ledger and enforces the De-loading Law.
@@ -21,15 +45,6 @@ The Vibe Kernel is a Dumb Fortress that processes human intent through an isolat
 - Turn B (Strike): Parallel Hounds (Google Search) + Specialist ELI Reports.
 - Turn C (Synthesis): Editor welds reports into Truth Bricks (TEXT or VISUAL_SPEC).
 - The Weld: Python regex physically injects Markdown links into prose.
-
----
-
-## DIRECTORY STRUCTURE
-- core/: Bootloader, Orchestrator, Clock, PromptBuilder
-- pods/: Social, Strike Team, Synthesis, Maintenance
-- registry/: (Deprecated) Milestones now live in Firestore
-- lab/: Vault Scanners, Map Seeders, API Stress Tests
-- Brain/: The Constitution and Scar Tissue Ledger
 
 ---
 

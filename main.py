@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from schema.kernel_schema import SovereignRequest, AgentEnvelope
+from schema.kernel_schema import SovereignRequest, SovereignResponse, AgentEnvelope
 from core.bootloader import SovereignBootloader
 from core.orchestrator import MasterOrchestrator
 import uvicorn
@@ -7,17 +7,11 @@ import os
 
 app = FastAPI(title="Vibe Kernel: Sovereign Cartography v21.1")
 
-@app.get("/health")
-def health():
-    return {"status": "online", "mode": "sovereign_cartography"}
-
-@app.post("/kernel/invoke")
+@app.post("/kernel/invoke", response_model=SovereignResponse)
 async def invoke(req: SovereignRequest):
     try:
-        # 1. Cartography Handshake
         data = await SovereignBootloader.assemble_envelope(req)
         
-        # 2. Package Envelope
         envelope = AgentEnvelope(
             app_id=req.app_id,
             project_id=req.project_id,
@@ -28,13 +22,16 @@ async def invoke(req: SovereignRequest):
             schema_map=data['schema_map']
         )
         
-        # 3. Execute
         result = await MasterOrchestrator.process_turn(envelope, req.user_message)
-        return result
+        
+        # This return matches the SovereignResponse schema
+        return {
+            "social_response": result.get("social_response"),
+            "status": result.get("status"),
+            "data_patch": result.get("data_patch")
+        }
         
     except ValueError as ve:
-        # v21.1 Safety Valve for Blind Kernel
-        print(f"[MAP ERROR] {ve}")
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
         print(f"[KERNEL CRASH] {e}")

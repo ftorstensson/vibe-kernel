@@ -253,3 +253,18 @@
 **Entry 086: The Infinite Project (Context Drift)**
 *   **Problem:** Long-running projects cause "Instruction Drift" as the Knowledge Bricks ledger exceeds the model's attention window.
 *   **Fix:** "The Clock." Automatic compression of historical bricks into a "FOUNDATIONAL_CONTEXT" block while keeping the 3 most recent bricks verbatim.
+
+**Entry 087: The Fragile Bridge (Courier Failure)**
+*   **Symptom:** Constant 422 Schema Errors and maintenance desync between the Main App and the Kernel.
+*   **Lesson:** Passing full SOP/DNA payloads via API creates a "leaky" boundary where a database change in the App breaks the Kernel.
+*   **Fix:** **Sovereign Kernel Architecture (v21.0)**. The Kernel receives only IDs and fetches its own Milestone SOPs, Agent DNA, and Project State directly from Firestore.
+
+**Entry 088: The Naming Ghost (Cartography)**
+*   **Symptom:** Kernel 404s or 500s when a different app uses different collection names or field keys.
+*   **Lesson:** Hardcoded database paths are the enemy of scaling. A "Headless" engine must be told how to see.
+*   **Fix:** **App Registry Map (ARM)**. Implemented "Bootstrap 0": The Kernel pings `_kernel_registry/{app_id}` to fetch a Map that defines the paths and schema keys for that specific application.
+
+**Entry 089: Case-Sensitivity 404**
+*   **Symptom:** Sovereign fetch failed for `THE_BIG_IDEA` because Firestore keys were lowercase (`the_big_idea`).
+*   **Lesson:** Human input and UI constants are volatile. Database lookups must be deterministic.
+*   **Fix:** Lowercase normalization. The `SovereignBootloader` now forces all IDs to lowercase before pining the Vault.
