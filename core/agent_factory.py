@@ -15,28 +15,25 @@ if PROJECT_ID:
 class AgentFactory:
     @staticmethod
     def get_clerk():
-        """IQ: 0.0 - Extraction (Gemini 2.0 Flash)"""
-        return GenerativeModel("gemini-2.0-flash-001"), GenerationConfig(temperature=0.0)
+        """IQ: 0.0 - Extraction (Gemini 2.5 Flash)"""
+        return GenerativeModel("gemini-2.5-flash"), GenerationConfig(temperature=0.0)
 
     @staticmethod
     def get_partner_pm():
-        """EQ: 0.4 - Social PM (Gemini 2.5 Pro w/ 1.5 Fallback)"""
-        try:
-            return GenerativeModel("gemini-2.5-pro"), GenerationConfig(temperature=0.4)
-        except:
-            return GenerativeModel("gemini-1.5-pro"), GenerationConfig(temperature=0.4)
+        """EQ: 0.4 - Social PM (Gemini 2.5 Pro)"""
+        return GenerativeModel("gemini-2.5-pro"), GenerationConfig(temperature=0.4)
 
     @staticmethod
     def get_hound():
-        """IQ: 0.1 - Grounded Specialist (Gemini 2.0 Flash)"""
+        """IQ: 0.1 - Grounded Specialist (Gemini 2.5 Flash)"""
         # Entry 050/063: Native Google Search Tool
         search_tool = Tool.from_dict({"google_search": {}})
         return GenerativeModel(
-            "gemini-2.0-flash-001",
+            "gemini-2.5-flash",
             tools=[search_tool]
         ), GenerationConfig(temperature=0.1)
 
     @staticmethod
     def get_clinical_auditor():
-        """IQ: 0.0 - The Deadbolt (Gemini 2.0 Flash)"""
-        return GenerativeModel("gemini-2.0-flash-001"), GenerationConfig(temperature=0.0)
+        """IQ: 0.0 - The Deadbolt (Gemini 2.5 Flash)"""
+        return GenerativeModel("gemini-2.5-flash"), GenerationConfig(temperature=0.0)
