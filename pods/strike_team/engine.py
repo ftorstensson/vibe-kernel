@@ -17,9 +17,9 @@ class StrikeEngine:
         # 1. SCOUTING (Generating 3 Queries)
         # For speed, we'll derive these from the milestone goals
         queries = [
-            f"Market growth and competitors for {envelope.manifest.project_id}",
-            f"Commercial revenue models for {envelope.manifest.project_id}",
-            f"Technical feasibility and risks for {envelope.manifest.project_id}"
+            f"Market growth and competitors for {envelope.project_id}",
+            f"Commercial revenue models for {envelope.project_id}",
+            f"Technical feasibility and risks for {envelope.project_id}"
         ]
 
         # 2. THE PARALLEL HUNT (Hounds)
@@ -40,15 +40,14 @@ class StrikeEngine:
 
         # 4. SPECIALIST ANALYSIS
         # Each specialist receives the SAME data and the SAME Treasure Chest IDs
-        specialists = envelope.manifest.milestone_config.get('specialists', [])
+        specialists = envelope.milestone_config.get('specialists', [])
         reports = []
-        
+
         for role in specialists:
             print(f" -> {role} is analyzing data...")
             analysis = Specialist.analyze(
                 role_name=role,
-                research_data={"raw_research": all_raw_data, "sources": treasure_chest},
-                milestone_goal=envelope.manifest.current_milestone
+                research_data={"raw_research": all_raw_data, "sources": treasure_chest}
             )
             reports.append({"role": role, "content": analysis})
             
