@@ -15,22 +15,8 @@ class Hound:
         prompt = f"{research_protocol}\n\nTASK: Find evidence for: {query}"
         
         response = model.generate_content(prompt, generation_config=config)
-        
-        sources = []
-        try:
-            # Native SDK Metadata Harvest
-            for candidate in response.candidates:
-                if hasattr(candidate, 'grounding_metadata'):
-                    for chunk in candidate.grounding_metadata.grounding_chunks:
-                        if chunk.web:
-                            sources.append({
-                                "title": chunk.web.title or "Source", 
-                                "url": chunk.web.uri
-                            })
-        except Exception as e:
-            print(f"[HOUND ERROR] Metadata harvest failed: {e}")
-            
+
         return {
             "raw_research": get_clean_text(response),
-            "sources": sources
+            "sources": getattr(response, "grounding_sources", [])
         }
