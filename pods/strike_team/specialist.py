@@ -5,7 +5,7 @@ import os
 class Specialist:
     @staticmethod
     def analyze(role_name, research_data):
-        protocol_path = "registry/protocols/global/eli_protocol.md"
+        protocol_path = "registry/protocols/eli_protocol.md"
         eli_protocol = ""
         if os.path.exists(protocol_path):
             with open(protocol_path, "r") as f:

@@ -11,7 +11,12 @@ class SocialEngine:
         # Pull dynamic keys from the ARM (App Registry Map)
         checklist_key = envelope.schema_map["schema_keys"]["pm_checklist"]
         checklist_prompt = envelope.milestone_config.get(checklist_key, "Find the spark.")
-        
+
+        required_questions = envelope.milestone_config.get("required_questions")
+        if required_questions:
+            numbered_questions = "\n".join(f"{i}. {q}" for i, q in enumerate(required_questions, start=1))
+            checklist_prompt = f"{checklist_prompt}\n\nSPECIFIC FACTS TO EXTRACT:\n{numbered_questions}"
+
         # 1. CLERK AUDIT
         clerk_mandate = "ACT AS A CYNICAL INDUSTRIAL AUDITOR."
         clerk_lens = f"CRITERIA: {checklist_prompt}\nSTRUCTURE_EXPECTED: {envelope.schema_map['schema_keys']['brick_list']}"

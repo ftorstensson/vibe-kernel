@@ -5,7 +5,7 @@ import os
 class Hound:
     @staticmethod
     def hunt(query: str):
-        protocol_path = "registry/protocols/global/research_v1_2.md"
+        protocol_path = "registry/protocols/research_v1_2.md"
         research_protocol = ""
         if os.path.exists(protocol_path):
             with open(protocol_path, "r") as f:
