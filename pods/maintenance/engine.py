@@ -1,5 +1,5 @@
 from core.agent_factory import AgentFactory
-from core.kernel_utils import get_clean_text, hammer_json
+from core.kernel_utils import get_clean_text
 from core.prompt_builder import PromptBuilder
 
 class MaintenanceEngine:

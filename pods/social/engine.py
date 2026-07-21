@@ -3,6 +3,15 @@ from core.kernel_utils import get_clean_text, hammer_json
 from core.prompt_builder import PromptBuilder
 from schema.kernel_schema import AgentEnvelope
 
+CLERK_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "physics_gate": {"type": "string", "enum": ["RED", "GREEN"]},
+        "missing_logic": {"type": "string"},
+    },
+    "required": ["physics_gate", "missing_logic"],
+}
+
 class SocialEngine:
     @staticmethod
     async def run_turn(envelope: AgentEnvelope):
@@ -25,10 +34,10 @@ class SocialEngine:
         clerk_work_order = PromptBuilder.assemble(
             mandate=clerk_mandate,
             lens=clerk_lens,
-            truth=clerk_truth + "\nReturn ONLY JSON: {\"physics_gate\": \"RED/GREEN\", \"missing_logic\": \"string\"}"
+            truth=clerk_truth
         )
-        
-        clerk_resp = clerk_model.generate_content(clerk_work_order, generation_config=clerk_config)
+
+        clerk_resp = clerk_model.generate_content(clerk_work_order, generation_config=clerk_config, response_schema=CLERK_SCHEMA)
         clerk_report = hammer_json(get_clean_text(clerk_resp))
         
         # 2. KAISER PHYSICS

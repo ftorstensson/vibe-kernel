@@ -34,7 +34,7 @@ class LiteLLMModel:
         self.model_name = model_name
         self.tools = tools
 
-    def generate_content(self, prompt, generation_config=None):
+    def generate_content(self, prompt, generation_config=None, response_schema=None):
         content = prompt if isinstance(prompt, str) else "\n".join(str(p) for p in prompt)
         kwargs = {
             "model": self.model_name,
@@ -46,6 +46,11 @@ class LiteLLMModel:
             kwargs["temperature"] = generation_config.temperature
         if self.tools:
             kwargs["tools"] = self.tools
+        if response_schema is not None:
+            kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {"name": "structured_output", "schema": response_schema, "strict": True},
+            }
         response = litellm.completion(**kwargs)
         return LiteLLMResponse(response)
 

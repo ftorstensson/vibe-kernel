@@ -2,11 +2,28 @@ from core.agent_factory import AgentFactory
 from core.kernel_utils import get_clean_text, hammer_json
 from core.prompt_builder import PromptBuilder
 
+def _build_synthesis_schema(structure: list):
+    """research_summary_structure entries may be plain key strings or
+    {"key"/"name": ..., "type": "TEXT"/"VISUAL_SPEC"} dicts -- either way the
+    value the model returns per key is always a string (prose or Markdown)."""
+    keys = []
+    for item in structure:
+        key = item.get("key") or item.get("name") if isinstance(item, dict) else item
+        if key:
+            keys.append(key)
+    if not keys:
+        return None
+    return {
+        "type": "object",
+        "properties": {key: {"type": "string"} for key in keys},
+        "required": keys,
+    }
+
 class SynthesisEngine:
     @staticmethod
     async def forge_truth(specialist_outputs: list, milestone_config: dict):
         model, config = AgentFactory.get_partner_pm()
-        
+
         # Pull the structure from the milestone (now supporting dynamic types)
         structure = milestone_config.get('research_summary_structure', [])
         
@@ -25,5 +42,9 @@ class SynthesisEngine:
         truth = f"RAW_SPECIALIST_REPORTS: {specialist_outputs}"
         
         work_order = PromptBuilder.assemble(mandate=mandate, lens=lens, truth=truth)
-        response = model.generate_content(work_order, generation_config=config)
+        response = model.generate_content(
+            work_order,
+            generation_config=config,
+            response_schema=_build_synthesis_schema(structure)
+        )
         return hammer_json(get_clean_text(response))
