@@ -57,5 +57,6 @@ class SovereignBootloader:
             "persona_config": p_doc.to_dict(),
             "knowledge_bricks": knowledge_bricks,
             "history": manifest.get("chat_history", []),
+            "physics_open": manifest.get("physics_open", False),
             "schema_map": arm
         }

@@ -19,6 +19,7 @@ async def invoke(req: SovereignRequest):
             persona_config=data['persona_config'],
             knowledge_bricks=data['knowledge_bricks'],
             history=data['history'],
+            physics_open=data['physics_open'],
             schema_map=data['schema_map']
         )
         
