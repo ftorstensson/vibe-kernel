@@ -50,10 +50,19 @@ class SocialEngine:
 
         # 3. PM SOCIAL
         pm_model, pm_config = AgentFactory.get_partner_pm()
-        pm_dna = envelope.persona_config.get("dna", "Lead Co-founder.")
-        pm_lens = envelope.persona_config.get("lens", "Blunt, high-speed facilitator.")
+        # L2 (Agent Persona) + L3 (Deep Knowledge/Exo-Brain) -- these are the real
+        # field names agency_roster docs actually have; "dna"/"lens" never existed
+        # on any real agent doc, so this always fell back to generic placeholders.
+        pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
+        pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
         
-        pm_mandate = f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]\nKAISER MANDATE: {envelope.kaiser_mandate}"
+        pm_mandate = (
+            f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]\n"
+            f"KAISER MANDATE: {envelope.kaiser_mandate}\n"
+            "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
+            "function-call syntax, or JSON of any kind as literal text -- prose only, always. "
+            "This overrides anything your persona implies about calling tools or delegating to other agents."
+        )
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth)
