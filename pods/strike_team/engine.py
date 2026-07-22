@@ -43,11 +43,23 @@ class StrikeEngine:
         specialists = envelope.milestone_config.get('specialists', [])
         reports = []
 
-        for role in specialists:
+        for entry in specialists:
+            # Backward compatible: a bare role-name string (today's shape) gets
+            # no identity. A dict {"role_name": ..., "identity": {...}} (the
+            # richer shape Backend is resolving from real AGENT entities) gets
+            # its archetype/persona/exobrain composed into the mandate.
+            if isinstance(entry, dict):
+                role = entry.get("role_name") or entry.get("role") or "SPECIALIST"
+                identity = entry.get("identity")
+            else:
+                role = entry
+                identity = None
+
             print(f" -> {role} is analyzing data...")
             analysis = Specialist.analyze(
                 role_name=role,
-                research_data={"raw_research": all_raw_data, "sources": treasure_chest}
+                research_data={"raw_research": all_raw_data, "sources": treasure_chest},
+                identity=identity
             )
             reports.append({"role": role, "content": analysis})
             
