@@ -56,13 +56,21 @@ class SocialEngine:
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
         
-        pm_mandate = (
-            f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]\n"
-            f"KAISER MANDATE: {envelope.kaiser_mandate}\n"
+        # L1 (Archetype Rules) -- role-level laws, when present. Everything below
+        # is situational and layered on top as overrides; archetype content never
+        # replaces it. Fails open: absent whenever archetype lookup didn't resolve.
+        archetype_rules = envelope.persona_config.get("archetype_l0_mother")
+        pm_mandate_lines = []
+        if archetype_rules:
+            pm_mandate_lines.append(archetype_rules)
+        pm_mandate_lines.append(f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]")
+        pm_mandate_lines.append(f"KAISER MANDATE: {envelope.kaiser_mandate}")
+        pm_mandate_lines.append(
             "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
             "function-call syntax, or JSON of any kind as literal text -- prose only, always. "
             "This overrides anything your persona implies about calling tools or delegating to other agents."
         )
+        pm_mandate = "\n".join(pm_mandate_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth)

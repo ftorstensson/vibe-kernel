@@ -37,6 +37,22 @@ class SovereignBootloader:
         if not m_doc.exists or not p_doc.exists:
             raise Exception(f"Sovereign Fetch Failed: Milestone ({m_id}) or Persona ({a_id}) missing at mapped paths.")
 
+        # --- BOOTSTRAP 1B: ARCHETYPE RULES (L1) ---
+        # Fail open: an agent without archetype_id, or a lookup that fails for any
+        # reason, must never break the turn -- it just means no archetype content
+        # gets layered in, same as today's behavior.
+        persona_config = p_doc.to_dict()
+        archetype_id = persona_config.get("archetype_id")
+        if archetype_id:
+            try:
+                archetype_doc = await asyncio.to_thread(
+                    db.collection("archetype_registry").document(archetype_id).get
+                )
+                if archetype_doc.exists:
+                    persona_config["archetype_l0_mother"] = archetype_doc.to_dict().get("l0_mother")
+            except Exception:
+                pass
+
         # --- BOOTSTRAP 2: STATE EXTRACTION (DE-LOADING) ---
         project_data = proj_doc.to_dict() if proj_doc.exists else {}
         
@@ -54,7 +70,7 @@ class SovereignBootloader:
 
         return {
             "milestone_config": m_doc.to_dict(),
-            "persona_config": p_doc.to_dict(),
+            "persona_config": persona_config,
             "knowledge_bricks": knowledge_bricks,
             "history": manifest.get("chat_history", []),
             "physics_open": manifest.get("physics_open", False),
