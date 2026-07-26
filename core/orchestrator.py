@@ -7,13 +7,21 @@ from schema.kernel_schema import AgentEnvelope
 
 class MasterOrchestrator:
     @staticmethod
-    async def process_turn(envelope: AgentEnvelope, user_input: str):
+    async def process_turn(envelope: AgentEnvelope, user_input: str, is_global: bool = False):
         # 1. The Clock (Self-Cleaning)
         await TheClock.maintenance_pulse(envelope)
-        
+
         # 2. Add input to internal history
         envelope.history.append({"role": "user", "content": user_input})
-        
+
+        if is_global:
+            # Global Agent: free-form chat, no scoped milestone, no second agent to
+            # hand off to. The Clerk/gate/Strike-Team machinery below exists to
+            # arbitrate handoff between agents -- there's nothing here to arbitrate,
+            # so it doesn't run. Nothing below this block is touched by this branch.
+            response = await SocialEngine.run_global_turn(envelope)
+            return {"social_response": response, "status": "GLOBAL"}
+
         # 3. Detect Ignition (regex)
         is_go_signal = any(word in user_input.lower() for word in ["yes", "go", "fire", "start", "launch"])
         

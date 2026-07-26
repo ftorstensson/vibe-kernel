@@ -23,7 +23,7 @@ async def invoke(req: SovereignRequest):
             schema_map=data['schema_map']
         )
         
-        result = await MasterOrchestrator.process_turn(envelope, req.user_message)
+        result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)
         
         # This return matches the SovereignResponse schema
         return {

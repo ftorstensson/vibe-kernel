@@ -8,11 +8,12 @@ class SovereignRequest(BaseModel):
     milestone_id: str
     user_message: str
     agent_id: Optional[str] = "master_pm"
+    is_global: bool = False  # Global Agent conversation: PM-only, no Clerk/gate
 
 class SovereignResponse(BaseModel):
     """The Formalized Interface for the App to consume."""
     social_response: str
-    status: str  # PROBING | AUTHORIZED | STABLE
+    status: str  # PROBING | AUTHORIZED | STABLE | GLOBAL
     data_patch: Optional[Dict[str, str]] = None
 
 class AgentEnvelope(BaseModel):
