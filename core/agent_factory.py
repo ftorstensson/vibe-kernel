@@ -10,8 +10,9 @@ LOCATION = "us-central1"
 
 
 class GenerationConfig:
-    def __init__(self, temperature=0.0):
+    def __init__(self, temperature=0.0, reasoning_effort=None):
         self.temperature = temperature
+        self.reasoning_effort = reasoning_effort
 
 
 class LiteLLMResponse:
@@ -44,6 +45,8 @@ class LiteLLMModel:
         }
         if generation_config is not None:
             kwargs["temperature"] = generation_config.temperature
+            if generation_config.reasoning_effort:
+                kwargs["reasoning_effort"] = generation_config.reasoning_effort
         if self.tools:
             kwargs["tools"] = self.tools
         if response_schema is not None:
@@ -59,12 +62,12 @@ class AgentFactory:
     @staticmethod
     def get_clerk():
         """IQ: 0.0 - Extraction (Gemini 2.5 Flash via LiteLLM)"""
-        return LiteLLMModel("vertex_ai/gemini-2.5-flash"), GenerationConfig(temperature=0.0)
+        return LiteLLMModel("vertex_ai/gemini-2.5-flash"), GenerationConfig(temperature=0.0, reasoning_effort="disable")
 
     @staticmethod
     def get_partner_pm():
         """EQ: 0.4 - Social PM (Gemini 2.5 Pro via LiteLLM)"""
-        return LiteLLMModel("vertex_ai/gemini-2.5-pro"), GenerationConfig(temperature=0.4)
+        return LiteLLMModel("vertex_ai/gemini-2.5-pro"), GenerationConfig(temperature=0.4, reasoning_effort="minimal")
 
     @staticmethod
     def get_hound():
