@@ -1,4 +1,5 @@
 import asyncio
+import json
 from google.cloud import firestore
 import os
 
@@ -66,7 +67,11 @@ class SovereignBootloader:
             platform_doc = await asyncio.to_thread(
                 db.collection("registry_docs").document("vibe_studio_logic").get
             )
-            persona_config["platform_logic"] = platform_doc.to_dict().get("content") if platform_doc.exists else None
+            raw = platform_doc.to_dict().get("content") if platform_doc.exists else None
+            # registry_docs is a generic store: Studio always JSON.stringify()s on
+            # save and JSON.parse()s on read, by design (same as platform_manual/
+            # dtl_manual) -- so the raw field must be parsed the same way here.
+            persona_config["platform_logic"] = json.loads(raw) if raw else None
         except Exception:
             persona_config["platform_logic"] = None
 
