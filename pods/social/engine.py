@@ -56,13 +56,17 @@ class SocialEngine:
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
         
-        # L1 (Archetype Rules) -- role-level laws, when present. Everything below
-        # is situational and layered on top as overrides; archetype content never
-        # replaces it. Fails open: absent whenever archetype lookup didn't resolve.
+        # L1 -- archetype rules (per archetype) + app manual (per app), when
+        # present. Everything below is situational and layered on top as
+        # overrides; neither replaces it. Fails open: absent whenever a lookup
+        # didn't resolve.
         archetype_rules = envelope.persona_config.get("archetype_l0_mother")
+        app_manual = envelope.persona_config.get("app_manual")
         pm_mandate_lines = []
         if archetype_rules:
             pm_mandate_lines.append(archetype_rules)
+        if app_manual:
+            pm_mandate_lines.append(app_manual)
         pm_mandate_lines.append(f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]")
         pm_mandate_lines.append(f"KAISER MANDATE: {envelope.kaiser_mandate}")
         pm_mandate_lines.append(
@@ -91,9 +95,12 @@ class SocialEngine:
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
 
         archetype_rules = envelope.persona_config.get("archetype_l0_mother")
+        app_manual = envelope.persona_config.get("app_manual")
         pm_mandate_lines = []
         if archetype_rules:
             pm_mandate_lines.append(archetype_rules)
+        if app_manual:
+            pm_mandate_lines.append(app_manual)
         pm_mandate_lines.append(
             "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
             "function-call syntax, or JSON of any kind as literal text -- prose only, always. "

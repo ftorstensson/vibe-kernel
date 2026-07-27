@@ -53,6 +53,11 @@ class SovereignBootloader:
             except Exception:
                 pass
 
+        # App-specific Manual (L1) -- one value per app, lives on the ARM doc
+        # already fetched above, so no extra read. .get() defaults to None,
+        # same fail-open behavior as archetype_l0_mother.
+        persona_config["app_manual"] = arm.get("app_manual")
+
         # --- BOOTSTRAP 2: STATE EXTRACTION (DE-LOADING) ---
         project_data = proj_doc.to_dict() if proj_doc.exists else {}
         
