@@ -58,6 +58,18 @@ class SovereignBootloader:
         # same fail-open behavior as archetype_l0_mother.
         persona_config["app_manual"] = arm.get("app_manual")
 
+        # Platform-wide Logic (L1) -- one value for the whole platform, not
+        # per-app or per-archetype, so it's an independent fetch (not on the
+        # ARM). Likely missing today since nothing's authored it yet -- same
+        # fail-open principle: a missing/empty doc contributes nothing to L1.
+        try:
+            platform_doc = await asyncio.to_thread(
+                db.collection("registry_docs").document("vibe_studio_logic").get
+            )
+            persona_config["platform_logic"] = platform_doc.to_dict().get("content") if platform_doc.exists else None
+        except Exception:
+            persona_config["platform_logic"] = None
+
         # --- BOOTSTRAP 2: STATE EXTRACTION (DE-LOADING) ---
         project_data = proj_doc.to_dict() if proj_doc.exists else {}
         

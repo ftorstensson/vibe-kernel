@@ -56,13 +56,17 @@ class SocialEngine:
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
         
-        # L1 -- archetype rules (per archetype) + app manual (per app), when
-        # present. Everything below is situational and layered on top as
-        # overrides; neither replaces it. Fails open: absent whenever a lookup
-        # didn't resolve.
+        # L1 -- platform-wide logic (whole platform) + archetype rules (per
+        # archetype) + app manual (per app), in that order, when present.
+        # Everything below is situational and layered on top as overrides;
+        # none of these three replace it. Fails open: absent whenever a
+        # lookup didn't resolve.
+        platform_logic = envelope.persona_config.get("platform_logic")
         archetype_rules = envelope.persona_config.get("archetype_l0_mother")
         app_manual = envelope.persona_config.get("app_manual")
         pm_mandate_lines = []
+        if platform_logic:
+            pm_mandate_lines.append(platform_logic)
         if archetype_rules:
             pm_mandate_lines.append(archetype_rules)
         if app_manual:
@@ -94,9 +98,12 @@ class SocialEngine:
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
 
+        platform_logic = envelope.persona_config.get("platform_logic")
         archetype_rules = envelope.persona_config.get("archetype_l0_mother")
         app_manual = envelope.persona_config.get("app_manual")
         pm_mandate_lines = []
+        if platform_logic:
+            pm_mandate_lines.append(platform_logic)
         if archetype_rules:
             pm_mandate_lines.append(archetype_rules)
         if app_manual:
