@@ -12,6 +12,35 @@ CLERK_SCHEMA = {
     "required": ["physics_gate", "missing_logic"],
 }
 
+
+def compose_l1_lines(persona_config):
+    """The one canonical place L1 composition happens, for both run_turn and
+    run_global_turn. Backend's compile_prompt_preview must mirror this
+    exactly -- labels included -- so the Test Lab shows the literal truth,
+    not a separately-maintained copy that can drift.
+
+    Each piece gets a plain, non-jargon label so both the model and a human
+    reading it can tell what's what -- no markdown, consistent with the
+    archetype's own rule against robot-speak formatting. archetype_l0_mother
+    is the one exception: it already opens with its own "IDENTITY:" line,
+    so labeling it again would be redundant.
+    """
+    lines = []
+    platform_logic = persona_config.get("platform_logic")
+    if platform_logic:
+        lines.append(f"HOW THIS PLATFORM WORKS: {platform_logic}")
+    archetype_rules = persona_config.get("archetype_l0_mother")
+    if archetype_rules:
+        lines.append(archetype_rules)
+    global_mission = persona_config.get("global_mission")
+    if global_mission:
+        lines.append(f"MISSION: {global_mission}")
+    app_manual = persona_config.get("app_manual")
+    if app_manual:
+        lines.append(f"HOW THIS APP WORKS: {app_manual}")
+    return lines
+
+
 class SocialEngine:
     @staticmethod
     async def run_turn(envelope: AgentEnvelope):
@@ -56,24 +85,9 @@ class SocialEngine:
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
         
-        # L1 -- platform-wide logic (whole platform) + archetype rules (per
-        # archetype) + global mission (app vision) + app manual (app
-        # structure), in that order, when present. Everything below is
-        # situational and layered on top as overrides; none of these four
-        # replace it. Fails open: absent whenever a lookup didn't resolve.
-        platform_logic = envelope.persona_config.get("platform_logic")
-        archetype_rules = envelope.persona_config.get("archetype_l0_mother")
-        global_mission = envelope.persona_config.get("global_mission")
-        app_manual = envelope.persona_config.get("app_manual")
-        pm_mandate_lines = []
-        if platform_logic:
-            pm_mandate_lines.append(platform_logic)
-        if archetype_rules:
-            pm_mandate_lines.append(archetype_rules)
-        if global_mission:
-            pm_mandate_lines.append(global_mission)
-        if app_manual:
-            pm_mandate_lines.append(app_manual)
+        # L1 -- see compose_l1_lines(). Everything below is situational and
+        # layered on top as overrides; none of the four L1 pieces replace it.
+        pm_mandate_lines = compose_l1_lines(envelope.persona_config)
         pm_mandate_lines.append(f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]")
         pm_mandate_lines.append(f"KAISER MANDATE: {envelope.kaiser_mandate}")
         pm_mandate_lines.append(
@@ -101,19 +115,7 @@ class SocialEngine:
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
 
-        platform_logic = envelope.persona_config.get("platform_logic")
-        archetype_rules = envelope.persona_config.get("archetype_l0_mother")
-        global_mission = envelope.persona_config.get("global_mission")
-        app_manual = envelope.persona_config.get("app_manual")
-        pm_mandate_lines = []
-        if platform_logic:
-            pm_mandate_lines.append(platform_logic)
-        if archetype_rules:
-            pm_mandate_lines.append(archetype_rules)
-        if global_mission:
-            pm_mandate_lines.append(global_mission)
-        if app_manual:
-            pm_mandate_lines.append(app_manual)
+        pm_mandate_lines = compose_l1_lines(envelope.persona_config)
         pm_mandate_lines.append(
             "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
             "function-call syntax, or JSON of any kind as literal text -- prose only, always. "
