@@ -57,18 +57,21 @@ class SocialEngine:
         pm_lens = envelope.persona_config.get("exo_brain", "Blunt, high-speed facilitator.")
         
         # L1 -- platform-wide logic (whole platform) + archetype rules (per
-        # archetype) + app manual (per app), in that order, when present.
-        # Everything below is situational and layered on top as overrides;
-        # none of these three replace it. Fails open: absent whenever a
-        # lookup didn't resolve.
+        # archetype) + global mission (app vision) + app manual (app
+        # structure), in that order, when present. Everything below is
+        # situational and layered on top as overrides; none of these four
+        # replace it. Fails open: absent whenever a lookup didn't resolve.
         platform_logic = envelope.persona_config.get("platform_logic")
         archetype_rules = envelope.persona_config.get("archetype_l0_mother")
+        global_mission = envelope.persona_config.get("global_mission")
         app_manual = envelope.persona_config.get("app_manual")
         pm_mandate_lines = []
         if platform_logic:
             pm_mandate_lines.append(platform_logic)
         if archetype_rules:
             pm_mandate_lines.append(archetype_rules)
+        if global_mission:
+            pm_mandate_lines.append(global_mission)
         if app_manual:
             pm_mandate_lines.append(app_manual)
         pm_mandate_lines.append(f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]")
@@ -100,12 +103,15 @@ class SocialEngine:
 
         platform_logic = envelope.persona_config.get("platform_logic")
         archetype_rules = envelope.persona_config.get("archetype_l0_mother")
+        global_mission = envelope.persona_config.get("global_mission")
         app_manual = envelope.persona_config.get("app_manual")
         pm_mandate_lines = []
         if platform_logic:
             pm_mandate_lines.append(platform_logic)
         if archetype_rules:
             pm_mandate_lines.append(archetype_rules)
+        if global_mission:
+            pm_mandate_lines.append(global_mission)
         if app_manual:
             pm_mandate_lines.append(app_manual)
         pm_mandate_lines.append(

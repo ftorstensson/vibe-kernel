@@ -59,6 +59,11 @@ class SovereignBootloader:
         # same fail-open behavior as archetype_l0_mother.
         persona_config["app_manual"] = arm.get("app_manual")
 
+        # Global Mission (L1) -- app-level vision, same ARM doc as app_manual,
+        # no extra read. Same fail-open behavior; likely missing until Backend's
+        # sync_projection write lands.
+        persona_config["global_mission"] = arm.get("global_mission")
+
         # Platform-wide Logic (L1) -- one value for the whole platform, not
         # per-app or per-archetype, so it's an independent fetch (not on the
         # ARM). Likely missing today since nothing's authored it yet -- same
