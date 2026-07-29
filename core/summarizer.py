@@ -11,7 +11,7 @@ EXTRACTION_SCHEMA = {
                 "type": "object",
                 "properties": {
                     "content": {"type": "string"},
-                    "type": {"type": "string", "enum": ["preference", "decision", "fact", "story"]},
+                    "type": {"type": "string", "enum": ["preference", "decision", "fact", "story", "agreement"]},
                     "speaker": {"type": "string", "enum": ["user", "assistant"]},
                     "turn_index": {"type": "integer"},
                 },
@@ -61,16 +61,21 @@ def extract_facts(turns):
 
     mandate = (
         "You are a fact-extraction function. Given a numbered conversation, extract "
-        "every distinct item worth remembering as its own separate entry -- do not "
-        "blend items into a single narrative. For each item, give its type, which "
-        "turn number it came from, and the speaker of that turn (read the speaker "
-        "directly off the turn's own role label -- do not guess). Priority order "
-        "for what to extract:\n"
-        "1. Anything the user stated as a preference or decision -- keep close to "
-        "their own words, never dropped or softened.\n"
-        "2. Concrete facts or stories.\n"
-        "3. General topic/context.\n"
-        "No commentary."
+        "only what's genuinely worth remembering -- skip anything fungible or "
+        "distillable later. Do NOT extract small talk, the assistant's own process "
+        "narration, or its questions and acknowledgments -- those are replaceable, "
+        "not worth preserving.\n"
+        "Extract only:\n"
+        "1. Anything the user stated as a preference, decision, fact, or story -- "
+        "keep close to their own words, never dropped or softened. This is the "
+        "Non-Googleable stuff: the specific intent, the twist, the grit -- not "
+        "something that could be reconstructed later.\n"
+        "2. A genuine conclusion or agreement actually reached in the conversation "
+        "(e.g. the team agreeing on a direction) -- not a rhetorical question or a "
+        "mid-argument remark.\n"
+        "For each item, give its type, which turn number it came from, and the "
+        "speaker of that turn (read the speaker directly off the turn's own role "
+        "label -- do not guess). No commentary."
     )
     truth = f"CONVERSATION (numbered):\n{numbered_turns}"
 
