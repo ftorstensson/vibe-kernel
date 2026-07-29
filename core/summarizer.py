@@ -12,8 +12,13 @@ def summarize_history(turns):
 
     mandate = (
         "You are a summarization function. Given a portion of a conversation, "
-        "produce a concise running summary preserving the key facts, decisions, "
-        "and context. No commentary, no meta-talk -- just the summary."
+        "produce a concise running summary. Preserve, in order of priority:\n"
+        "1. Anything the user stated as a preference or decision -- keep these "
+        "precisely, close to their own words. They are already settled and must "
+        "never be dropped or softened.\n"
+        "2. Concrete facts or stories.\n"
+        "3. The general narrative and topic thread.\n"
+        "No commentary, no meta-talk -- just the summary."
     )
     truth = f"CONVERSATION:\n{turns}"
 
