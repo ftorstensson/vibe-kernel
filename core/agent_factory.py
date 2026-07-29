@@ -81,3 +81,10 @@ class AgentFactory:
     def get_clinical_auditor():
         """IQ: 0.0 - The Deadbolt (Gemini 2.5 Flash via LiteLLM)"""
         return LiteLLMModel("vertex_ai/gemini-2.5-flash"), GenerationConfig(temperature=0.0)
+
+    @staticmethod
+    def get_summarizer():
+        """IQ: 0.0 - Condensation (Gemini 2.5 Flash via LiteLLM). Accurate
+        condensation, not creative work -- same tier and thinking bound as
+        the Clerk."""
+        return LiteLLMModel("vertex_ai/gemini-2.5-flash"), GenerationConfig(temperature=0.0, reasoning_effort="disable")
