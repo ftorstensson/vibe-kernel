@@ -12,9 +12,10 @@ EXTRACTION_SCHEMA = {
                 "properties": {
                     "content": {"type": "string"},
                     "type": {"type": "string", "enum": ["preference", "decision", "fact", "story"]},
+                    "speaker": {"type": "string", "enum": ["user", "assistant"]},
                     "turn_index": {"type": "integer"},
                 },
-                "required": ["content", "type", "turn_index"],
+                "required": ["content", "type", "speaker", "turn_index"],
             },
         }
     },
@@ -61,8 +62,10 @@ def extract_facts(turns):
     mandate = (
         "You are a fact-extraction function. Given a numbered conversation, extract "
         "every distinct item worth remembering as its own separate entry -- do not "
-        "blend items into a single narrative. For each item, give its type and the "
-        "turn number it came from. Priority order for what to extract:\n"
+        "blend items into a single narrative. For each item, give its type, which "
+        "turn number it came from, and the speaker of that turn (read the speaker "
+        "directly off the turn's own role label -- do not guess). Priority order "
+        "for what to extract:\n"
         "1. Anything the user stated as a preference or decision -- keep close to "
         "their own words, never dropped or softened.\n"
         "2. Concrete facts or stories.\n"
