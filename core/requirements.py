@@ -5,6 +5,7 @@ from core.prompt_builder import PromptBuilder
 REQUIREMENTS_SCHEMA = {
     "type": "object",
     "properties": {
+        "rationale": {"type": "string"},
         "ignition_inputs": {
             "type": "array",
             "items": {
@@ -15,9 +16,9 @@ REQUIREMENTS_SCHEMA = {
                 },
                 "required": ["question", "why_irreplaceable"],
             },
-        }
+        },
     },
-    "required": ["ignition_inputs"],
+    "required": ["rationale", "ignition_inputs"],
 }
 
 
@@ -31,6 +32,15 @@ def derive_requirements(purpose, target_structure):
     Everything else in the target structure is implicitly AI-researchable once
     those few inputs exist -- not enumerated, because it doesn't need to be.
 
+    Returns {rationale, ignition_inputs}. rationale comes before ignition_inputs
+    in both the schema and the mandate so the model reasons through the task
+    before committing to a list, not after -- mirrors
+    registry/prompts/foreman_mandate.md's own [STRATEGIC_THOUGHTS] step (2-3
+    sentences of internal logic) ahead of its final memo, dropped in the first
+    rebuild and restored here for the same reason the original had it: legible
+    to a human reviewing the output, and reasoning-first tends to produce a
+    better derivation than jumping straight to a list.
+
     Draws directly on registry/prompts/foreman_mandate.md's real language:
     "Identify 3-4 Ignition Inputs (essential human context) required to start
     the AI Specialists' work", plus its Substance Law (ask for the Meat/Grit,
@@ -40,8 +50,13 @@ def derive_requirements(purpose, target_structure):
     mandate = (
         "You are a requirements-derivation function, running once per milestone as "
         "a planning step, not per-turn. Given the milestone's purpose and its full "
-        "target output structure, do NOT classify each output field individually. "
-        "Instead, look at the whole picture and distill it down to 3-4 broad "
+        "target output structure, first reason through it in a `rationale` field: "
+        "2-3 plain-prose sentences covering what the milestone needs overall, what "
+        "AI Specialists can research or draft on their own, what's left that only "
+        "the human can provide, and therefore why these particular questions. "
+        "Plain sentences, not a poetic label.\n"
+        "Then, in `ignition_inputs`, do NOT classify each output field "
+        "individually. Instead, distill the whole picture down to 3-4 broad "
         "'Ignition Inputs' -- the small set of essential things only the human can "
         "provide to get the AI Specialists started. Everything else in the target "
         "structure can be researched, drafted, or synthesized by AI Specialists "
@@ -60,4 +75,4 @@ def derive_requirements(purpose, target_structure):
 
     work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=REQUIREMENTS_SCHEMA)
-    return hammer_json(get_clean_text(response)).get("ignition_inputs", [])
+    return hammer_json(get_clean_text(response))
