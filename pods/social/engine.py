@@ -105,6 +105,11 @@ class SocialEngine:
         pm_mandate_lines = compose_l1_lines(envelope.persona_config)
         pm_mandate_lines.append(f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]")
         pm_mandate_lines.append(f"KAISER MANDATE: {envelope.kaiser_mandate}")
+        # Computed once per turn in orchestrator.py (core/coverage.py), not
+        # here -- avoids running Coverage twice per turn now that
+        # orchestrator.py also needs it for gate-driven ignition.
+        if envelope.coverage_whisper:
+            pm_mandate_lines.append(f"COVERAGE WHISPER: {envelope.coverage_whisper}")
         pm_mandate_lines.append(
             "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
             "function-call syntax, or JSON of any kind as literal text -- prose only, always. "

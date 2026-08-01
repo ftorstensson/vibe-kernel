@@ -15,6 +15,27 @@ class SovereignResponse(BaseModel):
     social_response: str
     status: str  # PROBING | AUTHORIZED | STABLE | GLOBAL
     data_patch: Optional[Dict[str, str]] = None
+    # Restores the real v32.0-era API contract (confirmed still expected by
+    # the-co-founder's app/agency/architect.py and rendered by
+    # vibe-design-lab's ExecutivePaperNode) rather than inventing a new shape.
+    # brief: {identity_narrative, founding_voice} from core/brief.py.
+    # appendix: one {role, content, sources} entry per specialist, their own
+    # raw report and their own real sources, not re-synthesized.
+    brief: Optional[Dict[str, Any]] = None
+    appendix: Optional[List[Dict[str, Any]]] = None
+
+class DeriveRequirementsRequest(BaseModel):
+    """Functions Library, entry 1: derive_requirements() needs no conversation
+    state at all -- no app_id/project_id/milestone_id, no envelope, no
+    bootloader fetch -- just the milestone's own purpose and target output
+    structure, which the caller (Studio) already has. Kept separate from
+    SovereignRequest deliberately: this isn't a conversational turn."""
+    purpose: str
+    target_structure: List[Any] = Field(default_factory=list)
+
+class DeriveRequirementsResponse(BaseModel):
+    rationale: str
+    ignition_inputs: List[Dict[str, str]]
 
 class AgentEnvelope(BaseModel):
     """Internal briefcase containing the Map and the Data."""
@@ -27,3 +48,7 @@ class AgentEnvelope(BaseModel):
     schema_map: Dict[str, Any] = Field(default_factory=dict)
     physics_open: bool = False
     kaiser_mandate: str = ""
+    # Computed once per turn in orchestrator.py (Coverage's real gate_status
+    # and whisper), read by pods/social/engine.py's run_turn -- same scratch
+    # pattern as kaiser_mandate, avoids computing Coverage twice per turn.
+    coverage_whisper: Optional[str] = None
