@@ -3,9 +3,76 @@ import json
 from google.cloud import firestore
 import os
 
+from core.composition import compose_l1_lines
+
 db = firestore.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT", "vibe-agent-final"))
 
 class SovereignBootloader:
+    @staticmethod
+    async def _fetch_platform_logic():
+        """Platform-wide L1 content, same real doc assemble_envelope already
+        reads -- factored out so resolve_function_identity() doesn't
+        reimplement this fetch a second time (the exact "two parallel,
+        potentially-drifting versions" risk this whole pass exists to
+        avoid)."""
+        try:
+            platform_doc = await asyncio.to_thread(
+                db.collection("registry_docs").document("vibe_studio_logic").get
+            )
+            raw = platform_doc.to_dict().get("content") if platform_doc.exists else None
+            return json.loads(raw) if raw else None
+        except Exception:
+            return None
+
+    @staticmethod
+    async def resolve_function_identity(app_id, function_name):
+        """Real L1 + Skill resolution for a Functions Library entry (e.g.
+        Requirements), the same real sources and the same compose_l1_lines()
+        call bootloader.py already uses for agents -- not a separate
+        hand-written mandate. Unlike agents, most of a function's identity is
+        platform-wide, not app-scoped: functions_registry and
+        archetype_registry are both global collections, no app_id involved.
+        app_manual is the one genuinely app-specific piece (lives on the
+        ARM), which is why this still needs app_id at all.
+
+        Returns {l1: str, skill: str}. Raises if the function isn't in the
+        registry or has no bound archetype -- a real API call should fail
+        loud here, not silently fall back to nothing."""
+        registry_doc = await asyncio.to_thread(
+            db.collection("registry_docs").document("functions_registry").get
+        )
+        if not registry_doc.exists:
+            raise ValueError("functions_registry doc not found")
+        raw = registry_doc.to_dict().get("content")
+        functions = json.loads(raw) if raw else []
+        entry = next((f for f in functions if f.get("name") == function_name), None)
+        if not entry:
+            raise ValueError(f"No functions_registry entry named '{function_name}'")
+
+        archetype_id = entry.get("archetype_id")
+        archetype_l0_mother = None
+        if archetype_id:
+            archetype_doc = await asyncio.to_thread(
+                db.collection("archetype_registry").document(archetype_id).get
+            )
+            if archetype_doc.exists:
+                archetype_l0_mother = archetype_doc.to_dict().get("l0_mother")
+
+        arm_doc = await asyncio.to_thread(
+            db.collection("_kernel_registry").document(app_id).get
+        )
+        app_manual = arm_doc.to_dict().get("app_manual") if arm_doc.exists else None
+
+        platform_logic = await SovereignBootloader._fetch_platform_logic()
+
+        l1_lines = compose_l1_lines({
+            "archetype_l0_mother": archetype_l0_mother,
+            "platform_logic": platform_logic,
+            "app_manual": app_manual,
+        })
+
+        return {"l1": "\n".join(l1_lines), "skill": entry.get("skill", "")}
+
     @staticmethod
     async def assemble_envelope(req):
         # --- BOOTSTRAP 0: THE MAP (CARTOGRAPHY) ---
@@ -66,19 +133,9 @@ class SovereignBootloader:
 
         # Platform-wide Logic (L1) -- one value for the whole platform, not
         # per-app or per-archetype, so it's an independent fetch (not on the
-        # ARM). Likely missing today since nothing's authored it yet -- same
-        # fail-open principle: a missing/empty doc contributes nothing to L1.
-        try:
-            platform_doc = await asyncio.to_thread(
-                db.collection("registry_docs").document("vibe_studio_logic").get
-            )
-            raw = platform_doc.to_dict().get("content") if platform_doc.exists else None
-            # registry_docs is a generic store: Studio always JSON.stringify()s on
-            # save and JSON.parse()s on read, by design (same as platform_manual/
-            # dtl_manual) -- so the raw field must be parsed the same way here.
-            persona_config["platform_logic"] = json.loads(raw) if raw else None
-        except Exception:
-            persona_config["platform_logic"] = None
+        # ARM). Shared with resolve_function_identity() via _fetch_platform_logic()
+        # rather than fetched inline here a second time.
+        persona_config["platform_logic"] = await SovereignBootloader._fetch_platform_logic()
 
         # --- BOOTSTRAP 2: STATE EXTRACTION (DE-LOADING) ---
         project_data = proj_doc.to_dict() if proj_doc.exists else {}

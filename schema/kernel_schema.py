@@ -26,10 +26,18 @@ class SovereignResponse(BaseModel):
 
 class DeriveRequirementsRequest(BaseModel):
     """Functions Library, entry 1: derive_requirements() needs no conversation
-    state at all -- no app_id/project_id/milestone_id, no envelope, no
-    bootloader fetch -- just the milestone's own purpose and target output
-    structure, which the caller (Studio) already has. Kept separate from
-    SovereignRequest deliberately: this isn't a conversational turn."""
+    state -- no project_id/milestone_id, no envelope, no chat history -- just
+    the milestone's own purpose and target output structure, which the caller
+    (Studio) already has. Kept separate from SovereignRequest deliberately:
+    this isn't a conversational turn.
+
+    app_id is real, not optional: it resolves the function's actual identity
+    (L1 via core/bootloader.py's resolve_function_identity -- functions_registry,
+    archetype_registry, and the app's own app_manual), not a hand-written
+    mandate baked into the function itself. Everything but app_manual is
+    platform-wide, but app_manual is genuinely app-specific, so app_id is
+    still required."""
+    app_id: str
     purpose: str
     target_structure: List[Any] = Field(default_factory=list)
 

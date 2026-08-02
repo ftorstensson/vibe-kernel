@@ -47,15 +47,19 @@ async def invoke(req: SovereignRequest):
 
 # Functions Library, entry 1. Deliberately NOT under /kernel/invoke -- that
 # route is a conversational turn (bootloader fetch, envelope, orchestrator).
-# derive_requirements() needs none of that, just purpose + target_structure,
-# so this is its own stateless route: no app_id/project_id/milestone_id, no
-# Firestore read on Kernel's side at all. Caller (Studio/Backend) already has
-# the real content and supplies it directly.
+# derive_requirements() needs no conversation state (no project_id/
+# milestone_id, no history), but it does need app_id -- its real L1/Skill
+# come from the same live sources (functions_registry, archetype_registry,
+# the app's own app_manual) real agent turns compose from, not a hand-written
+# mandate baked into the function.
 @app.post("/kernel/functions/derive_requirements", response_model=DeriveRequirementsResponse)
 async def invoke_derive_requirements(req: DeriveRequirementsRequest):
     try:
-        result = derive_requirements(req.purpose, req.target_structure)
+        identity = await SovereignBootloader.resolve_function_identity(req.app_id, "Requirements")
+        result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["skill"])
         return result
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
         print(f"[KERNEL CRASH] {e}")
         raise HTTPException(status_code=500, detail=str(e))
