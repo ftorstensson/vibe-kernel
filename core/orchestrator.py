@@ -1,5 +1,9 @@
 import re
+from core.brief import derive_brief
 from core.clock import TheClock
+from core.coverage import assess_coverage
+from core.ignition import confirm_launch_intent
+from core.reconcile import build_durable_facts
 from pods.social.engine import SocialEngine
 from pods.strike_team.engine import StrikeEngine
 from pods.synthesis.engine import SynthesisEngine
@@ -7,40 +11,106 @@ from schema.kernel_schema import AgentEnvelope
 
 class MasterOrchestrator:
     @staticmethod
-    async def process_turn(envelope: AgentEnvelope, user_input: str):
+    async def process_turn(envelope: AgentEnvelope, user_input: str, is_global: bool = False):
         # 1. The Clock (Self-Cleaning)
         await TheClock.maintenance_pulse(envelope)
-        
+
         # 2. Add input to internal history
         envelope.history.append({"role": "user", "content": user_input})
-        
-        # 3. Detect Ignition (regex)
-        is_go_signal = any(word in user_input.lower() for word in ["yes", "go", "fire", "start", "launch"])
-        
-        if is_go_signal and envelope.physics_open:
-            print(f"[ORCHESTRATOR] Strike Team Authorized.")
-            
+
+        if is_global:
+            # Global Agent: free-form chat, no scoped milestone, no second agent to
+            # hand off to. The Clerk/gate/Strike-Team machinery below exists to
+            # arbitrate handoff between agents -- there's nothing here to arbitrate,
+            # so it doesn't run. Nothing below this block is touched by this branch.
+            response = await SocialEngine.run_global_turn(envelope)
+            return {"social_response": response, "status": "GLOBAL"}
+
+        # 3. Detect readiness -- gate-driven, not keyword matching. Fred's
+        # explicit design: he tried "go"/"yes"/etc. substring matching before
+        # and abandoned it as unreliable (real bug: "grow"/"good" false-
+        # trigger it). Coverage is computed once here (not duplicated inside
+        # run_turn) and threaded through envelope.coverage_whisper for the PM
+        # to read -- same scratch-field pattern as kaiser_mandate.
+        required_questions = envelope.milestone_config.get("required_questions")
+        durable_facts = []
+        ready = False
+        envelope.coverage_whisper = None
+        if required_questions:
+            try:
+                durable_facts = build_durable_facts(envelope.history)
+                coverage = assess_coverage(required_questions, durable_facts)
+                envelope.coverage_whisper = coverage.get("whisper")
+                ready = coverage.get("gate_status") == "GREEN"
+            except Exception:
+                ready = False
+
+        # Guard against re-firing every subsequent turn once already
+        # launched. No new persistence needed: knowledge_bricks already
+        # round-trips through Backend's real ledger sync, so a non-empty
+        # knowledge_bricks on a fresh read is a real, already-persisted
+        # signal that the Strike Team has fired for this milestone before.
+        already_fired = bool(envelope.knowledge_bricks)
+
+        if ready and not already_fired and confirm_launch_intent(envelope.history):
+            print(f"[ORCHESTRATOR] Strike Team Authorized (gate-driven).")
+
+            # The settled brief -- Phase 1 (core/brief.py), not gated/fail-open
+            # like Coverage's whisper since firing at all already implies
+            # gate_status GREEN; built from the same durable facts pipeline
+            # as Coverage, so it can't be built on a fact that already
+            # scrolled out of view. Already computed above for the readiness
+            # check -- reused here, not recomputed.
+            brief = derive_brief(envelope.milestone_config.get("output", ""), durable_facts)
+
+            # Specialists/Hound only need the brief as readable text -- the
+            # structured {identity_narrative, founding_voice} shape below is
+            # for the final response/UI (content.brief), a separate concern.
+            brief_text = brief.get("identity_narrative", "")
+            if brief.get("founding_voice"):
+                quotes = "\n".join(f'- "{q}"' for q in brief["founding_voice"])
+                brief_text = f"{brief_text}\n\nIN THE DIRECTOR'S OWN WORDS:\n{quotes}"
+
             # Turn B: Parallel Hunt
-            strike_results = await StrikeEngine.run_industrial_strike(envelope)
-            
-            # Turn C: Synthesis
-            new_truth = await SynthesisEngine.forge_truth(
+            strike_results = await StrikeEngine.run_industrial_strike(envelope, brief_text)
+
+            # Turn C: Synthesis -- bricks (the paper sections) and appendix
+            # (each specialist's own raw report + sources) are genuinely
+            # different things now, not one blended dict.
+            synthesis = await SynthesisEngine.forge_truth(
                 specialist_outputs=strike_results['reports'],
                 milestone_config=envelope.milestone_config
             )
-            
-            # The Weld (Inject Links)
-            for key, content in new_truth.items():
+            bricks = synthesis['bricks']
+            appendix = synthesis['appendix']
+
+            # The Weld (Inject Links) -- both the synthesized sections and
+            # each specialist's own raw report can carry [N] citations back
+            # to the same global treasure_chest.
+            for key, content in bricks.items():
                 if isinstance(content, str):
-                    new_truth[key] = MasterOrchestrator.weld_links(content, strike_results['treasure_chest'])
-            
-            # Update Knowledge
-            envelope.knowledge_bricks.update(new_truth)
+                    bricks[key] = MasterOrchestrator.weld_links(content, strike_results['treasure_chest'])
+            for entry in appendix:
+                if isinstance(entry.get('content'), str):
+                    entry['content'] = MasterOrchestrator.weld_links(entry['content'], strike_results['treasure_chest'])
+
+            # Update Knowledge -- only the flat brick_id->prose bricks belong
+            # in knowledge_bricks (bootloader.py's de-loading and TheClock's
+            # compression both assume that flat shape); appendix/brief are
+            # carried in the response instead, not folded in here -- same
+            # reasoning as why they can't be smuggled into data_patch either.
+            envelope.knowledge_bricks.update(bricks)
             envelope.kaiser_mandate = "RESEARCH COMPLETE. Discuss the new findings."
-            
+
             # Social Turn
             response = await SocialEngine.run_turn(envelope)
-            return {"social_response": response, "data_patch": new_truth, "status": "STABLE"}
+            return {
+                "social_response": response,
+                "data_patch": bricks,
+                "brief": brief,
+                "appendix": appendix,
+                "status": "STABLE"
+            }
 
         else:
             # Turn A: Social

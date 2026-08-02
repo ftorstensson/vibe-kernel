@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 pydantic
-google-cloud-aiplatform
+litellm
+orjson
 google-cloud-firestore
 python-dotenv
