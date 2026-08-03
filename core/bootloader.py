@@ -61,7 +61,9 @@ class SovereignBootloader:
         arm_doc = await asyncio.to_thread(
             db.collection("_kernel_registry").document(app_id).get
         )
-        app_manual = arm_doc.to_dict().get("app_manual") if arm_doc.exists else None
+        arm = arm_doc.to_dict() if arm_doc.exists else {}
+        app_manual = arm.get("app_manual")
+        global_mission = arm.get("global_mission")
 
         platform_logic = await SovereignBootloader._fetch_platform_logic()
 
@@ -69,11 +71,15 @@ class SovereignBootloader:
             "archetype_l0_mother": archetype_l0_mother,
             "platform_logic": platform_logic,
         })
-        # app_manual lives in L3 now, not L1 (see compose_l3_lens). No
-        # persona/exo_brain concept exists for a Functions Library entry --
-        # default_exo_brain=None keeps the agent-voice fallback out of a
-        # function's mandate.
-        l3 = compose_l3_lens({"app_manual": app_manual}, default_exo_brain=None) or None
+        # app_manual and global_mission live in L3 now, not L1 (see
+        # compose_l3_lens) -- both are on the same already-fetched ARM doc,
+        # no extra Firestore call needed. No persona/exo_brain concept
+        # exists for a Functions Library entry -- default_exo_brain=None
+        # keeps the agent-voice fallback out of a function's mandate.
+        l3 = compose_l3_lens(
+            {"app_manual": app_manual, "global_mission": global_mission},
+            default_exo_brain=None,
+        ) or None
 
         return {"l1": "\n".join(l1_lines), "l3": l3, "skill": entry.get("skill", "")}
 
