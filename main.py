@@ -57,7 +57,7 @@ async def invoke(req: SovereignRequest):
 async def invoke_derive_requirements(req: DeriveRequirementsRequest):
     try:
         identity = await SovereignBootloader.resolve_function_identity(req.app_id, "Requirements")
-        result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["skill"])
+        result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["l3"], identity["skill"])
         return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -68,12 +68,15 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
 
 # Test Lab preview: the real five-layer composition (L1-L5) a Functions
 # Library entry's model call would use -- as inspectable text, no model call.
-# L2 (persona/voice), L3 (Deep Knowledge/domain facts), and L5 (history) are
-# genuinely not applicable to a stateless function like Requirements, so
-# they're explicit None, not omitted -- the UI renders all five boxes and
-# shows which are empty by design. Skill lives in L4 (Active Task/Signal)
-# alongside purpose/target_structure, since all three together define what
-# this specific unit of work is. Reuses resolve_function_identity() directly
+# L2 (persona/voice) and L5 (history) are genuinely not applicable to a
+# stateless function like Requirements, so they're explicit None, not
+# omitted -- the UI renders all five boxes and shows which are empty by
+# design. L3 is real when the app has an app_manual (Deep Knowledge moved
+# there from L1, see core/composition.py), None otherwise -- not hardcoded
+# to always-empty, since a function's app_manual is exactly as real as an
+# agent's. Skill lives in L4 (Active Task/Signal) alongside
+# purpose/target_structure, since all three together define what this
+# specific unit of work is. Reuses resolve_function_identity() directly
 # (same function, same fetch path derive_requirements() uses above) rather
 # than a second copy of that resolution logic.
 @app.post("/kernel/functions/preview", response_model=PreviewFunctionResponse)
@@ -83,7 +86,7 @@ async def invoke_preview_function(req: PreviewFunctionRequest):
         return {
             "l1": identity["l1"],
             "l2": None,
-            "l3": None,
+            "l3": identity["l3"],
             "l4": {
                 "skill": identity["skill"],
                 "purpose": req.purpose,
