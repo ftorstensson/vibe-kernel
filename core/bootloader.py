@@ -3,7 +3,7 @@ import json
 from google.cloud import firestore
 import os
 
-from core.composition import compose_l1_lines
+from core.composition import compose_l1_lines, compose_l3_lens
 
 db = firestore.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT", "vibe-agent-final"))
 
@@ -35,9 +35,9 @@ class SovereignBootloader:
         app_manual is the one genuinely app-specific piece (lives on the
         ARM), which is why this still needs app_id at all.
 
-        Returns {l1: str, skill: str}. Raises if the function isn't in the
-        registry or has no bound archetype -- a real API call should fail
-        loud here, not silently fall back to nothing."""
+        Returns {l1: str, l3: str|None, skill: str}. Raises if the function
+        isn't in the registry or has no bound archetype -- a real API call
+        should fail loud here, not silently fall back to nothing."""
         registry_doc = await asyncio.to_thread(
             db.collection("registry_docs").document("functions_registry").get
         )
@@ -68,10 +68,14 @@ class SovereignBootloader:
         l1_lines = compose_l1_lines({
             "archetype_l0_mother": archetype_l0_mother,
             "platform_logic": platform_logic,
-            "app_manual": app_manual,
         })
+        # app_manual lives in L3 now, not L1 (see compose_l3_lens). No
+        # persona/exo_brain concept exists for a Functions Library entry --
+        # default_exo_brain=None keeps the agent-voice fallback out of a
+        # function's mandate.
+        l3 = compose_l3_lens({"app_manual": app_manual}, default_exo_brain=None) or None
 
-        return {"l1": "\n".join(l1_lines), "skill": entry.get("skill", "")}
+        return {"l1": "\n".join(l1_lines), "l3": l3, "skill": entry.get("skill", "")}
 
     @staticmethod
     async def assemble_envelope(req):

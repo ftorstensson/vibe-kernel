@@ -22,7 +22,7 @@ REQUIREMENTS_SCHEMA = {
 }
 
 
-def derive_requirements(purpose, target_structure, l1, skill):
+def derive_requirements(purpose, target_structure, l1, l3, skill):
     """Standalone, Phase 1 only -- not wired into the real Clerk/gate mechanism.
     Runs once per milestone (a planning step, not per-turn). Does NOT classify
     each target_structure item individually -- that was the first version's
@@ -32,15 +32,18 @@ def derive_requirements(purpose, target_structure, l1, skill):
     Everything else in the target structure is implicitly AI-researchable once
     those few inputs exist -- not enumerated, because it doesn't need to be.
 
-    l1 and skill are real, not a hand-written mandate string -- resolved by
-    core/bootloader.py's resolve_function_identity() from the actual live
+    l1, l3, and skill are real, not a hand-written mandate string -- resolved
+    by core/bootloader.py's resolve_function_identity() from the actual live
     Functions Library (registry_docs/functions_registry's skill field) and
     the actual live archetype/platform-logic/app-manual sources, the same
-    composition path (core/composition.py's compose_l1_lines) real agent
-    turns use. This function does no Firestore I/O itself and has no
-    embedded procedure text -- it only assembles the prompt from what it's
-    given and calls the model, matching the pure-function shape every other
-    Phase 1 function already has.
+    composition path (core/composition.py's compose_l1_lines/compose_l3_lens)
+    real agent turns use. l3 (app_manual, when the app has one) is None for
+    apps without one -- folded into the LENS block alongside skill, same
+    pattern real agent turns use to combine L2+L3 into their own LENS block.
+    This function does no Firestore I/O itself and has no embedded procedure
+    text -- it only assembles the prompt from what it's given and calls the
+    model, matching the pure-function shape every other Phase 1 function
+    already has.
 
     Returns {rationale, ignition_inputs}. rationale comes before
     ignition_inputs in both the schema and the mandate so the model reasons
@@ -50,7 +53,8 @@ def derive_requirements(purpose, target_structure, l1, skill):
     model, config = AgentFactory.get_summarizer()
 
     truth = f"PURPOSE:\n{purpose}\n\nTARGET OUTPUT STRUCTURE:\n{target_structure}"
+    lens = f"{l3}\n\n{skill}" if l3 else skill
 
-    work_order = PromptBuilder.assemble(mandate=l1, lens=skill, truth=truth)
+    work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=REQUIREMENTS_SCHEMA)
     return hammer_json(get_clean_text(response))

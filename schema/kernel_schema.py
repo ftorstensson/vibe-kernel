@@ -65,17 +65,18 @@ class PreviewFunctionResponse(BaseModel):
     Named by layer (L1-L5) to match the same five-layer shape real agent turns
     are composed from (see core/composition.py, pods/social/engine.py), so the
     Test Lab can render all five boxes consistently across agents and
-    functions -- with L2/L3/L5 explicitly present-but-empty for a stateless
+    functions -- with L2/L5 explicitly present-but-empty for a stateless
     function like Requirements, not silently missing.
 
-    l1: Mandate -- archetype_l0_mother + platform_logic + app_manual, via
+    l1: Mandate -- archetype_l0_mother + platform_logic, via
         resolve_function_identity()/compose_l1_lines(). Real.
     l2: Persona/voice (an agent's own system_prompt/dna). Not applicable to a
         Functions Library entry -- there's no agent persona here, only a
         procedure. None by design, not a missing fetch.
-    l3: Deep Knowledge/Exo-Brain -- domain facts/mission content (see
-        compose_l3_lens). Requirements doesn't use any of that. None by
-        design, not a missing fetch.
+    l3: Deep Knowledge/Exo-Brain -- app_manual, via compose_l3_lens() (same
+        layer agents' mission/app_manual live in). Real whenever the app has
+        one; None when it doesn't -- not hardcoded to always-empty, a
+        function's app_manual is exactly as real as an agent's.
     l4: Active Task/Signal -- what this specific unit of work actually is:
         the Skill (functions_registry's real procedure text, fixed per
         function) plus the data (the real purpose + target_structure for the
