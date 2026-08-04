@@ -84,6 +84,29 @@ class SovereignBootloader:
         return {"l1": "\n".join(l1_lines), "l3": l3, "skill": entry.get("skill", "")}
 
     @staticmethod
+    async def fetch_project_history(app_id, project_id):
+        """A project's real, currently-stored chat_history -- the same ARM
+        (paths.user_projects, schema_keys.manifest_root) + project-doc lookup
+        assemble_envelope() already does as BOOTSTRAP 0/1B, factored out so a
+        standalone L5 (durable_facts) fetch doesn't need a live turn to read
+        it. Raises on a missing Map, same fail-loud contract as
+        assemble_envelope's Map Error -- a real API call should fail loud
+        here, not silently return an empty history."""
+        map_ref = db.collection("_kernel_registry").document(app_id)
+        arm_doc = await asyncio.to_thread(map_ref.get)
+        if not arm_doc.exists:
+            raise ValueError(f"502 Map Error: Kernel is Blind. No App Registry Map found for {app_id}")
+        arm = arm_doc.to_dict()
+        paths = arm.get("paths", {})
+        keys = arm.get("schema_keys", {})
+
+        project_ref = db.collection(paths["user_projects"]).document(project_id)
+        proj_doc = await asyncio.to_thread(project_ref.get)
+        project_data = proj_doc.to_dict() if proj_doc.exists else {}
+        manifest = project_data.get(keys["manifest_root"], {})
+        return manifest.get("chat_history", [])
+
+    @staticmethod
     async def assemble_envelope(req):
         # --- BOOTSTRAP 0: THE MAP (CARTOGRAPHY) ---
         map_ref = db.collection("_kernel_registry").document(req.app_id)
