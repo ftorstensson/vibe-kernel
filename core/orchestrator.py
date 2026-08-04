@@ -1,4 +1,5 @@
 import re
+from core.bootloader import SovereignBootloader
 from core.brief import derive_brief
 from core.clock import TheClock
 from core.coverage import assess_coverage
@@ -39,7 +40,15 @@ class MasterOrchestrator:
         if required_questions:
             try:
                 durable_facts = build_durable_facts(envelope.history)
-                coverage = assess_coverage(required_questions, durable_facts)
+                # Coverage's real L1 (judge archetype)/L3 (mission+app_manual)/
+                # skill (the assessment procedure), the same resolution path
+                # Requirements uses -- not a hand-written mandate baked into
+                # assess_coverage() itself.
+                identity = await SovereignBootloader.resolve_function_identity(envelope.app_id, "Coverage")
+                coverage = assess_coverage(
+                    required_questions, durable_facts,
+                    identity["l1"], identity["l3"], identity["skill"],
+                )
                 envelope.coverage_whisper = coverage.get("whisper")
                 ready = coverage.get("gate_status") == "GREEN"
             except Exception:

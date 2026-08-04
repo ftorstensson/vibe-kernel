@@ -46,18 +46,35 @@ class DeriveRequirementsResponse(BaseModel):
     ignition_inputs: List[Dict[str, str]]
 
 class PreviewFunctionRequest(BaseModel):
-    """Test Lab preview: same fields as DeriveRequirementsRequest, plus
-    function_name -- resolve_function_identity() is already function-agnostic
-    (app_id, function_name), so this isn't scoped to Requirements alone, even
-    though Requirements is the only Functions Library entry that exists today.
-    purpose/target_structure are caller-supplied (same as
-    DeriveRequirementsRequest) and just echoed back alongside the resolved
-    l1/skill -- this endpoint does no model call, so it's cheap to fetch
-    purely for display."""
+    """Test Lab preview -- function-agnostic (resolve_function_identity() only
+    needs app_id/function_name), but each function's L4/L5 data has its own
+    shape, so this request carries both a legacy, Requirements-specific path
+    and a generic one:
+
+    purpose/target_structure: Requirements' real, already-live shape --
+    Backend's proxy and Studio's Requirements Input panel consume this in
+    production today. Kept exactly as-is, not touched, so that integration
+    doesn't break.
+
+    l4_data/l5_data: generic pass-through for any other function (e.g.
+    Coverage's required_questions/durable_facts) -- echoed straight into the
+    response's l4/l5 alongside the resolved skill, no function-specific
+    field names hardcoded. l4_data is the discriminator: if a caller sends
+    it, the generic path is used instead of the legacy purpose/target_structure
+    one (see main.py's invoke_preview_function).
+
+    This endpoint does no model call itself -- l4_data/l5_data are just
+    echoed back, same as purpose/target_structure always were -- cheap to
+    fetch purely for display. (A real L5 fetch, e.g. Coverage's durable_facts,
+    is a separate concern with a real cost -- see /kernel/durable_facts --
+    the caller fetches it first, then optionally passes the result in here
+    via l5_data for display alongside L1/L3.)"""
     app_id: str
     function_name: str
-    purpose: str
+    purpose: Optional[str] = None
     target_structure: List[Any] = Field(default_factory=list)
+    l4_data: Optional[Dict[str, Any]] = None
+    l5_data: Optional[List[Any]] = None
 
 class PreviewFunctionResponse(BaseModel):
     """The real, literal prompt inputs a Functions Library entry's model call
@@ -79,17 +96,54 @@ class PreviewFunctionResponse(BaseModel):
         function's app_manual is exactly as real as an agent's.
     l4: Active Task/Signal -- what this specific unit of work actually is:
         the Skill (functions_registry's real procedure text, fixed per
-        function) plus the data (the real purpose + target_structure for the
-        milestone, echoed straight back from the request). Both define the
-        task, so both live here together.
-    l5: History (prior chat turns). Not applicable -- derive_requirements()
-        runs once per milestone as a planning step, no conversation state.
-        None by design, not a missing fetch."""
+        function) plus the function's own data, echoed straight back from
+        the request -- purpose/target_structure for Requirements,
+        required_questions for Coverage, whatever a future function needs.
+        Both the Skill and the data define the task, so both live here
+        together.
+    l5: History/distilled-memory layer. None for a function with no
+        conversation state (e.g. Requirements). Real when the caller
+        supplies it (e.g. Coverage's durable_facts, fetched separately via
+        /kernel/durable_facts and passed through here for display)."""
     l1: str
     l2: Optional[str] = None
     l3: Optional[str] = None
     l4: Dict[str, Any]
     l5: Optional[List[Any]] = None
+
+class AssessCoverageRequest(BaseModel):
+    """Coverage's own standalone endpoint, same reasoning as
+    DeriveRequirementsRequest: Coverage needs no envelope/history of its
+    own -- just the milestone's required_questions (L4) and the current
+    durable_facts (L5, the caller already has these -- from a live turn, or
+    fetched standalone via /kernel/durable_facts). app_id resolves the real
+    identity (L1 judge archetype + L3 mission/app_manual + Skill) via
+    resolve_function_identity(app_id, "Coverage") -- same call the live turn
+    pipeline (core/orchestrator.py) already uses."""
+    app_id: str
+    required_questions: List[str] = Field(default_factory=list)
+    durable_facts: List[Dict[str, Any]] = Field(default_factory=list)
+
+class AssessCoverageResponse(BaseModel):
+    assessments: List[Dict[str, Any]]
+    gate_status: str
+    whisper: str
+
+class DurableFactsRequest(BaseModel):
+    """Fetches a project's real, current durable_facts (L5) on demand --
+    NOT free like PreviewFunctionResponse's other layers: build_durable_facts()
+    genuinely calls the model (extract_facts, then a reconcile_fact pass per
+    fact), so this is a deliberate, on-demand fetch, not something to poll or
+    auto-fire on every render. Lives outside /kernel/functions/ -- this isn't
+    a Functions Library identity concern, it's a real cost operation over a
+    project's stored history. project_id is the same value Studio calls
+    task_id for task-scoped conversations (confirmed 1:1, no separate
+    mapping)."""
+    app_id: str
+    project_id: str
+
+class DurableFactsResponse(BaseModel):
+    durable_facts: List[Dict[str, Any]]
 
 class AgentEnvelope(BaseModel):
     """Internal briefcase containing the Map and the Data."""
