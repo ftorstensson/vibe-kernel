@@ -24,6 +24,31 @@ COVERAGE_SCHEMA = {
 }
 
 
+def resolve_required_questions(milestone_config):
+    """Prefers Requirements' real derived output over the static
+    hand-authored required_questions list, once it exists. Backend writes
+    derived_requirements onto the milestone doc (Requirements' real
+    ignition_inputs) whenever Requirements is run for real, replacing
+    whatever was there before -- re-running is the only way it changes. A
+    genuine fallback, not a hard requirement: a milestone with no
+    derived_requirements yet (Requirements never run for it) keeps working
+    exactly as it does today, off the original required_questions field.
+
+    Defensive about the exact shape rather than assuming one, since
+    derived_requirements doesn't exist on any real milestone doc as of this
+    pass (Backend hasn't shipped the write yet) -- handles it being the raw
+    ignition_inputs list ([{question, why_irreplaceable}, ...], the literal
+    shape derive_requirements() already returns), the full
+    {rationale, ignition_inputs} response object, or a flat list of question
+    strings, without crashing on whichever one Backend lands on."""
+    derived = milestone_config.get("derived_requirements")
+    if isinstance(derived, dict):
+        derived = derived.get("ignition_inputs")
+    if derived:
+        return [item.get("question", "") if isinstance(item, dict) else item for item in derived]
+    return milestone_config.get("required_questions")
+
+
 def assess_coverage(required_questions, durable_facts, l1, l3, skill):
     """Runs every real turn (core/orchestrator.py), like today's Clerk does:
     given the milestone's required_questions (L4 -- the gates being checked)

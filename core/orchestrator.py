@@ -2,7 +2,7 @@ import re
 from core.bootloader import SovereignBootloader
 from core.brief import derive_brief
 from core.clock import TheClock
-from core.coverage import assess_coverage
+from core.coverage import assess_coverage, resolve_required_questions
 from core.ignition import confirm_launch_intent
 from core.reconcile import build_durable_facts
 from pods.social.engine import SocialEngine
@@ -33,7 +33,10 @@ class MasterOrchestrator:
         # trigger it). Coverage is computed once here (not duplicated inside
         # run_turn) and threaded through envelope.coverage_whisper for the PM
         # to read -- same scratch-field pattern as kaiser_mandate.
-        required_questions = envelope.milestone_config.get("required_questions")
+        # resolve_required_questions() prefers Requirements' real derived
+        # output (milestone_config's derived_requirements) once it exists,
+        # falling back to the static required_questions field otherwise.
+        required_questions = resolve_required_questions(envelope.milestone_config)
         durable_facts = []
         ready = False
         envelope.coverage_whisper = None
