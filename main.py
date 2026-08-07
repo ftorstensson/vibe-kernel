@@ -6,34 +6,39 @@ from schema.kernel_schema import (
     AssessCoverageRequest, AssessCoverageResponse,
     DurableFactsRequest, DurableFactsResponse,
 )
-from core.bootloader import SovereignBootloader
 from core.orchestrator import MasterOrchestrator
 from core.requirements import derive_requirements
-from core.coverage import assess_coverage
+from core.coverage import assess_coverage, resolve_required_questions
 from core.reconcile import build_durable_facts
+from core.composition import compose_function_identity
 import uvicorn
 import os
 
 app = FastAPI(title="Vibe Kernel: Sovereign Cartography v21.1")
 
+# Stateless executor: given a complete input, Kernel composes/calls the
+# model/returns a result -- it never reaches into Firestore for its own
+# inputs (core/bootloader.py's SovereignBootloader, which used to do that,
+# is deleted). req already carries everything AgentEnvelope needs -- this
+# is a straight field-copy, no fetch in between.
 @app.post("/kernel/invoke", response_model=SovereignResponse)
 async def invoke(req: SovereignRequest):
     try:
-        data = await SovereignBootloader.assemble_envelope(req)
-        
         envelope = AgentEnvelope(
             app_id=req.app_id,
             project_id=req.project_id,
-            milestone_config=data['milestone_config'],
-            persona_config=data['persona_config'],
-            knowledge_bricks=data['knowledge_bricks'],
-            history=data['history'],
-            physics_open=data['physics_open'],
-            schema_map=data['schema_map']
+            milestone_config=req.milestone_config,
+            persona_config=req.persona_config,
+            knowledge_bricks=req.knowledge_bricks,
+            history=req.history,
+            physics_open=req.physics_open,
+            schema_map=req.schema_map,
+            coverage_archetype_l0_mother=req.coverage_archetype_l0_mother,
+            coverage_skill=req.coverage_skill,
         )
-        
+
         result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)
-        
+
         # This return matches the SovereignResponse schema
         return {
             "social_response": result.get("social_response"),
@@ -42,7 +47,7 @@ async def invoke(req: SovereignRequest):
             "brief": result.get("brief"),
             "appendix": result.get("appendix")
         }
-        
+
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -51,17 +56,18 @@ async def invoke(req: SovereignRequest):
 
 
 # Functions Library, entry 1. Deliberately NOT under /kernel/invoke -- that
-# route is a conversational turn (bootloader fetch, envelope, orchestrator).
-# derive_requirements() needs no conversation state (no project_id/
-# milestone_id, no history), but it does need app_id -- its real L1/Skill
-# come from the same live sources (functions_registry, archetype_registry,
-# the app's own app_manual) real agent turns compose from, not a hand-written
-# mandate baked into the function.
+# route is a conversational turn. derive_requirements() needs no
+# conversation state (no project_id/milestone_id, no history), but it does
+# need real L1/Skill -- composed here from raw ingredients Backend already
+# resolved (functions_registry, archetype_registry, the app's own ARM), not
+# fetched by Kernel and not a hand-written mandate baked into the function.
 @app.post("/kernel/functions/derive_requirements", response_model=DeriveRequirementsResponse)
 async def invoke_derive_requirements(req: DeriveRequirementsRequest):
     try:
-        identity = await SovereignBootloader.resolve_function_identity(req.app_id, "Requirements")
-        result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["l3"], identity["skill"])
+        identity = compose_function_identity(
+            req.archetype_l0_mother, req.platform_logic, req.app_manual, req.global_mission,
+        )
+        result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["l3"], req.skill)
         return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -82,19 +88,20 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
 # kept unchanged so Backend's proxy and Studio's Requirements Input panel
 # don't break. L5 is whatever the caller supplies (e.g. Coverage's
 # durable_facts, fetched separately via /kernel/durable_facts since that one
-# has a real cost) -- None if nothing's supplied. Reuses
-# resolve_function_identity() directly (same function, same fetch path
-# derive_requirements() uses above) rather than a second copy of that
-# resolution logic.
+# has a real cost) -- None if nothing's supplied. Composes L1/L3 from raw
+# ingredients via compose_function_identity() (same call
+# derive_requirements() uses above) rather than a second copy of that logic.
 @app.post("/kernel/functions/preview", response_model=PreviewFunctionResponse)
 async def invoke_preview_function(req: PreviewFunctionRequest):
     try:
-        identity = await SovereignBootloader.resolve_function_identity(req.app_id, req.function_name)
+        identity = compose_function_identity(
+            req.archetype_l0_mother, req.platform_logic, req.app_manual, req.global_mission,
+        )
         if req.l4_data is not None:
-            l4 = {**req.l4_data, "skill": identity["skill"]}
+            l4 = {**req.l4_data, "skill": req.skill}
         else:
             l4 = {
-                "skill": identity["skill"],
+                "skill": req.skill,
                 "purpose": req.purpose,
                 "target_structure": req.target_structure,
             }
@@ -114,16 +121,32 @@ async def invoke_preview_function(req: PreviewFunctionRequest):
 
 # Coverage's own standalone endpoint, same reasoning as derive_requirements'
 # above: Coverage needs no envelope/history of its own, just the milestone's
-# required_questions (L4) and the current durable_facts (L5) -- the caller
-# already has these, from a live turn or from /kernel/durable_facts below.
-# Real identity (L1 judge archetype + L3 mission/app_manual + Skill) via the
-# same resolve_function_identity() call the live turn pipeline
-# (core/orchestrator.py) already uses -- not a second copy.
+# own raw fields and the current durable_facts (L5) -- the caller already
+# has these, from a live turn or from /kernel/durable_facts below. Real
+# identity (L1 judge archetype + L3 mission/app_manual + Skill) composed
+# from raw ingredients via compose_function_identity() -- the same
+# composition the live turn pipeline (core/orchestrator.py) uses for
+# Coverage's own gate check, not a second copy. Calls
+# resolve_required_questions() itself (same helper orchestrator.py already
+# uses, a pure function -- no I/O, so no stateless-executor violation)
+# rather than trusting the caller to pre-resolve -- that's what drifted:
+# Test Lab's Coverage panel built required_questions from the static list
+# only, never knowing derived_requirements should take precedence, while
+# the live turn pipeline got it right. Making this endpoint the single
+# source of truth for that precedence removes the duplication every caller
+# would otherwise need to get right independently.
 @app.post("/kernel/functions/assess_coverage", response_model=AssessCoverageResponse)
 async def invoke_assess_coverage(req: AssessCoverageRequest):
     try:
-        identity = await SovereignBootloader.resolve_function_identity(req.app_id, "Coverage")
-        result = assess_coverage(req.required_questions, req.durable_facts, identity["l1"], identity["l3"], identity["skill"])
+        identity = compose_function_identity(
+            req.archetype_l0_mother, req.platform_logic, req.app_manual, req.global_mission,
+        )
+        milestone_config = {
+            "required_questions": req.required_questions,
+            "derived_requirements": req.derived_requirements,
+        }
+        required_questions = resolve_required_questions(milestone_config)
+        result = assess_coverage(required_questions, req.durable_facts, identity["l1"], identity["l3"], req.skill)
         return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -132,17 +155,16 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# A project's real, current durable_facts (L5) on demand -- not a Functions
-# Library identity concern (no app_id-driven L1/Skill resolution here), so
-# deliberately outside /kernel/functions/. NOT free like preview -- this
-# genuinely calls the model (extract_facts, then a reconcile_fact pass per
-# fact) -- Studio treats this as a deliberate, on-demand fetch (a button),
-# not something that auto-fires on every render.
+# A conversation's real durable_facts (L5) on demand, from history the
+# caller already has -- Kernel no longer fetches a project's stored
+# chat_history itself. NOT free like preview -- this genuinely calls the
+# model (extract_facts, then a reconcile_fact pass per fact) -- Studio
+# treats this as a deliberate, on-demand fetch (a button), not something
+# that auto-fires on every render.
 @app.post("/kernel/durable_facts", response_model=DurableFactsResponse)
 async def invoke_durable_facts(req: DurableFactsRequest):
     try:
-        history = await SovereignBootloader.fetch_project_history(req.app_id, req.project_id)
-        facts = build_durable_facts(history)
+        facts = build_durable_facts(req.history)
         return {"durable_facts": facts}
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))

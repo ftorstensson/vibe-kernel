@@ -1,7 +1,7 @@
 import re
-from core.bootloader import SovereignBootloader
 from core.brief import derive_brief
 from core.clock import TheClock
+from core.composition import compose_function_identity
 from core.coverage import assess_coverage, resolve_required_questions
 from core.ignition import confirm_launch_intent
 from core.reconcile import build_durable_facts
@@ -44,13 +44,23 @@ class MasterOrchestrator:
             try:
                 durable_facts = build_durable_facts(envelope.history)
                 # Coverage's real L1 (judge archetype)/L3 (mission+app_manual)/
-                # skill (the assessment procedure), the same resolution path
-                # Requirements uses -- not a hand-written mandate baked into
-                # assess_coverage() itself.
-                identity = await SovereignBootloader.resolve_function_identity(envelope.app_id, "Coverage")
+                # skill (the assessment procedure), composed from raw
+                # ingredients already on the envelope -- not fetched here, and
+                # not a hand-written mandate baked into assess_coverage()
+                # itself. platform_logic/app_manual/global_mission are the
+                # exact same values already on persona_config (identical for
+                # the agent and for Coverage); only the judge archetype's
+                # content and Coverage's skill text are genuinely Coverage's
+                # own (see SovereignRequest's docstring).
+                identity = compose_function_identity(
+                    envelope.coverage_archetype_l0_mother,
+                    envelope.persona_config.get("platform_logic"),
+                    envelope.persona_config.get("app_manual"),
+                    envelope.persona_config.get("global_mission"),
+                )
                 coverage = assess_coverage(
                     required_questions, durable_facts,
-                    identity["l1"], identity["l3"], identity["skill"],
+                    identity["l1"], identity["l3"], envelope.coverage_skill or "",
                 )
                 envelope.coverage_whisper = coverage.get("whisper")
                 ready = coverage.get("gate_status") == "GREEN"
@@ -107,7 +117,7 @@ class MasterOrchestrator:
                     entry['content'] = MasterOrchestrator.weld_links(entry['content'], strike_results['treasure_chest'])
 
             # Update Knowledge -- only the flat brick_id->prose bricks belong
-            # in knowledge_bricks (bootloader.py's de-loading and TheClock's
+            # in knowledge_bricks (Backend's ledger extraction and TheClock's
             # compression both assume that flat shape); appendix/brief are
             # carried in the response instead, not folded in here -- same
             # reasoning as why they can't be smuggled into data_patch either.

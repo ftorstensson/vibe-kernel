@@ -32,14 +32,16 @@ def derive_requirements(purpose, target_structure, l1, l3, skill):
     Everything else in the target structure is implicitly AI-researchable once
     those few inputs exist -- not enumerated, because it doesn't need to be.
 
-    l1, l3, and skill are real, not a hand-written mandate string -- resolved
-    by core/bootloader.py's resolve_function_identity() from the actual live
-    Functions Library (registry_docs/functions_registry's skill field) and
-    the actual live archetype/platform-logic/app-manual sources, the same
-    composition path (core/composition.py's compose_l1_lines/compose_l3_lens)
-    real agent turns use. l3 (app_manual, when the app has one) is None for
-    apps without one -- folded into the LENS block alongside skill, same
-    pattern real agent turns use to combine L2+L3 into their own LENS block.
+    l1, l3, and skill are real, not a hand-written mandate string -- Backend
+    resolves the raw ingredients (the real Functions Library skill from
+    registry_docs/functions_registry, the actual live archetype/platform-
+    logic/app-manual sources), main.py's endpoint composes l1/l3 from them
+    via core/composition.py's compose_function_identity() (the same
+    compose_l1_lines/compose_l3_lens path real agent turns use) -- this
+    function does no composition or I/O itself. l3 (app_manual, when the app
+    has one) is None for apps without one -- folded into the LENS block
+    alongside skill, same pattern real agent turns use to combine L2+L3 into
+    their own LENS block.
     This function does no Firestore I/O itself and has no embedded procedure
     text -- it only assembles the prompt from what it's given and calls the
     model, matching the pure-function shape every other Phase 1 function
