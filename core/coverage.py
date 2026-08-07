@@ -62,16 +62,18 @@ def assess_coverage(required_questions, durable_facts, l1, l3, skill):
     Director actually contradicts themselves (a real reconcile_fact()
     CONTRADICTION), never because the conversation got long.
 
-    l1, l3, and skill are real, not a hand-written mandate string -- resolved
-    by core/bootloader.py's resolve_function_identity() from the real
-    "judge" archetype (Traffic Lights, Zero-Delta Law, the Nudge already live
-    on archetype_registry) and the real functions_registry "Coverage" entry's
-    skill (the assessment procedure and whisper tone), the same composition
-    path (core/composition.py's compose_l1_lines/compose_l3_lens) real agent
-    turns and derive_requirements() use. l3 (mission + app_manual, when the
-    app has them) folds into the LENS block alongside skill, same pattern
-    derive_requirements() uses. This function does no Firestore I/O itself --
-    it only assembles the prompt from what it's given and calls the model."""
+    l1, l3, and skill are real, not a hand-written mandate string -- Backend
+    resolves the raw ingredients (the real "judge" archetype -- Traffic
+    Lights, Zero-Delta Law, the Nudge -- and the real functions_registry
+    "Coverage" entry's skill, the assessment procedure and whisper tone),
+    the caller (main.py's endpoint, or core/orchestrator.py's live turn)
+    composes l1/l3 from them via core/composition.py's
+    compose_function_identity() (the same compose_l1_lines/compose_l3_lens
+    path real agent turns and derive_requirements() use). l3 (mission +
+    app_manual, when the app has them) folds into the LENS block alongside
+    skill, same pattern derive_requirements() uses. This function does no
+    Firestore I/O itself -- it only assembles the prompt from what it's
+    given and calls the model."""
     model, config = AgentFactory.get_summarizer()
 
     current_facts = [f for f in durable_facts if f.get("status", "current") == "current"]
