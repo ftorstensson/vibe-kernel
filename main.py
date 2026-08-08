@@ -91,6 +91,14 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
 # has a real cost) -- None if nothing's supplied. Composes L1/L3 from raw
 # ingredients via compose_function_identity() (same call
 # derive_requirements() uses above) rather than a second copy of that logic.
+#
+# Ground truth, no double wiring: if l4_data carries a "required_questions"
+# key, it's resolved through resolve_required_questions() right here -- the
+# one real place that decision is made (core/coverage.py, also used by
+# assess_coverage's endpoint and the live turn pipeline) -- not echoed back
+# raw for the caller to re-decide. Studio sends the raw ingredients
+# (required_questions + derived_requirements) and prints whatever comes back
+# verbatim; it never re-implements "which one wins."
 @app.post("/kernel/functions/preview", response_model=PreviewFunctionResponse)
 async def invoke_preview_function(req: PreviewFunctionRequest):
     try:
@@ -98,7 +106,13 @@ async def invoke_preview_function(req: PreviewFunctionRequest):
             req.archetype_l0_mother, req.platform_logic, req.app_manual, req.global_mission,
         )
         if req.l4_data is not None:
-            l4 = {**req.l4_data, "skill": req.skill}
+            l4 = dict(req.l4_data)
+            if "required_questions" in l4:
+                l4["required_questions"] = resolve_required_questions({
+                    "required_questions": l4.get("required_questions", []),
+                    "derived_requirements": l4.get("derived_requirements"),
+                })
+            l4["skill"] = req.skill
         else:
             l4 = {
                 "skill": req.skill,
