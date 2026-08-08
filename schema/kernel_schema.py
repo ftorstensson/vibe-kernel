@@ -31,10 +31,19 @@ class SovereignRequest(BaseModel):
     than Coverage's fixed "judge") -- but platform_logic/app_manual/
     global_mission for Coverage's L1/L3 are NOT duplicated here, they're
     the exact same values already on persona_config (platform-wide/app-wide,
-    identical for the agent and for Coverage), reused directly."""
+    identical for the agent and for Coverage), reused directly.
+
+    milestone_id is Optional -- genuinely unused on the is_global=True path.
+    process_turn() returns from that branch (core/orchestrator.py) before
+    milestone_config is ever read, and run_global_turn() (pods/social/
+    engine.py) only touches persona_config/knowledge_bricks/history --
+    confirmed by tracing both, not assumed. Required for a real
+    milestone-scoped call (is_global=False); Backend enforces that, not a
+    Kernel-side validator, since Kernel has no way to distinguish "caller
+    forgot it" from "global call, doesn't apply" from the value alone."""
     app_id: str
     project_id: str
-    milestone_id: str
+    milestone_id: Optional[str] = None
     agent_id: Optional[str] = "master_pm"
     is_global: bool = False  # Global Agent conversation: PM-only, no Clerk/gate
     user_message: str
