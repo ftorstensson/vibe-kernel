@@ -1,56 +1,26 @@
 from core.agent_factory import AgentFactory
 from core.composition import compose_l1_lines, compose_l3_lens
-from core.kernel_utils import get_clean_text, hammer_json
+from core.kernel_utils import get_clean_text
 from core.prompt_builder import PromptBuilder
 from schema.kernel_schema import AgentEnvelope
-
-CLERK_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "physics_gate": {"type": "string", "enum": ["RED", "GREEN"]},
-        "missing_logic": {"type": "string"},
-    },
-    "required": ["physics_gate", "missing_logic"],
-}
 
 
 class SocialEngine:
     @staticmethod
     async def run_turn(envelope: AgentEnvelope):
-        clerk_model, clerk_config = AgentFactory.get_clerk()
-        
-        # Pull dynamic keys from the ARM (App Registry Map)
-        checklist_key = envelope.schema_map["schema_keys"]["pm_checklist"]
-        checklist_prompt = envelope.milestone_config.get(checklist_key, "Find the spark.")
-
-        required_questions = envelope.milestone_config.get("required_questions")
-        if required_questions:
-            numbered_questions = "\n".join(f"{i}. {q}" for i, q in enumerate(required_questions, start=1))
-            checklist_prompt = f"{checklist_prompt}\n\nSPECIFIC FACTS TO EXTRACT:\n{numbered_questions}"
-
-        # 1. CLERK AUDIT
-        clerk_mandate = "ACT AS A CYNICAL INDUSTRIAL AUDITOR."
-        clerk_lens = f"CRITERIA: {checklist_prompt}\nSTRUCTURE_EXPECTED: {envelope.schema_map['schema_keys']['brick_list']}"
-        clerk_truth = f"CHAT_HISTORY: {envelope.history[-5:]}"
-        
-        clerk_work_order = PromptBuilder.assemble(
-            mandate=clerk_mandate,
-            lens=clerk_lens,
-            truth=clerk_truth
-        )
-
-        clerk_resp = clerk_model.generate_content(clerk_work_order, generation_config=clerk_config, response_schema=CLERK_SCHEMA)
-        clerk_report = hammer_json(get_clean_text(clerk_resp))
-        
-        # 2. KAISER PHYSICS
-        envelope.physics_open = (clerk_report.get("physics_gate") == "GREEN")
-        if not envelope.physics_open:
-            missing = clerk_report.get("missing_logic", "Proprietary insight.")
-            envelope.kaiser_mandate = f"PHYSICS LOCKED. Missing: {missing}. Probe blunt."
-        else:
-            envelope.kaiser_mandate = "PHYSICS OPEN. Offer to fire Strike Team."
-
-        # 3. PM SOCIAL
+        """The PM's own social turn. Gating (physics_open, the readiness
+        signal, and coverage_whisper, the PM-facing directive) is Coverage's
+        job -- computed once in core/orchestrator.py before this runs and
+        threaded through the envelope. This function used to also run its
+        own separate "Clerk" audit here: its own LLM call, its own criteria
+        (a static checklist_prompt + the milestone's schema_keys), its own
+        physics_open/KAISER MANDATE derivation -- independent of, and
+        sometimes disagreeing with, Coverage's real gate_status (Clerk read
+        the static required_questions field directly, never Requirements'
+        derived output). Retired entirely, not just its output: Coverage
+        (assess_coverage/resolve_required_questions) is the one real
+        declared gate mechanism now -- nothing about gating logic lives
+        here."""
         pm_model, pm_config = AgentFactory.get_partner_pm()
         # L2 (Agent Persona) + L3 (Deep Knowledge/Exo-Brain) -- these are the real
         # field names agency_roster docs actually have; "dna"/"lens" never existed
@@ -62,10 +32,18 @@ class SocialEngine:
         # layered on top as overrides; none of the L1 pieces replace it.
         pm_mandate_lines = compose_l1_lines(envelope.persona_config)
         pm_mandate_lines.append(f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]")
-        pm_mandate_lines.append(f"KAISER MANDATE: {envelope.kaiser_mandate}")
+        # kaiser_mandate is turn-local scratch state for concerns unrelated
+        # to gating now (e.g. orchestrator.py's post-Strike-Team-fire
+        # "RESEARCH COMPLETE" directive) -- not always set, so guarded like
+        # coverage_whisper below, not unconditional.
+        if envelope.kaiser_mandate:
+            pm_mandate_lines.append(f"KAISER MANDATE: {envelope.kaiser_mandate}")
         # Computed once per turn in orchestrator.py (core/coverage.py), not
         # here -- avoids running Coverage twice per turn now that
-        # orchestrator.py also needs it for gate-driven ignition.
+        # orchestrator.py also needs it for gate-driven ignition. Carries
+        # both the gate assessment's nuance AND the PM-facing directive
+        # (what Clerk's now-retired KAISER MANDATE used to separately
+        # provide) in one real signal, not two.
         if envelope.coverage_whisper:
             pm_mandate_lines.append(f"COVERAGE WHISPER: {envelope.coverage_whisper}")
         pm_mandate_lines.append(
@@ -84,7 +62,7 @@ class SocialEngine:
     @staticmethod
     async def run_global_turn(envelope: AgentEnvelope):
         """Global Agent: free-form chat, no scoped milestone, no second agent to
-        hand off to. Single PM call, no Clerk audit -- the Clerk/gate/Kaiser
+        hand off to. Single PM call, no gate audit -- Coverage/gate/Kaiser
         mandate exist to arbitrate handoff between agents, and there's nothing
         here to arbitrate. Real L1 (archetype_rules) and TOOL LAW stay; the
         situational [STATUS]/KAISER MANDATE lines from run_turn are dropped
