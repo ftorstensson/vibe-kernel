@@ -36,6 +36,17 @@ class MasterOrchestrator:
         # resolve_required_questions() prefers Requirements' real derived
         # output (milestone_config's derived_requirements) once it exists,
         # falling back to the static required_questions field otherwise.
+        #
+        # Coverage is the one real declared gate mechanism now -- it used to
+        # run alongside a separate, undeclared "Clerk" audit inside
+        # run_turn() (its own LLM call, its own criteria, its own
+        # physics_open, reading the static required_questions field only,
+        # never Requirements' derived output) that independently drove
+        # envelope.physics_open/status. Retired: physics_open is now always
+        # exactly `ready` (Coverage's own gate_status == GREEN), computed
+        # once here, not carried over from a stale prior value on a
+        # transient failure -- "ground truth" means this turn's honest
+        # answer, not a cached guess.
         required_questions = resolve_required_questions(envelope.milestone_config)
         durable_facts = []
         ready = False
@@ -66,6 +77,7 @@ class MasterOrchestrator:
                 ready = coverage.get("gate_status") == "GREEN"
             except Exception:
                 ready = False
+        envelope.physics_open = ready
 
         # Guard against re-firing every subsequent turn once already
         # launched. No new persistence needed: knowledge_bricks already
