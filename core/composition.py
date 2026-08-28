@@ -3,18 +3,29 @@ def compose_l1_lines(persona_config):
     pods/social/engine.py, shared by run_turn and run_global_turn; moved here
     so core-level callers (Requirements, Coverage, and future Functions) can
     reuse it too without core/ depending on pods/ backwards. Backend sends
-    raw ingredients (archetype_l0_mother, platform_logic, app_manual,
+    raw ingredients (archetype.mandate, platform.mandate, app_manual,
     global_mission, skill text), never pre-composed L1/L3 strings --
     deliberate, so this stays the one place this composition logic runs, not
     a second copy Backend maintains that can drift from it.
+
+    archetype/platform are each record-wrapped ({mandate: str}), not flat
+    archetype_l0_mother/platform_logic keys -- "One Name, Many Records": a
+    field's name shouldn't fork depending on which record type it's
+    attached to, since the record's own address already tells you the
+    context. Exact literal key names confirmed with the architect session
+    and Backend 2 during Test Run 1 (Six-Layer OS taxonomy); this reads
+    persona_config["archetype"]["mandate"] and
+    persona_config["platform"]["mandate"], defensively (.get chains, never
+    a bare [] that can KeyError on a partial/missing record).
 
     Archetype rules go first: the most load-bearing, hard-compliance content
     (response budget, one-question rule, tone) earns primacy, not the more
     abstract platform framing. Each piece gets a plain, non-jargon label so
     both the model and a human reading it can tell what's what -- no
     markdown, consistent with the archetype's own rule against robot-speak
-    formatting. archetype_l0_mother is the one exception: it already opens
-    with its own "IDENTITY:" line, so labeling it again would be redundant.
+    formatting. The archetype's mandate is the one exception: it already
+    opens with its own "IDENTITY:" line, so labeling it again would be
+    redundant.
 
     Distinct pieces are separated by a blank line (not a single newline) so
     it's visually obvious where one source ends and the next begins.
@@ -24,10 +35,10 @@ def compose_l1_lines(persona_config):
     instead (see compose_l3_lens). L1 stays lean, hard-compliance law only.
     """
     lines = []
-    archetype_rules = persona_config.get("archetype_l0_mother")
+    archetype_rules = (persona_config.get("archetype") or {}).get("mandate")
     if archetype_rules:
         lines.append(archetype_rules)
-    platform_logic = persona_config.get("platform_logic")
+    platform_logic = (persona_config.get("platform") or {}).get("mandate")
     if platform_logic:
         if lines:
             lines.append("")
@@ -65,7 +76,7 @@ def compose_l3_lens(persona_config, default_exo_brain="Blunt, high-speed facilit
     return "\n".join(lines)
 
 
-def compose_function_identity(archetype_l0_mother, platform_logic, app_manual, global_mission):
+def compose_function_identity(archetype_mandate, platform_mandate, app_manual, global_mission):
     """L1/L3 for a Functions Library entry (e.g. Requirements, Coverage),
     composed from raw ingredients the caller (Backend) already resolved --
     the pure-composition half of what used to be core/bootloader.py's
@@ -77,13 +88,20 @@ def compose_function_identity(archetype_l0_mother, platform_logic, app_manual, g
     one place, so there's exactly one spot this composition logic runs --
     not a second copy that can drift from compose_l1_lines/compose_l3_lens.
 
+    Takes plain mandate strings (not the record-wrapped {mandate: str}
+    shape compose_l1_lines reads off persona_config) -- callers unwrap their
+    own archetype/platform records before calling this, since a standalone
+    Functions Library request has no persona_config to nest inside; this
+    stays a simple 4-string function rather than also owning that
+    unwrapping.
+
     No persona/exo_brain concept exists for a Functions Library entry --
     default_exo_brain=None keeps the agent-voice fallback out of a
     function's mandate, same reasoning compose_l3_lens's docstring already
     gives. Returns {l1: str, l3: str|None}."""
     l1 = "\n".join(compose_l1_lines({
-        "archetype_l0_mother": archetype_l0_mother,
-        "platform_logic": platform_logic,
+        "archetype": {"mandate": archetype_mandate},
+        "platform": {"mandate": platform_mandate},
     }))
     l3 = compose_l3_lens(
         {"app_manual": app_manual, "global_mission": global_mission},

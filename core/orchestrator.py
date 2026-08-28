@@ -58,14 +58,14 @@ class MasterOrchestrator:
                 # skill (the assessment procedure), composed from raw
                 # ingredients already on the envelope -- not fetched here, and
                 # not a hand-written mandate baked into assess_coverage()
-                # itself. platform_logic/app_manual/global_mission are the
+                # itself. platform.mandate/app_manual/global_mission are the
                 # exact same values already on persona_config (identical for
                 # the agent and for Coverage); only the judge archetype's
-                # content and Coverage's skill text are genuinely Coverage's
+                # mandate and Coverage's skill text are genuinely Coverage's
                 # own (see SovereignRequest's docstring).
                 identity = compose_function_identity(
-                    envelope.coverage_archetype_l0_mother,
-                    envelope.persona_config.get("platform_logic"),
+                    envelope.coverage_mandate,
+                    (envelope.persona_config.get("platform") or {}).get("mandate"),
                     envelope.persona_config.get("app_manual"),
                     envelope.persona_config.get("global_mission"),
                 )

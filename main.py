@@ -33,7 +33,7 @@ async def invoke(req: SovereignRequest):
             history=req.history,
             physics_open=req.physics_open,
             schema_map=req.schema_map,
-            coverage_archetype_l0_mother=req.coverage_archetype_l0_mother,
+            coverage_mandate=req.coverage_mandate,
             coverage_skill=req.coverage_skill,
         )
 
@@ -65,7 +65,8 @@ async def invoke(req: SovereignRequest):
 async def invoke_derive_requirements(req: DeriveRequirementsRequest):
     try:
         identity = compose_function_identity(
-            req.archetype_l0_mother, req.platform_logic, req.app_manual, req.global_mission,
+            (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
+            req.app_manual, req.global_mission,
         )
         result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["l3"], req.skill)
         return result
@@ -103,7 +104,8 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
 async def invoke_preview_function(req: PreviewFunctionRequest):
     try:
         identity = compose_function_identity(
-            req.archetype_l0_mother, req.platform_logic, req.app_manual, req.global_mission,
+            (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
+            req.app_manual, req.global_mission,
         )
         if req.l4_data is not None:
             l4 = dict(req.l4_data)
@@ -153,7 +155,8 @@ async def invoke_preview_function(req: PreviewFunctionRequest):
 async def invoke_assess_coverage(req: AssessCoverageRequest):
     try:
         identity = compose_function_identity(
-            req.archetype_l0_mother, req.platform_logic, req.app_manual, req.global_mission,
+            (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
+            req.app_manual, req.global_mission,
         )
         milestone_config = {
             "required_questions": req.required_questions,
