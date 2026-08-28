@@ -181,22 +181,24 @@ def reconcile_fact(existing_facts, new_item):
     }
 
 
-def build_durable_facts(turns):
-    """Standalone, Phase 1 only -- not wired into any real flow except (as of
-    this pass) Coverage's own turn. Runs extract_facts() over the full
+def build_chat_summary(turns):
+    """Chat Manager's real output -- named chat_summary throughout (renamed
+    from build_durable_facts()/durable_facts, matching Gatekeeper's own
+    canvas board target display name). Runs extract_facts() over the full
     conversation (not a trailing window -- an early fact must not disappear
     just because the conversation got long) and folds each item through
     reconcile_fact() in order, so the result is one clean current list: new
     facts appended, revisions merged with lineage preserved, contradictions
-    superseded rather than silently overwritten. Recomputed fresh each call
-    rather than persisted -- Kernel has no write path to Firestore today, so
-    there is nowhere durable to accumulate this across real turns yet; running
-    extract_facts() over the whole history each time gets the same *result*
-    (a deduplicated current-facts list immune to window loss) without adding
-    a new persistence layer this pass didn't ask for."""
+    superseded rather than silently overwritten. Still a full recompute every
+    call, not incremental -- the target design (read newest history since
+    last run + the current chat_summary, fold in, return updated
+    chat_summary) needs Backend's persistence contract for what a prior
+    chat_summary looks like arriving in the envelope (shape, None-on-fresh-
+    conversation semantics) before it can be built; this pass is the rename
+    only, behavior unchanged."""
     items = extract_facts(turns)
-    facts = []
+    chat_summary = []
     for item in items:
-        result = reconcile_fact(facts, item)
-        facts = result["facts"]
-    return facts
+        result = reconcile_fact(chat_summary, item)
+        chat_summary = result["facts"]
+    return chat_summary

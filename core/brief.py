@@ -15,15 +15,16 @@ BRIEF_SCHEMA = {
 }
 
 
-def derive_brief(purpose, durable_facts):
+def derive_brief(purpose, chat_summary):
     """Standalone, Phase 1 only -- not wired into any real flow. The historical
     "Author" role (~/vibe-design-lab/Brain/AI_SYSTEM_MAP.md: "The Author (ID:
     `master_author`)... Synthesizing chat history into the 2-paragraph 'Official
     Brief'"), rebuilt as a function rather than a persona/agent, and updated to
-    synthesize from the durable facts list (this pass's build_durable_facts()
-    output -- deduplicated, revision-merged) instead of raw chat history, for
-    the same reason Coverage was: nothing downstream should be built on
-    something that might have scrolled out of view or since been contradicted.
+    synthesize from chat_summary (this pass's build_chat_summary() output,
+    formerly durable_facts -- deduplicated, revision-merged) instead of raw
+    chat history, for the same reason Coverage was: nothing downstream should
+    be built on something that might have scrolled out of view or since been
+    contradicted.
 
     Runs once coverage is all-clear (a planning step, not per-turn, like
     derive_requirements()).
@@ -36,7 +37,7 @@ def derive_brief(purpose, durable_facts):
     anchor + Dual-Brief negative constraints as before (SCAR_TISSUE_v20.md
     Entry 079, "The SaaS Ghost") -- unchanged substance, just one named field
     instead of the whole return value. founding_voice is new: 2-4 short,
-    close-to-verbatim quotes lifted from the Director's own durable facts (not
+    close-to-verbatim quotes lifted from the Director's own chat_summary (not
     paraphrased into the Author's voice) -- what the UI's "Founding Voice"
     section is actually for, the conviction in the Director's own words.
 
@@ -47,14 +48,14 @@ def derive_brief(purpose, durable_facts):
     empirically rather than assuming the schema is free."""
     model, config = AgentFactory.get_summarizer()
 
-    current_facts = [f for f in durable_facts if f.get("status", "current") == "current"]
+    current_facts = [f for f in chat_summary if f.get("status", "current") == "current"]
     facts_listing = "\n".join(
         f"- [{f['type']}, speaker={f['speaker']}] {f['content']}" for f in current_facts
     ) or "(none yet)"
 
     mandate = (
         "You are the Author: a dedicated brief-writing function. Given the "
-        "milestone's purpose and the Director's durable, settled facts for it "
+        "milestone's purpose and the Director's settled chat summary for it "
         "(already deduplicated and revision-merged -- treat this as the "
         "complete, current truth), produce two things for the AI Specialists "
         "who will research this milestone next. They will never see the raw "
@@ -74,13 +75,13 @@ def derive_brief(purpose, durable_facts):
         "Skip this only if there is truly nothing in the facts to draw a "
         "negative constraint from.\n"
         "2. founding_voice: 2-4 short quotes taken close to verbatim from the "
-        "Director's OWN durable facts (speaker=user only) -- not paraphrased "
+        "Director's OWN chat summary (speaker=user only) -- not paraphrased "
         "into your own voice, not invented. Pick the lines that carry the "
         "real personal conviction or grit behind the idea. If fewer than 2 "
         "user-spoken facts genuinely qualify, return fewer rather than "
         "padding with weak material."
     )
-    truth = f"MILESTONE PURPOSE:\n{purpose}\n\nDURABLE FACTS:\n{facts_listing}"
+    truth = f"MILESTONE PURPOSE:\n{purpose}\n\nCHAT SUMMARY:\n{facts_listing}"
 
     work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=BRIEF_SCHEMA)

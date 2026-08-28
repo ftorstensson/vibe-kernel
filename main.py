@@ -4,12 +4,12 @@ from schema.kernel_schema import (
     DeriveRequirementsRequest, DeriveRequirementsResponse,
     PreviewFunctionRequest, PreviewFunctionResponse,
     AssessCoverageRequest, AssessCoverageResponse,
-    DurableFactsRequest, DurableFactsResponse,
+    ChatSummaryRequest, ChatSummaryResponse,
 )
 from core.orchestrator import MasterOrchestrator
 from core.requirements import derive_requirements
 from core.coverage import assess_coverage, resolve_required_questions
-from core.reconcile import build_durable_facts
+from core.reconcile import build_chat_summary
 from core.composition import compose_function_identity
 import uvicorn
 import os
@@ -87,7 +87,7 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
 # purpose/target_structure is Requirements' specific, already-live shape,
 # kept unchanged so Backend's proxy and Studio's Requirements Input panel
 # don't break. L5 is whatever the caller supplies (e.g. Coverage's
-# durable_facts, fetched separately via /kernel/durable_facts since that one
+# chat_summary, fetched separately via /kernel/chat_summary since that one
 # has a real cost) -- None if nothing's supplied. Composes L1/L3 from raw
 # ingredients via compose_function_identity() (same call
 # derive_requirements() uses above) rather than a second copy of that logic.
@@ -135,8 +135,8 @@ async def invoke_preview_function(req: PreviewFunctionRequest):
 
 # Coverage's own standalone endpoint, same reasoning as derive_requirements'
 # above: Coverage needs no envelope/history of its own, just the milestone's
-# own raw fields and the current durable_facts (L5) -- the caller already
-# has these, from a live turn or from /kernel/durable_facts below. Real
+# own raw fields and the current chat_summary (L5) -- the caller already
+# has these, from a live turn or from /kernel/chat_summary below. Real
 # identity (L1 judge archetype + L3 mission/app_manual + Skill) composed
 # from raw ingredients via compose_function_identity() -- the same
 # composition the live turn pipeline (core/orchestrator.py) uses for
@@ -160,7 +160,7 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
             "derived_requirements": req.derived_requirements,
         }
         required_questions = resolve_required_questions(milestone_config)
-        result = assess_coverage(required_questions, req.durable_facts, identity["l1"], identity["l3"], req.skill)
+        result = assess_coverage(required_questions, req.chat_summary, identity["l1"], identity["l3"], req.skill)
         return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -169,17 +169,17 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# A conversation's real durable_facts (L5) on demand, from history the
+# A conversation's real chat_summary (L5) on demand, from history the
 # caller already has -- Kernel no longer fetches a project's stored
 # chat_history itself. NOT free like preview -- this genuinely calls the
 # model (extract_facts, then a reconcile_fact pass per fact) -- Studio
 # treats this as a deliberate, on-demand fetch (a button), not something
 # that auto-fires on every render.
-@app.post("/kernel/durable_facts", response_model=DurableFactsResponse)
-async def invoke_durable_facts(req: DurableFactsRequest):
+@app.post("/kernel/chat_summary", response_model=ChatSummaryResponse)
+async def invoke_chat_summary(req: ChatSummaryRequest):
     try:
-        facts = build_durable_facts(req.history)
-        return {"durable_facts": facts}
+        chat_summary = build_chat_summary(req.history)
+        return {"chat_summary": chat_summary}
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:

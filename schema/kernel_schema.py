@@ -108,7 +108,7 @@ class PreviewFunctionRequest(BaseModel):
     doesn't break.
 
     l4_data/l5_data: generic pass-through for any other function (e.g.
-    Coverage's required_questions/durable_facts) -- echoed straight into the
+    Coverage's required_questions/chat_summary) -- echoed straight into the
     response's l4/l5 alongside the resolved skill, no function-specific
     field names hardcoded. l4_data is the discriminator: if a caller sends
     it, the generic path is used instead of the legacy purpose/target_structure
@@ -124,8 +124,8 @@ class PreviewFunctionRequest(BaseModel):
     This endpoint does no model call itself -- composition is cheap, and
     l4_data/l5_data are just echoed back, same as purpose/target_structure
     always were -- cheap to fetch purely for display. (A real L5 fetch, e.g.
-    Coverage's durable_facts, is a separate concern with a real cost -- see
-    /kernel/durable_facts -- the caller fetches it first, then optionally
+    Coverage's chat_summary, is a separate concern with a real cost -- see
+    /kernel/chat_summary -- the caller fetches it first, then optionally
     passes the result in here via l5_data for display alongside L1/L3.)"""
     app_id: str
     function_name: str
@@ -166,8 +166,8 @@ class PreviewFunctionResponse(BaseModel):
         together.
     l5: History/distilled-memory layer. None for a function with no
         conversation state (e.g. Requirements). Real when the caller
-        supplies it (e.g. Coverage's durable_facts, fetched separately via
-        /kernel/durable_facts and passed through here for display)."""
+        supplies it (e.g. Coverage's chat_summary, fetched separately via
+        /kernel/chat_summary and passed through here for display)."""
     l1: str
     l2: Optional[str] = None
     l3: Optional[str] = None
@@ -177,9 +177,9 @@ class PreviewFunctionResponse(BaseModel):
 class AssessCoverageRequest(BaseModel):
     """Coverage's own standalone endpoint, same reasoning as
     DeriveRequirementsRequest: Coverage needs no envelope/history of its
-    own -- just the milestone's own raw fields and the current durable_facts
+    own -- just the milestone's own raw fields and the current chat_summary
     (L5, the caller already has these -- from a live turn, or fetched
-    standalone via /kernel/durable_facts).
+    standalone via /kernel/chat_summary).
 
     archetype_l0_mother/platform_logic/app_manual/global_mission/skill: raw
     ingredients Backend already resolved (the "judge" archetype's content,
@@ -209,7 +209,7 @@ class AssessCoverageRequest(BaseModel):
     app_id: str
     required_questions: List[str] = Field(default_factory=list)
     derived_requirements: Optional[Any] = None
-    durable_facts: List[Dict[str, Any]] = Field(default_factory=list)
+    chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     archetype_l0_mother: Optional[str] = None
     platform_logic: Optional[Any] = None
     app_manual: Optional[str] = None
@@ -221,21 +221,22 @@ class AssessCoverageResponse(BaseModel):
     gate_status: str
     whisper: str
 
-class DurableFactsRequest(BaseModel):
-    """Computes durable_facts (L5) from a real conversation history the
-    caller already has -- Kernel no longer fetches a project's stored
-    chat_history itself (that was core/bootloader.py's
+class ChatSummaryRequest(BaseModel):
+    """Computes chat_summary (L5, renamed from durable_facts -- matching
+    Gatekeeper's own canvas board target display name) from a real
+    conversation history the caller already has -- Kernel no longer fetches
+    a project's stored chat_history itself (that was core/bootloader.py's
     fetch_project_history(), now deleted; Backend fetches it and sends
     history directly). NOT free like PreviewFunctionResponse's other layers:
-    build_durable_facts() genuinely calls the model (extract_facts, then a
+    build_chat_summary() genuinely calls the model (extract_facts, then a
     reconcile_fact pass per fact), so this is a deliberate, on-demand
     computation, not something to poll or auto-fire on every render. Lives
     outside /kernel/functions/ -- this isn't a Functions Library identity
     concern."""
     history: List[Dict[str, Any]] = Field(default_factory=list)
 
-class DurableFactsResponse(BaseModel):
-    durable_facts: List[Dict[str, Any]]
+class ChatSummaryResponse(BaseModel):
+    chat_summary: List[Dict[str, Any]]
 
 class AgentEnvelope(BaseModel):
     """Internal briefcase containing the Map and the Data -- populated

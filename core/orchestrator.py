@@ -4,7 +4,7 @@ from core.clock import TheClock
 from core.composition import compose_function_identity
 from core.coverage import assess_coverage, resolve_required_questions
 from core.ignition import confirm_launch_intent
-from core.reconcile import build_durable_facts
+from core.reconcile import build_chat_summary
 from pods.social.engine import SocialEngine
 from pods.strike_team.engine import StrikeEngine
 from pods.synthesis.engine import SynthesisEngine
@@ -48,12 +48,12 @@ class MasterOrchestrator:
         # transient failure -- "ground truth" means this turn's honest
         # answer, not a cached guess.
         required_questions = resolve_required_questions(envelope.milestone_config)
-        durable_facts = []
+        chat_summary = []
         ready = False
         envelope.coverage_whisper = None
         if required_questions:
             try:
-                durable_facts = build_durable_facts(envelope.history)
+                chat_summary = build_chat_summary(envelope.history)
                 # Coverage's real L1 (judge archetype)/L3 (mission+app_manual)/
                 # skill (the assessment procedure), composed from raw
                 # ingredients already on the envelope -- not fetched here, and
@@ -70,7 +70,7 @@ class MasterOrchestrator:
                     envelope.persona_config.get("global_mission"),
                 )
                 coverage = assess_coverage(
-                    required_questions, durable_facts,
+                    required_questions, chat_summary,
                     identity["l1"], identity["l3"], envelope.coverage_skill or "",
                 )
                 envelope.coverage_whisper = coverage.get("whisper")
@@ -91,11 +91,11 @@ class MasterOrchestrator:
 
             # The settled brief -- Phase 1 (core/brief.py), not gated/fail-open
             # like Coverage's whisper since firing at all already implies
-            # gate_status GREEN; built from the same durable facts pipeline
+            # gate_status GREEN; built from the same chat_summary pipeline
             # as Coverage, so it can't be built on a fact that already
             # scrolled out of view. Already computed above for the readiness
             # check -- reused here, not recomputed.
-            brief = derive_brief(envelope.milestone_config.get("output", ""), durable_facts)
+            brief = derive_brief(envelope.milestone_config.get("output", ""), chat_summary)
 
             # Specialists/Hound only need the brief as readable text -- the
             # structured {identity_narrative, founding_voice} shape below is

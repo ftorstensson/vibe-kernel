@@ -49,13 +49,13 @@ def resolve_required_questions(milestone_config):
     return milestone_config.get("required_questions")
 
 
-def assess_coverage(required_questions, durable_facts, l1, l3, skill):
-    """Runs every real turn (core/orchestrator.py), like today's Clerk does:
-    given the milestone's required_questions (L4 -- the gates being checked)
-    and the durable facts list (L5 -- this turn's core/reconcile.py output,
+def assess_coverage(required_questions, chat_summary, l1, l3, skill):
+    """Runs every real turn (core/orchestrator.py): given the milestone's
+    required_questions (L4 -- the gates being checked) and chat_summary
+    (L5 -- this turn's core/reconcile.py output, formerly durable_facts,
     deduplicated, revision-merged, one entry per real thing the Director has
     said, NOT raw chat history -- Coverage never sees that), produces a
-    RED/AMBER/GREEN status per question. Checking against the durable list
+    RED/AMBER/GREEN status per question. Checking against chat_summary
     rather than a trailing window of raw turns is deliberate: a fact
     established early in a long conversation must stay counted even after it
     scrolls out of any fixed window -- coverage should only regress if the
@@ -76,13 +76,13 @@ def assess_coverage(required_questions, durable_facts, l1, l3, skill):
     given and calls the model."""
     model, config = AgentFactory.get_summarizer()
 
-    current_facts = [f for f in durable_facts if f.get("status", "current") == "current"]
+    current_facts = [f for f in chat_summary if f.get("status", "current") == "current"]
     facts_listing = "\n".join(
         f"- [{f['type']}] {f['content']} (turn {f['turn_index']}, {f['speaker']})"
         for f in current_facts
     ) or "(none yet)"
 
-    truth = f"REQUIRED QUESTIONS (GATES):\n{required_questions}\n\nDURABLE FACTS:\n{facts_listing}"
+    truth = f"REQUIRED QUESTIONS (GATES):\n{required_questions}\n\nCHAT SUMMARY:\n{facts_listing}"
     lens = f"{l3}\n\n{skill}" if l3 else skill
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
