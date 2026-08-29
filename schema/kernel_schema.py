@@ -15,23 +15,28 @@ class SovereignRequest(BaseModel):
     are what AgentEnvelope already was -- populated by the caller now,
     not fetched. persona_config must already be merged the way
     core/bootloader.py's old BOOTSTRAP 1B merged it: the raw persona doc's
-    own fields (system_prompt, exo_brain, ...) plus archetype_l0_mother
-    (the agent's own bound archetype), app_manual, global_mission, and
-    platform_logic. schema_map is the ARM doc (paths + schema_keys) --
-    genuinely still needed downstream, not just for path-resolution:
-    pods/social/engine.py's run_turn() reads
+    own fields (system_prompt, exo_brain, ...) plus archetype (the agent's
+    own bound archetype, record-wrapped as {mandate: str} -- "One Name,
+    Many Records", not the old flat archetype_l0_mother key), app_manual,
+    global_mission, and platform (same record-wrapped {mandate: str} shape,
+    not the old flat platform_logic key). schema_map is the ARM doc (paths
+    + schema_keys) -- genuinely still needed downstream, not just for
+    path-resolution: pods/social/engine.py's run_turn() reads
     schema_map["schema_keys"]["pm_checklist"/"brick_list"] to build the
     Clerk's lens, so dropping it would break the live PM turn.
 
-    coverage_archetype_l0_mother/coverage_skill: Coverage's own identity for
-    the live turn's gate check (core/orchestrator.py) -- the "judge"
-    archetype's real content and the real functions_registry "Coverage"
-    skill text. Not derived from persona_config (that's the AGENT's own
-    archetype, e.g. "navigator" for a PM persona, a different archetype
-    than Coverage's fixed "judge") -- but platform_logic/app_manual/
-    global_mission for Coverage's L1/L3 are NOT duplicated here, they're
-    the exact same values already on persona_config (platform-wide/app-wide,
-    identical for the agent and for Coverage), reused directly.
+    coverage_mandate/coverage_skill: Coverage's own identity for the live
+    turn's gate check (core/orchestrator.py) -- the "judge" archetype's real
+    mandate content and the real functions_registry "Coverage" skill text.
+    Not derived from persona_config (that's the AGENT's own archetype, e.g.
+    "navigator" for a PM persona, a different archetype than Coverage's
+    fixed "judge") -- but platform/app_manual/global_mission for Coverage's
+    L1/L3 are NOT duplicated here, they're the exact same values already on
+    persona_config (platform-wide/app-wide, identical for the agent and for
+    Coverage), reused directly. Kept as a flat field here (not record-
+    wrapped like persona_config's archetype/platform) since it's Kernel's
+    own addition to the contract, not part of the shared persona_config
+    shape Backend assembles the same way for every agent.
 
     milestone_id is Optional -- genuinely unused on the is_global=True path.
     process_turn() returns from that branch (core/orchestrator.py) before
@@ -53,7 +58,7 @@ class SovereignRequest(BaseModel):
     history: List[Dict[str, str]] = Field(default_factory=list)
     physics_open: bool = False
     schema_map: Dict[str, Any]
-    coverage_archetype_l0_mother: Optional[str] = None
+    coverage_mandate: Optional[str] = None
     coverage_skill: Optional[str] = None
 
 class SovereignResponse(BaseModel):
@@ -77,18 +82,21 @@ class DeriveRequirementsRequest(BaseModel):
     (Studio) already has. Kept separate from SovereignRequest deliberately:
     this isn't a conversational turn.
 
-    archetype_l0_mother/platform_logic/app_manual/global_mission/skill are
-    raw ingredients Backend already resolved (functions_registry,
-    archetype_registry, the app's own ARM) -- Kernel composes L1/L3 from
-    them itself via core/composition.py's compose_function_identity() (the
-    same compose_l1_lines/compose_l3_lens real agent turns use), it doesn't
-    fetch them. app_id is kept for identification/error messages only, it no
-    longer drives a Firestore lookup."""
+    archetype/platform/app_manual/global_mission/skill are raw ingredients
+    Backend already resolved (functions_registry, archetype_registry, the
+    app's own ARM) -- Kernel composes L1/L3 from them itself via
+    core/composition.py's compose_function_identity() (the same
+    compose_l1_lines/compose_l3_lens real agent turns use), it doesn't
+    fetch them. archetype/platform are each record-wrapped ({mandate: str}),
+    not flat archetype_l0_mother/platform_logic keys -- "One Name, Many
+    Records", same as persona_config's shape on SovereignRequest. app_id is
+    kept for identification/error messages only, it no longer drives a
+    Firestore lookup."""
     app_id: str
     purpose: str
     target_structure: List[Any] = Field(default_factory=list)
-    archetype_l0_mother: Optional[str] = None
-    platform_logic: Optional[Any] = None
+    archetype: Optional[Dict[str, Any]] = None
+    platform: Optional[Dict[str, Any]] = None
     app_manual: Optional[str] = None
     global_mission: Optional[str] = None
     skill: str = ""
@@ -108,24 +116,26 @@ class PreviewFunctionRequest(BaseModel):
     doesn't break.
 
     l4_data/l5_data: generic pass-through for any other function (e.g.
-    Coverage's required_questions/durable_facts) -- echoed straight into the
+    Coverage's required_questions/chat_summary) -- echoed straight into the
     response's l4/l5 alongside the resolved skill, no function-specific
     field names hardcoded. l4_data is the discriminator: if a caller sends
     it, the generic path is used instead of the legacy purpose/target_structure
     one (see main.py's invoke_preview_function).
 
-    archetype_l0_mother/platform_logic/app_manual/global_mission/skill: raw
-    ingredients Backend already resolved -- Kernel composes L1/L3 itself via
+    archetype/platform/app_manual/global_mission/skill: raw ingredients
+    Backend already resolved -- Kernel composes L1/L3 itself via
     compose_function_identity(), same as derive_requirements'/
     assess_coverage's own endpoints, so there's exactly one place this
-    composition runs. app_id/function_name are identification only now, they
-    no longer drive a Firestore lookup.
+    composition runs. archetype/platform are each record-wrapped
+    ({mandate: str}), matching the same shape everywhere else this
+    session's ingredients travel. app_id/function_name are identification
+    only now, they no longer drive a Firestore lookup.
 
     This endpoint does no model call itself -- composition is cheap, and
     l4_data/l5_data are just echoed back, same as purpose/target_structure
     always were -- cheap to fetch purely for display. (A real L5 fetch, e.g.
-    Coverage's durable_facts, is a separate concern with a real cost -- see
-    /kernel/durable_facts -- the caller fetches it first, then optionally
+    Coverage's chat_summary, is a separate concern with a real cost -- see
+    /kernel/chat_summary -- the caller fetches it first, then optionally
     passes the result in here via l5_data for display alongside L1/L3.)"""
     app_id: str
     function_name: str
@@ -133,8 +143,8 @@ class PreviewFunctionRequest(BaseModel):
     target_structure: List[Any] = Field(default_factory=list)
     l4_data: Optional[Dict[str, Any]] = None
     l5_data: Optional[List[Any]] = None
-    archetype_l0_mother: Optional[str] = None
-    platform_logic: Optional[Any] = None
+    archetype: Optional[Dict[str, Any]] = None
+    platform: Optional[Dict[str, Any]] = None
     app_manual: Optional[str] = None
     global_mission: Optional[str] = None
     skill: str = ""
@@ -148,7 +158,7 @@ class PreviewFunctionResponse(BaseModel):
     functions -- with L2/L5 explicitly present-but-empty for a stateless
     function like Requirements, not silently missing.
 
-    l1: Mandate -- archetype_l0_mother + platform_logic, via
+    l1: Mandate -- archetype.mandate + platform.mandate, via
         compose_function_identity()/compose_l1_lines(). Real.
     l2: Persona/voice (an agent's own system_prompt/dna). Not applicable to a
         Functions Library entry -- there's no agent persona here, only a
@@ -166,8 +176,8 @@ class PreviewFunctionResponse(BaseModel):
         together.
     l5: History/distilled-memory layer. None for a function with no
         conversation state (e.g. Requirements). Real when the caller
-        supplies it (e.g. Coverage's durable_facts, fetched separately via
-        /kernel/durable_facts and passed through here for display)."""
+        supplies it (e.g. Coverage's chat_summary, fetched separately via
+        /kernel/chat_summary and passed through here for display)."""
     l1: str
     l2: Optional[str] = None
     l3: Optional[str] = None
@@ -177,17 +187,19 @@ class PreviewFunctionResponse(BaseModel):
 class AssessCoverageRequest(BaseModel):
     """Coverage's own standalone endpoint, same reasoning as
     DeriveRequirementsRequest: Coverage needs no envelope/history of its
-    own -- just the milestone's own raw fields and the current durable_facts
+    own -- just the milestone's own raw fields and the current chat_summary
     (L5, the caller already has these -- from a live turn, or fetched
-    standalone via /kernel/durable_facts).
+    standalone via /kernel/chat_summary).
 
-    archetype_l0_mother/platform_logic/app_manual/global_mission/skill: raw
-    ingredients Backend already resolved (the "judge" archetype's content,
-    the app's platform_logic/app_manual/global_mission, and the real
+    archetype/platform/app_manual/global_mission/skill: raw ingredients
+    Backend already resolved (the "judge" archetype's mandate content, the
+    app's platform mandate/app_manual/global_mission, and the real
     functions_registry "Coverage" skill text) -- Kernel composes L1/L3
     itself via compose_function_identity(), the same call the live turn
     pipeline (core/orchestrator.py) uses for Coverage's own gate check. This
-    endpoint no longer fetches its own identity.
+    endpoint no longer fetches its own identity. archetype/platform are
+    each record-wrapped ({mandate: str}), matching the same shape
+    everywhere else this session's ingredients travel.
 
     required_questions and derived_requirements are the milestone's raw
     fields, NOT pre-resolved by the caller -- the endpoint builds a
@@ -209,9 +221,9 @@ class AssessCoverageRequest(BaseModel):
     app_id: str
     required_questions: List[str] = Field(default_factory=list)
     derived_requirements: Optional[Any] = None
-    durable_facts: List[Dict[str, Any]] = Field(default_factory=list)
-    archetype_l0_mother: Optional[str] = None
-    platform_logic: Optional[Any] = None
+    chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
+    archetype: Optional[Dict[str, Any]] = None
+    platform: Optional[Dict[str, Any]] = None
     app_manual: Optional[str] = None
     global_mission: Optional[str] = None
     skill: str = ""
@@ -221,21 +233,33 @@ class AssessCoverageResponse(BaseModel):
     gate_status: str
     whisper: str
 
-class DurableFactsRequest(BaseModel):
-    """Computes durable_facts (L5) from a real conversation history the
-    caller already has -- Kernel no longer fetches a project's stored
-    chat_history itself (that was core/bootloader.py's
+class ChatSummaryRequest(BaseModel):
+    """Computes chat_summary (L5, renamed from durable_facts -- matching
+    Gatekeeper's own canvas board target display name) from a real
+    conversation history the caller already has -- Kernel no longer fetches
+    a project's stored chat_history itself (that was core/bootloader.py's
     fetch_project_history(), now deleted; Backend fetches it and sends
     history directly). NOT free like PreviewFunctionResponse's other layers:
-    build_durable_facts() genuinely calls the model (extract_facts, then a
+    build_chat_summary() genuinely calls the model (extract_facts, then a
     reconcile_fact pass per fact), so this is a deliberate, on-demand
     computation, not something to poll or auto-fire on every render. Lives
     outside /kernel/functions/ -- this isn't a Functions Library identity
-    concern."""
-    history: List[Dict[str, Any]] = Field(default_factory=list)
+    concern.
 
-class DurableFactsResponse(BaseModel):
-    durable_facts: List[Dict[str, Any]]
+    required_questions/purpose are optional milestone context for bucket
+    classification (Core Topic/Sub Topics/Miscellaneous) -- omit for a
+    bare, milestone-agnostic call."""
+    history: List[Dict[str, Any]] = Field(default_factory=list)
+    required_questions: Optional[List[str]] = None
+    purpose: Optional[str] = None
+
+class ChatSummaryResponse(BaseModel):
+    """chat_whisper: the single most pressing thing Chat Manager couldn't
+    confidently classify as new/update/conflict this call, or None if
+    nothing needs the Director's clarification -- see
+    core/reconcile.py's build_chat_summary()."""
+    chat_summary: List[Dict[str, Any]]
+    chat_whisper: Optional[str] = None
 
 class AgentEnvelope(BaseModel):
     """Internal briefcase containing the Map and the Data -- populated
@@ -256,8 +280,13 @@ class AgentEnvelope(BaseModel):
     # and whisper), read by pods/social/engine.py's run_turn -- same scratch
     # pattern as kaiser_mandate, avoids computing Coverage twice per turn.
     coverage_whisper: Optional[str] = None
+    # Same pattern, Chat Manager's real output (core/reconcile.py's
+    # build_chat_summary()): the single most pressing thing it couldn't
+    # confidently classify as new/update/conflict, surfaced so the PM asks
+    # the Director to clarify instead of guessing or silently dropping it.
+    chat_whisper: Optional[str] = None
     # Coverage's own identity for the live turn's gate check -- see
     # SovereignRequest's docstring for why these two specifically (everything
     # else Coverage's L1/L3 needs is already on persona_config).
-    coverage_archetype_l0_mother: Optional[str] = None
+    coverage_mandate: Optional[str] = None
     coverage_skill: Optional[str] = None
