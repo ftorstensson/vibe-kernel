@@ -244,11 +244,22 @@ class ChatSummaryRequest(BaseModel):
     reconcile_fact pass per fact), so this is a deliberate, on-demand
     computation, not something to poll or auto-fire on every render. Lives
     outside /kernel/functions/ -- this isn't a Functions Library identity
-    concern."""
+    concern.
+
+    required_questions/purpose are optional milestone context for bucket
+    classification (Core Topic/Sub Topics/Miscellaneous) -- omit for a
+    bare, milestone-agnostic call."""
     history: List[Dict[str, Any]] = Field(default_factory=list)
+    required_questions: Optional[List[str]] = None
+    purpose: Optional[str] = None
 
 class ChatSummaryResponse(BaseModel):
+    """chat_whisper: the single most pressing thing Chat Manager couldn't
+    confidently classify as new/update/conflict this call, or None if
+    nothing needs the Director's clarification -- see
+    core/reconcile.py's build_chat_summary()."""
     chat_summary: List[Dict[str, Any]]
+    chat_whisper: Optional[str] = None
 
 class AgentEnvelope(BaseModel):
     """Internal briefcase containing the Map and the Data -- populated
@@ -269,6 +280,11 @@ class AgentEnvelope(BaseModel):
     # and whisper), read by pods/social/engine.py's run_turn -- same scratch
     # pattern as kaiser_mandate, avoids computing Coverage twice per turn.
     coverage_whisper: Optional[str] = None
+    # Same pattern, Chat Manager's real output (core/reconcile.py's
+    # build_chat_summary()): the single most pressing thing it couldn't
+    # confidently classify as new/update/conflict, surfaced so the PM asks
+    # the Director to clarify instead of guessing or silently dropping it.
+    chat_whisper: Optional[str] = None
     # Coverage's own identity for the live turn's gate check -- see
     # SovereignRequest's docstring for why these two specifically (everything
     # else Coverage's L1/L3 needs is already on persona_config).

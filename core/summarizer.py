@@ -14,8 +14,10 @@ EXTRACTION_SCHEMA = {
                     "type": {"type": "string", "enum": ["preference", "decision", "fact", "story", "agreement"]},
                     "speaker": {"type": "string", "enum": ["user", "assistant"]},
                     "turn_index": {"type": "integer"},
+                    "bucket": {"type": "string", "enum": ["Core Topic", "Sub Topics", "Miscellaneous"]},
+                    "resolution_status": {"type": "string", "enum": ["unresolved", "settled"]},
                 },
-                "required": ["content", "type", "speaker", "turn_index"],
+                "required": ["content", "type", "speaker", "turn_index", "bucket", "resolution_status"],
             },
         }
     },
@@ -23,14 +25,23 @@ EXTRACTION_SCHEMA = {
 }
 
 
-def extract_facts(turns):
+def extract_facts(turns, required_questions=None, purpose=None):
     """Standalone, Phase 1 only -- not wired into run_turn/run_global_turn or
     any real conversation flow. Structured fact extraction instead of prose
     summarization: research shows prose summaries silently drop specific
     details because every item competes for space in one narrative.
     Returns a list of discrete items, each with its type and the index of
     the source turn it came from -- so the original wording is always
-    traceable, not just paraphrased away."""
+    traceable, not just paraphrased away.
+
+    bucket/status are Chat Manager's Sorter Step (Test Run 1 / Phase 1 of
+    the Six-Layer OS taxonomy pass, confirmed by Fred against the Chat
+    Manager canvas board's "CHAT SUMMARY NEW" spec): required_questions and
+    purpose are the milestone context needed to judge bucket (relevance),
+    optional since not every caller has milestone scope (e.g. a bare
+    conversation with no milestone yet) -- bucket defaults to whatever the
+    model judges without that context (Miscellaneous is the safe default
+    absent any milestone to be relevant TO)."""
     model, config = AgentFactory.get_summarizer()
 
     numbered_turns = "\n".join(f"{i}: [{t['role']}] {t['content']}" for i, t in enumerate(turns))
@@ -68,9 +79,36 @@ def extract_facts(turns):
         "rather than forcing it into the closest-sounding type.\n"
         "For each item, give its type, which turn number it came from, and the "
         "speaker of that turn (read the speaker directly off the turn's own role "
-        "label -- do not guess). No commentary."
+        "label -- do not guess).\n"
+        "Also give each item a bucket and a resolution_status, two independent "
+        "judgments, neither one determined by the other:\n"
+        "BUCKET -- relevance to the milestone's own required questions and purpose "
+        "(given below, if any):\n"
+        "  Core Topic: directly answers or bears on one of the required questions.\n"
+        "  Sub Topics: related to the milestone's purpose/domain, adds context or "
+        "elaboration, but doesn't map onto any single required question directly.\n"
+        "  Miscellaneous: doesn't relate to the milestone's purpose or required "
+        "questions at all -- a genuine aside that still cleared the bar above (a "
+        "real preference/decision/fact/story, not small talk).\n"
+        "  If no required questions or purpose are given below, judge Core Topic "
+        "vs. Sub Topics by whether the item is central to the main thread of the "
+        "conversation itself; Miscellaneous still means a genuine aside.\n"
+        "RESOLUTION_STATUS -- whether the conversation actually resolved this, "
+        "never assumed just because something was extracted:\n"
+        "  unresolved: raised, floated, discussed, or proposed -- but not actually "
+        "settled. A hedge in the wording (see above) is a strong signal for "
+        "unresolved, but judge the actual content, not just the phrasing -- a "
+        "firmly-stated fact can still be unresolved if the conversation moved on "
+        "without confirming it, and a hedged suggestion can still be settled if a "
+        "later turn confirms it.\n"
+        "  settled: the conversation shows a genuine resolution or confirmation of "
+        "this specific thing -- not just that it was said once."
     )
     truth = f"CONVERSATION (numbered):\n{numbered_turns}"
+    if required_questions:
+        truth += f"\n\nMILESTONE REQUIRED QUESTIONS:\n{required_questions}"
+    if purpose:
+        truth += f"\n\nMILESTONE PURPOSE:\n{purpose}"
 
     work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=EXTRACTION_SCHEMA)

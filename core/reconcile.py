@@ -153,6 +153,20 @@ def reconcile_fact(existing_facts, new_item):
                 f["content"] = verdict["merged_content"]
                 f["turn_index"] = new_item["turn_index"]
                 f["speaker"] = new_item["speaker"]
+                # bucket/resolution_status are re-derived from new_item
+                # (extract_facts() already judged them with the full
+                # conversation + milestone context in view), not carried
+                # over stale from the pre-merge entry -- a revision can
+                # genuinely move a fact from Sub Topics to Core Topic, or
+                # from unresolved to settled, and the merge should reflect
+                # that, not freeze the old guess. resolution_status is a
+                # distinct field from this entry's own lifecycle `status`
+                # (current/superseded) -- same word, different concept,
+                # named differently to keep them from colliding.
+                if "bucket" in new_item:
+                    f["bucket"] = new_item["bucket"]
+                if "resolution_status" in new_item:
+                    f["resolution_status"] = new_item["resolution_status"]
                 break
     elif classification == "contradiction" and resolved_id:
         for f in facts:
@@ -172,6 +186,18 @@ def reconcile_fact(existing_facts, new_item):
         # REVISION-vs-NEW tightening above: an unresolved merge/supersede is
         # exactly the "genuinely unsure" case that should never be guessed.
         facts.append({**new_item, "id": str(uuid.uuid4()), "status": "current"})
+        # Extend CONTRADICTION's existing "never silently auto-resolve real
+        # uncertainty" treatment to this fallback too -- an unconfidently-
+        # matched revision/contradiction is the same genuine ambiguity, just
+        # not one the model was asked to flag (the mandate only asks for
+        # needs_confirmation on CONTRADICTION). Code-generated, not
+        # model-derived, since the model's own verdict didn't produce a
+        # clarifying_question for this case.
+        verdict["needs_confirmation"] = True
+        verdict["clarifying_question"] = (
+            f"Not sure how \"{new_item['content']}\" relates to what's already "
+            "been said -- is this new, or does it update something discussed before?"
+        )
 
     return {
         "facts": facts,
@@ -181,7 +207,26 @@ def reconcile_fact(existing_facts, new_item):
     }
 
 
-def build_chat_summary(turns):
+_BUCKET_PRIORITY = {"Core Topic": 0, "Sub Topics": 1, "Miscellaneous": 2}
+
+
+def _pick_chat_whisper(pending):
+    """Chat Manager surfaces exactly one whisper per turn -- matching
+    Coverage's own existing "one distilled signal" precedent, not a list the
+    PM has to triage itself. `pending` is every {bucket, clarifying_question}
+    reconcile_fact() flagged this turn (real CONTRADICTIONs, and the
+    unresolved-match fallback extended the same treatment to). Ranked by
+    bucket -- Core Topic first, since that's what the milestone actually
+    needs resolved -- with earliest occurrence as the tie-break within the
+    same bucket (sorted() is stable, so insertion order -- roughly
+    chronological -- is preserved among equal-priority items)."""
+    if not pending:
+        return None
+    ranked = sorted(pending, key=lambda p: _BUCKET_PRIORITY.get(p["bucket"], 99))
+    return ranked[0]["clarifying_question"]
+
+
+def build_chat_summary(turns, required_questions=None, purpose=None):
     """Chat Manager's real output -- named chat_summary throughout (renamed
     from build_durable_facts()/durable_facts, matching Gatekeeper's own
     canvas board target display name). Runs extract_facts() over the full
@@ -195,10 +240,31 @@ def build_chat_summary(turns):
     chat_summary) needs Backend's persistence contract for what a prior
     chat_summary looks like arriving in the envelope (shape, None-on-fresh-
     conversation semantics) before it can be built; this pass is the rename
-    only, behavior unchanged."""
-    items = extract_facts(turns)
+    only, behavior unchanged for the summary itself.
+
+    required_questions/purpose are threaded into extract_facts() so it can
+    judge each item's bucket against real milestone relevance, not guess in
+    a vacuum -- optional, since not every caller has milestone scope.
+
+    chat_whisper is new: the real reason it exists (Fred's own words) is
+    that when Chat Manager can't confidently classify something as new/
+    update/conflict, it should tell the PM to ask the Director to clarify,
+    not guess or silently drop it. reconcile_fact() already computed
+    needs_confirmation/clarifying_question per-item on every CONTRADICTION
+    (and now the unresolved-match fallback too) -- this was previously
+    discarded every loop iteration; now it's collected and reduced to the
+    single most pressing one via _pick_chat_whisper().
+
+    Returns {chat_summary: [...], chat_whisper: str|None}."""
+    items = extract_facts(turns, required_questions=required_questions, purpose=purpose)
     chat_summary = []
+    pending = []
     for item in items:
         result = reconcile_fact(chat_summary, item)
         chat_summary = result["facts"]
-    return chat_summary
+        if result["needs_confirmation"] and result["clarifying_question"]:
+            pending.append({
+                "bucket": item.get("bucket", "Miscellaneous"),
+                "clarifying_question": result["clarifying_question"],
+            })
+    return {"chat_summary": chat_summary, "chat_whisper": _pick_chat_whisper(pending)}

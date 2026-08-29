@@ -46,6 +46,13 @@ class SocialEngine:
         # provide) in one real signal, not two.
         if envelope.coverage_whisper:
             pm_mandate_lines.append(f"COVERAGE WHISPER: {envelope.coverage_whisper}")
+        # Chat Manager's own signal, same scratch-field pattern -- when it
+        # couldn't confidently classify something as new/update/conflict,
+        # this is the single most pressing thing to ask the Director to
+        # clarify, not a guess or a silent drop (core/reconcile.py's
+        # build_chat_summary()/_pick_chat_whisper()).
+        if envelope.chat_whisper:
+            pm_mandate_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
         pm_mandate_lines.append(
             "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
             "function-call syntax, or JSON of any kind as literal text -- prose only, always. "

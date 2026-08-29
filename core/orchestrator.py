@@ -51,9 +51,16 @@ class MasterOrchestrator:
         chat_summary = []
         ready = False
         envelope.coverage_whisper = None
+        envelope.chat_whisper = None
         if required_questions:
             try:
-                chat_summary = build_chat_summary(envelope.history)
+                chat_result = build_chat_summary(
+                    envelope.history,
+                    required_questions=required_questions,
+                    purpose=envelope.milestone_config.get("output", ""),
+                )
+                chat_summary = chat_result["chat_summary"]
+                envelope.chat_whisper = chat_result["chat_whisper"]
                 # Coverage's real L1 (judge archetype)/L3 (mission+app_manual)/
                 # skill (the assessment procedure), composed from raw
                 # ingredients already on the envelope -- not fetched here, and

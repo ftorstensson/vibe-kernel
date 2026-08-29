@@ -181,8 +181,8 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
 @app.post("/kernel/chat_summary", response_model=ChatSummaryResponse)
 async def invoke_chat_summary(req: ChatSummaryRequest):
     try:
-        chat_summary = build_chat_summary(req.history)
-        return {"chat_summary": chat_summary}
+        result = build_chat_summary(req.history, required_questions=req.required_questions, purpose=req.purpose)
+        return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
