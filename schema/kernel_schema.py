@@ -148,6 +148,28 @@ class DeriveRequirementsResponse(BaseModel):
     rationale: str
     ignition_inputs: List[Dict[str, str]]
 
+class ConfirmLaunchIntentRequest(BaseModel):
+    """Functions Library, Keymaster's own standalone endpoint -- same
+    reasoning as DeriveRequirementsRequest: confirm_launch_intent() needs no
+    envelope/milestone state, just the recent conversation history, which
+    the caller (Studio) already has.
+
+    archetype/platform/skill are raw ingredients Backend already resolved
+    -- Kernel composes L1 from them via compose_function_identity(), same
+    as every other function. No app_manual/global_mission fields at all
+    (not just unused) -- Keymaster's own design (core/ignition.py) has no
+    L3 concept, confirmed no genuine mission/app_manual use for this
+    narrow intent-classification task, so this request doesn't carry two
+    fields that would always be None. app_id is identification only."""
+    app_id: str
+    history: List[Dict[str, Any]] = Field(default_factory=list)
+    archetype: Optional[Dict[str, Any]] = None
+    platform: Optional[Dict[str, Any]] = None
+    skill: str = ""
+
+class ConfirmLaunchIntentResponse(BaseModel):
+    confirmed: bool
+
 class PreviewFunctionRequest(BaseModel):
     """Test Lab preview -- function-agnostic composition, but each function's
     L4/L5 data has its own shape, so this request carries both a legacy,

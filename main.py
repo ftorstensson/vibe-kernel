@@ -5,11 +5,13 @@ from schema.kernel_schema import (
     PreviewFunctionRequest, PreviewFunctionResponse,
     AssessCoverageRequest, AssessCoverageResponse,
     ChatSummaryRequest, ChatSummaryResponse,
+    ConfirmLaunchIntentRequest, ConfirmLaunchIntentResponse,
 )
 from core.orchestrator import MasterOrchestrator
 from core.requirements import derive_requirements
 from core.coverage import assess_coverage, resolve_required_questions
 from core.reconcile import build_chat_summary
+from core.ignition import confirm_launch_intent
 from core.composition import compose_function_identity
 import uvicorn
 import os
@@ -78,6 +80,31 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
         )
         result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["l3"], req.skill)
         return result
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Functions Library, Keymaster's own standalone endpoint -- same reasoning
+# as derive_requirements' above: confirm_launch_intent() needs no envelope/
+# milestone state, just the recent conversation history, which the caller
+# (Studio) already has. app_manual/global_mission are NOT passed to
+# compose_function_identity() here (unlike derive_requirements' call above)
+# -- Keymaster's own design has no L3 concept at all (core/ignition.py),
+# confirmed no genuine mission/app_manual use for this narrow intent-
+# classification task, so this endpoint composes L1 only and discards l3
+# rather than threading two fields through that would always be None.
+@app.post("/kernel/functions/confirm_launch_intent", response_model=ConfirmLaunchIntentResponse)
+async def invoke_confirm_launch_intent(req: ConfirmLaunchIntentRequest):
+    try:
+        identity = compose_function_identity(
+            (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
+            None, None,
+        )
+        result = confirm_launch_intent(req.history, l1=identity["l1"], skill=req.skill)
+        return {"confirmed": result}
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
