@@ -37,6 +37,8 @@ async def invoke(req: SovereignRequest):
             coverage_skill=req.coverage_skill,
             chat_summary=req.chat_summary,
             chat_summary_cursor=req.chat_summary_cursor,
+            chat_manager_mandate=req.chat_manager_mandate,
+            chat_manager_skill=req.chat_manager_skill,
         )
 
         result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)
@@ -187,9 +189,14 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
 @app.post("/kernel/chat_summary", response_model=ChatSummaryResponse)
 async def invoke_chat_summary(req: ChatSummaryRequest):
     try:
+        identity = compose_function_identity(
+            (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
+            req.app_manual, req.global_mission,
+        )
         result = build_chat_summary(
             req.history, required_questions=req.required_questions, purpose=req.purpose,
             prior_chat_summary=req.prior_chat_summary, cursor=req.cursor,
+            l1=identity["l1"], l3=identity["l3"], skill=req.skill,
         )
         return result
     except ValueError as ve:

@@ -226,13 +226,21 @@ def _pick_chat_whisper(pending):
     return ranked[0]["clarifying_question"]
 
 
-def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_summary=None, cursor=0):
+def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_summary=None, cursor=0, l1=None, l3=None, skill=""):
     """Chat Manager's real output -- named chat_summary throughout (renamed
     from build_durable_facts()/durable_facts, matching Gatekeeper's own
     canvas board target display name). Folds each newly extracted item
     through reconcile_fact() in order, so the result is one clean current
     list: new facts appended, revisions merged with lineage preserved,
     contradictions superseded rather than silently overwritten.
+
+    l1/l3/skill are Chat Manager's real identity (the "scribe" archetype's
+    mandate + the real functions_registry "Chat Manager" skill), threaded
+    straight through to extract_facts() -- same pattern Gate Maker/Gatekeeper
+    already use, this function does no composition itself, just passes the
+    real ingredients through. reconcile_fact() is explicitly out of scope
+    for this pass -- it keeps its own separate hardcoded mandate, a later
+    question, not assumed into this one.
 
     Incremental now, closing the real persistence gap a full recompute every
     turn used to be: prior_chat_summary/cursor are Backend's persisted state
@@ -269,6 +277,7 @@ def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_
     items = extract_facts(
         new_turns, required_questions=required_questions, purpose=purpose,
         offset=cursor, prior_chat_summary=prior_chat_summary,
+        l1=l1, l3=l3, skill=skill,
     )
     chat_summary = list(prior_chat_summary)
     pending = []

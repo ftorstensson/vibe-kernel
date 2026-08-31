@@ -58,7 +58,14 @@ class SovereignRequest(BaseModel):
     this contract. Confirmed with Backend 2: chat_history is genuinely
     append-only/monotonic/transactional, and the cursor they send is read
     from the same snapshot as history, so it can't drift out from under
-    this slice."""
+    this slice.
+
+    chat_manager_mandate/chat_manager_skill: Chat Manager's own identity for
+    the live turn's extraction step (core/orchestrator.py) -- the "scribe"
+    archetype's real mandate content and the real functions_registry
+    "Chat Manager" skill text, same pattern as coverage_mandate/
+    coverage_skill above (Kernel's own addition to the contract, not part
+    of the shared persona_config shape, kept flat not record-wrapped)."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -75,6 +82,8 @@ class SovereignRequest(BaseModel):
     coverage_skill: Optional[str] = None
     chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     chat_summary_cursor: int = 0
+    chat_manager_mandate: Optional[str] = None
+    chat_manager_skill: Optional[str] = None
 
 class SovereignResponse(BaseModel):
     """The Formalized Interface for the App to consume.
@@ -279,12 +288,23 @@ class ChatSummaryRequest(BaseModel):
     [cursor:] internally; prior_chat_summary is folded with the newly
     extracted items via reconcile_fact() and also given to extract_facts()
     as lightweight context so backward references in the new turns ("that",
-    "the second option") can resolve against already-established facts."""
+    "the second option") can resolve against already-established facts.
+
+    archetype/platform/app_manual/global_mission/skill: raw ingredients
+    Backend already resolved -- Kernel composes L1/L3 itself via
+    compose_function_identity(), same as Gate Maker's/Gatekeeper's own
+    endpoints. This endpoint no longer has any embedded extraction
+    procedure of its own -- skill carries all of it."""
     history: List[Dict[str, Any]] = Field(default_factory=list)
     required_questions: Optional[List[str]] = None
     purpose: Optional[str] = None
     prior_chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     cursor: int = 0
+    archetype: Optional[Dict[str, Any]] = None
+    platform: Optional[Dict[str, Any]] = None
+    app_manual: Optional[str] = None
+    global_mission: Optional[str] = None
+    skill: str = ""
 
 class ChatSummaryResponse(BaseModel):
     """chat_whisper: the single most pressing thing Chat Manager couldn't
@@ -334,3 +354,8 @@ class AgentEnvelope(BaseModel):
     # and knowledge_bricks already use.
     chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     chat_summary_cursor: int = 0
+    # Chat Manager's own identity for the live turn's extraction step -- see
+    # SovereignRequest's docstring for why these two specifically (everything
+    # else Chat Manager's L1/L3 needs is already on persona_config).
+    chat_manager_mandate: Optional[str] = None
+    chat_manager_skill: Optional[str] = None
