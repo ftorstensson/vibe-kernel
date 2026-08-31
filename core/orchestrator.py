@@ -123,7 +123,23 @@ class MasterOrchestrator:
         # signal that the Strike Team has fired for this milestone before.
         already_fired = bool(envelope.knowledge_bricks)
 
-        if ready and not already_fired and confirm_launch_intent(envelope.history):
+        # Keymaster's real L1/skill (the classifier role + confirmation
+        # criteria), composed from raw ingredients already on the envelope --
+        # same pattern as Coverage's/Chat Manager's identity resolution
+        # above. No l3: confirmed no genuine mission/app_manual use for this
+        # function's narrow intent-classification task. Composed
+        # unconditionally here (cheap, pure string work, no I/O) rather than
+        # only inside the ready-and-not-fired branch, so the short-circuit
+        # below still reads cleanly as one condition.
+        keymaster_identity = compose_function_identity(
+            envelope.keymaster_mandate,
+            (envelope.persona_config.get("platform") or {}).get("mandate"),
+            None, None,
+        )
+
+        if ready and not already_fired and confirm_launch_intent(
+            envelope.history, l1=keymaster_identity["l1"], skill=envelope.keymaster_skill or "",
+        ):
             print(f"[ORCHESTRATOR] Strike Team Authorized (gate-driven).")
 
             # The settled brief -- Phase 1 (core/brief.py), not gated/fail-open
