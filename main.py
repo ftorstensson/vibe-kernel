@@ -39,6 +39,8 @@ async def invoke(req: SovereignRequest):
             chat_summary_cursor=req.chat_summary_cursor,
             chat_manager_mandate=req.chat_manager_mandate,
             chat_manager_skill=req.chat_manager_skill,
+            keymaster_mandate=req.keymaster_mandate,
+            keymaster_skill=req.keymaster_skill,
         )
 
         result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)

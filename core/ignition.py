@@ -11,7 +11,7 @@ LAUNCH_CONFIRM_SCHEMA = {
 }
 
 
-def confirm_launch_intent(history):
+def confirm_launch_intent(history, l1=None, skill=""):
     """Standalone, Phase 1 only. Replaces the old `"go" in user_input.lower()`
     substring check (real, already-hit bug: "grow"/"good"/etc. false-trigger
     it) with a real model judgment -- Fred's explicit design, tried keyword
@@ -28,22 +28,26 @@ def confirm_launch_intent(history):
     same as the Clerk) rather than tracking a separate "awaiting
     confirmation" state -- Kernel has no persistence to hold that state in
     anyway, and re-deriving from "still ready, still not fired" each turn is
-    simpler and self-correcting if the Director changes their mind."""
+    simpler and self-correcting if the Director changes their mind.
+
+    l1/skill are real, not a hand-written mandate string -- Keymaster's own
+    functions_registry skill (the confirmation criteria) and mandate (the
+    classifier role + "never guess" law), same Test Run 1 pattern as Gate
+    Maker/Gatekeeper/Chat Manager. Keymaster never had a donor archetype
+    (unlike the other three) -- Backend resolves whatever real mandate
+    content it has for Keymaster regardless of where it lives in Firestore,
+    Kernel just composes and calls the model, agnostic to that.
+
+    No l3 param: checked whether mission/app_manual context genuinely
+    applies here, the way it does for Coverage's/Chat Manager's topic-
+    relevance judgments -- it doesn't. This is a narrow, self-contained
+    intent classification on the last few turns, not a topic/relevance
+    judgment that benefits from broader app context. Adding an always-None
+    l3 param here would be unused indirection, not real support."""
     model, config = AgentFactory.get_clerk()
 
-    mandate = (
-        "You are a launch-confirmation classifier. The PM has just told the "
-        "Director the vision is Strike-Ready and asked for the go-ahead to "
-        "launch the AI specialists. Given the recent conversation, decide "
-        "whether the Director's LATEST message genuinely confirms launching "
-        "now -- real affirmative intent, however phrased ('yes', 'let's do "
-        "it', 'sounds good', 'go for it'), not a deflection, a new question, "
-        "a request to change something first, or an ambiguous reply. When "
-        "genuinely unsure, confirmed must be false -- never launch on a "
-        "guess."
-    )
     truth = f"RECENT CONVERSATION (last message is the Director's reply to judge):\n{history[-5:]}"
 
-    work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
+    work_order = PromptBuilder.assemble(mandate=l1, lens=skill, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=LAUNCH_CONFIRM_SCHEMA)
     return hammer_json(get_clean_text(response)).get("confirmed", False)

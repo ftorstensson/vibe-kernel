@@ -65,7 +65,16 @@ class SovereignRequest(BaseModel):
     archetype's real mandate content and the real functions_registry
     "Chat Manager" skill text, same pattern as coverage_mandate/
     coverage_skill above (Kernel's own addition to the contract, not part
-    of the shared persona_config shape, kept flat not record-wrapped)."""
+    of the shared persona_config shape, kept flat not record-wrapped).
+
+    keymaster_mandate/keymaster_skill: same pattern again, for
+    confirm_launch_intent()'s real identity (core/ignition.py). Keymaster
+    never had a donor archetype -- Backend resolves whatever real mandate
+    content it has for Keymaster regardless of where it lives in Firestore;
+    Kernel just receives the raw string, agnostic to that. No l3 for
+    Keymaster -- confirmed no genuine mission/app_manual use for this
+    function's narrow intent-classification task, unlike Coverage's/Chat
+    Manager's topic-relevance judgments."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -84,6 +93,8 @@ class SovereignRequest(BaseModel):
     chat_summary_cursor: int = 0
     chat_manager_mandate: Optional[str] = None
     chat_manager_skill: Optional[str] = None
+    keymaster_mandate: Optional[str] = None
+    keymaster_skill: Optional[str] = None
 
 class SovereignResponse(BaseModel):
     """The Formalized Interface for the App to consume.
@@ -359,3 +370,8 @@ class AgentEnvelope(BaseModel):
     # else Chat Manager's L1/L3 needs is already on persona_config).
     chat_manager_mandate: Optional[str] = None
     chat_manager_skill: Optional[str] = None
+    # Keymaster's own identity for confirm_launch_intent() -- see
+    # SovereignRequest's docstring. No l3 field: confirmed no genuine
+    # mission/app_manual use for this function.
+    keymaster_mandate: Optional[str] = None
+    keymaster_skill: Optional[str] = None
