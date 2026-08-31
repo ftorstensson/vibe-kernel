@@ -55,6 +55,19 @@ class MasterOrchestrator:
         envelope.chat_whisper = None
         if required_questions:
             try:
+                # Chat Manager's real L1 (scribe archetype)/L3 (mission+app_manual)/
+                # skill (the extraction procedure), composed from raw
+                # ingredients already on the envelope -- same pattern as
+                # Coverage's identity resolution right below. platform.mandate/
+                # app_manual/global_mission are the exact same values already
+                # on persona_config; only the scribe archetype's mandate and
+                # Chat Manager's skill text are genuinely its own.
+                chat_manager_identity = compose_function_identity(
+                    envelope.chat_manager_mandate,
+                    (envelope.persona_config.get("platform") or {}).get("mandate"),
+                    envelope.persona_config.get("app_manual"),
+                    envelope.persona_config.get("global_mission"),
+                )
                 # prior_chat_summary/cursor are envelope state Backend sent
                 # (empty/0 on a fresh conversation) -- Kernel slices
                 # envelope.history[cursor:] itself inside build_chat_summary(),
@@ -66,6 +79,9 @@ class MasterOrchestrator:
                     purpose=envelope.milestone_config.get("output", ""),
                     prior_chat_summary=envelope.chat_summary,
                     cursor=envelope.chat_summary_cursor,
+                    l1=chat_manager_identity["l1"],
+                    l3=chat_manager_identity["l3"],
+                    skill=envelope.chat_manager_skill or "",
                 )
                 chat_summary = chat_result["chat_summary"]
                 envelope.chat_whisper = chat_result["chat_whisper"]

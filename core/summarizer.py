@@ -25,23 +25,30 @@ EXTRACTION_SCHEMA = {
 }
 
 
-def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_chat_summary=None):
-    """Standalone, Phase 1 only -- not wired into run_turn/run_global_turn or
-    any real conversation flow. Structured fact extraction instead of prose
-    summarization: research shows prose summaries silently drop specific
-    details because every item competes for space in one narrative.
-    Returns a list of discrete items, each with its type and the index of
-    the source turn it came from -- so the original wording is always
-    traceable, not just paraphrased away.
+def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_chat_summary=None, l1=None, l3=None, skill=""):
+    """Chat Manager's real extraction step. l1/l3/skill are real, not a
+    hand-written mandate string -- Backend resolves the raw ingredients (the
+    real functions_registry "Chat Manager" skill, the "scribe" archetype's
+    mandate, the app's platform/app-manual/mission), main.py's endpoint (or
+    core/orchestrator.py's live-turn identity resolution) composes l1/l3 via
+    core/composition.py's compose_function_identity(), same as Gate Maker
+    (derive_requirements)/Gatekeeper (assess_coverage). This function does no
+    composition or I/O itself, and -- as of this pass -- no embedded
+    procedure text either: the entire extraction spec (what counts as
+    extractable, hedging rules, bucket/resolution_status definitions, how to
+    use ALREADY-ESTABLISHED FACTS context) now lives in skill, not hardcoded
+    here. That content used to be an inline mandate string in this file;
+    moved to Firestore verbatim, not rewritten, since the exact wording is
+    what made the turn_index/back-reference fixes verified in the prior pass
+    actually work -- paraphrasing it loosely would risk quietly regressing
+    already-tested behavior.
 
-    bucket/status are Chat Manager's Sorter Step (Test Run 1 / Phase 1 of
-    the Six-Layer OS taxonomy pass, confirmed by Fred against the Chat
-    Manager canvas board's "CHAT SUMMARY NEW" spec): required_questions and
-    purpose are the milestone context needed to judge bucket (relevance),
-    optional since not every caller has milestone scope (e.g. a bare
-    conversation with no milestone yet) -- bucket defaults to whatever the
-    model judges without that context (Miscellaneous is the safe default
-    absent any milestone to be relevant TO).
+    Structured fact extraction instead of prose summarization is a real
+    design decision skill's real content should preserve: prose summaries
+    silently drop specific details because every item competes for space in
+    one narrative. Returns a list of discrete items, each with its type and
+    the index of the source turn it came from -- so the original wording is
+    always traceable, not just paraphrased away.
 
     offset/prior_chat_summary support incremental compute (build_chat_summary()
     passing history[cursor:] instead of the full conversation, closing Chat
@@ -63,79 +70,14 @@ def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_
     pre-cursor turns -- prior_chat_summary is already condensed, cheaper,
     and is exactly the same context reconcile_fact() itself works from) so
     the model can resolve those references without re-reading everything
-    it already distilled once. It must NOT re-extract anything already in
-    this list -- context to resolve against, not new material."""
+    it already distilled once. skill's own text carries the instruction not
+    to re-extract anything already in this list; Kernel only assembles the
+    data block itself (the listing below), unconditionally available in the
+    truth block whenever prior_chat_summary is non-empty."""
     model, config = AgentFactory.get_summarizer()
 
     numbered_turns = "\n".join(f"{i}: [{t['role']}] {t['content']}" for i, t in enumerate(turns, start=offset))
 
-    mandate = (
-        "You are a fact-extraction function. Given a numbered conversation, extract "
-        "only what's genuinely worth remembering -- skip anything fungible or "
-        "distillable later. Do NOT extract small talk, the assistant's own process "
-        "narration, or its questions and acknowledgments -- those are replaceable, "
-        "not worth preserving.\n"
-        "Extract only:\n"
-        "1. Anything the user stated as a preference, decision, fact, or story -- "
-        "keep close to their own words, never dropped or softened. This is the "
-        "Non-Googleable stuff: the specific intent, the twist, the grit -- not "
-        "something that could be reconstructed later. A hedge in the phrasing "
-        "does NOT disqualify it -- a tentative suggestion that still contains "
-        "real proposed content (a number, a mechanism, a direction) counts just "
-        "as much as a confident one. When capturing a hedged item, keep the "
-        "hedge in the wording itself (e.g. 'floated the idea that...', "
-        "'suggested, without committing, that...') rather than restating it as "
-        "settled -- your job is to capture content faithfully, including how "
-        "firm or tentative it was, not to judge how settled it is. But do NOT "
-        "extract turns where the user "
-        "explicitly withholds or defers the content itself ('not sure yet, "
-        "let's come back to that', 'I don't have an opinion', 'no preference "
-        "either way') or is doing session bookkeeping ('that's it for today', "
-        "'let's move on') -- unlike a hedged-but-substantive suggestion, these "
-        "offer no actual content to preserve.\n"
-        "2. A genuine conclusion or agreement actually reached in the conversation "
-        "(e.g. the team agreeing on a direction) -- not a rhetorical question or a "
-        "mid-argument remark.\n"
-        "Requests to do something later (reminders, follow-ups, 'check X next "
-        "week') are neither preferences nor decisions -- do not extract them. If "
-        "an item doesn't genuinely fit one of the categories above, leave it out "
-        "rather than forcing it into the closest-sounding type.\n"
-        "For each item, give its type, which turn number it came from, and the "
-        "speaker of that turn (read the speaker directly off the turn's own role "
-        "label -- do not guess).\n"
-        "Also give each item a bucket and a resolution_status, two independent "
-        "judgments, neither one determined by the other:\n"
-        "BUCKET -- relevance to the milestone's own required questions and purpose "
-        "(given below, if any):\n"
-        "  Core Topic: directly answers or bears on one of the required questions.\n"
-        "  Sub Topics: related to the milestone's purpose/domain, adds context or "
-        "elaboration, but doesn't map onto any single required question directly.\n"
-        "  Miscellaneous: doesn't relate to the milestone's purpose or required "
-        "questions at all -- a genuine aside that still cleared the bar above (a "
-        "real preference/decision/fact/story, not small talk).\n"
-        "  If no required questions or purpose are given below, judge Core Topic "
-        "vs. Sub Topics by whether the item is central to the main thread of the "
-        "conversation itself; Miscellaneous still means a genuine aside.\n"
-        "RESOLUTION_STATUS -- whether the conversation actually resolved this, "
-        "never assumed just because something was extracted:\n"
-        "  unresolved: raised, floated, discussed, or proposed -- but not actually "
-        "settled. A hedge in the wording (see above) is a strong signal for "
-        "unresolved, but judge the actual content, not just the phrasing -- a "
-        "firmly-stated fact can still be unresolved if the conversation moved on "
-        "without confirming it, and a hedged suggestion can still be settled if a "
-        "later turn confirms it.\n"
-        "  settled: the conversation shows a genuine resolution or confirmation of "
-        "this specific thing -- not just that it was said once."
-    )
-    if prior_chat_summary:
-        mandate += (
-            "\nThe conversation below may be only the newest portion, not the whole "
-            "thing -- ALREADY-ESTABLISHED FACTS below is what's already been "
-            "distilled from everything before it. Use it to resolve references in "
-            "the new turns ('that', 'the second option', 'like we discussed') "
-            "against what's already known. Do NOT re-extract anything already "
-            "listed there -- only genuinely new content from the conversation below."
-        )
     truth = f"CONVERSATION (numbered):\n{numbered_turns}"
     if required_questions:
         truth += f"\n\nMILESTONE REQUIRED QUESTIONS:\n{required_questions}"
@@ -147,7 +89,8 @@ def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_
             for f in prior_chat_summary if f.get("status", "current") == "current"
         )
         truth += f"\n\nALREADY-ESTABLISHED FACTS:\n{established}"
+    lens = f"{l3}\n\n{skill}" if l3 else skill
 
-    work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
+    work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=EXTRACTION_SCHEMA)
     return hammer_json(get_clean_text(response)).get("items", [])
