@@ -45,7 +45,20 @@ class SovereignRequest(BaseModel):
     confirmed by tracing both, not assumed. Required for a real
     milestone-scoped call (is_global=False); Backend enforces that, not a
     Kernel-side validator, since Kernel has no way to distinguish "caller
-    forgot it" from "global call, doesn't apply" from the value alone."""
+    forgot it" from "global call, doesn't apply" from the value alone.
+
+    chat_summary/chat_summary_cursor: Chat Manager's persisted state from
+    the last time it ran for this conversation -- Backend sends back
+    whatever build_chat_summary() last returned (empty list / 0 on a fresh
+    conversation). Closes the real persistence gap that made every turn a
+    full recompute: Kernel slices history[cursor:] itself (it already gets
+    the full history) rather than Backend computing and sending a delta --
+    cursor is the raw ingredient, Kernel does the slicing, same
+    Backend-resolves-raw/Kernel-composes principle as everything else in
+    this contract. Confirmed with Backend 2: chat_history is genuinely
+    append-only/monotonic/transactional, and the cursor they send is read
+    from the same snapshot as history, so it can't drift out from under
+    this slice."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -60,9 +73,17 @@ class SovereignRequest(BaseModel):
     schema_map: Dict[str, Any]
     coverage_mandate: Optional[str] = None
     coverage_skill: Optional[str] = None
+    chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
+    chat_summary_cursor: int = 0
 
 class SovereignResponse(BaseModel):
-    """The Formalized Interface for the App to consume."""
+    """The Formalized Interface for the App to consume.
+
+    chat_summary/chat_summary_cursor: the advanced state after this turn's
+    Chat Manager pass, for Backend to persist forward as next turn's
+    chat_summary/chat_summary_cursor input -- None when Chat Manager didn't
+    run this turn (no required_questions, or is_global), meaning "nothing
+    changed, keep what you already have," not "reset to empty."."""
     social_response: str
     status: str  # PROBING | AUTHORIZED | STABLE | GLOBAL
     data_patch: Optional[Dict[str, str]] = None
@@ -74,6 +95,8 @@ class SovereignResponse(BaseModel):
     # raw report and their own real sources, not re-synthesized.
     brief: Optional[Dict[str, Any]] = None
     appendix: Optional[List[Dict[str, Any]]] = None
+    chat_summary: Optional[List[Dict[str, Any]]] = None
+    chat_summary_cursor: Optional[int] = None
 
 class DeriveRequirementsRequest(BaseModel):
     """Functions Library, entry 1: derive_requirements() needs no conversation
@@ -248,18 +271,33 @@ class ChatSummaryRequest(BaseModel):
 
     required_questions/purpose are optional milestone context for bucket
     classification (Core Topic/Sub Topics/Miscellaneous) -- omit for a
-    bare, milestone-agnostic call."""
+    bare, milestone-agnostic call.
+
+    prior_chat_summary/cursor: the same incremental-compute inputs
+    /kernel/invoke takes -- omit (empty list / 0) for a full recompute from
+    scratch, same as before this pass. When given, history is sliced
+    [cursor:] internally; prior_chat_summary is folded with the newly
+    extracted items via reconcile_fact() and also given to extract_facts()
+    as lightweight context so backward references in the new turns ("that",
+    "the second option") can resolve against already-established facts."""
     history: List[Dict[str, Any]] = Field(default_factory=list)
     required_questions: Optional[List[str]] = None
     purpose: Optional[str] = None
+    prior_chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
+    cursor: int = 0
 
 class ChatSummaryResponse(BaseModel):
     """chat_whisper: the single most pressing thing Chat Manager couldn't
     confidently classify as new/update/conflict this call, or None if
     nothing needs the Director's clarification -- see
-    core/reconcile.py's build_chat_summary()."""
+    core/reconcile.py's build_chat_summary().
+
+    chat_summary_cursor: the advanced cursor (len(history) at this call) --
+    the caller persists this alongside chat_summary and sends both back as
+    prior_chat_summary/cursor on the next call."""
     chat_summary: List[Dict[str, Any]]
     chat_whisper: Optional[str] = None
+    chat_summary_cursor: int
 
 class AgentEnvelope(BaseModel):
     """Internal briefcase containing the Map and the Data -- populated
@@ -290,3 +328,9 @@ class AgentEnvelope(BaseModel):
     # else Coverage's L1/L3 needs is already on persona_config).
     coverage_mandate: Optional[str] = None
     coverage_skill: Optional[str] = None
+    # Chat Manager's persisted state -- prior state in from SovereignRequest,
+    # overwritten in place with this turn's advanced state during
+    # process_turn(), same dual-purpose input/output pattern physics_open
+    # and knowledge_bricks already use.
+    chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
+    chat_summary_cursor: int = 0

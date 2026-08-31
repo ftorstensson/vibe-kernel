@@ -25,7 +25,7 @@ EXTRACTION_SCHEMA = {
 }
 
 
-def extract_facts(turns, required_questions=None, purpose=None):
+def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_chat_summary=None):
     """Standalone, Phase 1 only -- not wired into run_turn/run_global_turn or
     any real conversation flow. Structured fact extraction instead of prose
     summarization: research shows prose summaries silently drop specific
@@ -41,10 +41,33 @@ def extract_facts(turns, required_questions=None, purpose=None):
     optional since not every caller has milestone scope (e.g. a bare
     conversation with no milestone yet) -- bucket defaults to whatever the
     model judges without that context (Miscellaneous is the safe default
-    absent any milestone to be relevant TO)."""
+    absent any milestone to be relevant TO).
+
+    offset/prior_chat_summary support incremental compute (build_chat_summary()
+    passing history[cursor:] instead of the full conversation, closing Chat
+    Manager's persistence gap):
+
+    offset: turns may be a slice starting partway through the real
+    conversation, not the whole thing -- turn_index must still reflect true
+    position (enumerate(turns, start=offset), not enumerate(turns)), since
+    it's shown back to the model in reconcile_fact()'s own prompt and
+    Coverage's facts_listing, and is what revision_trail preserves as
+    traceable history. Getting this wrong doesn't crash anything, it just
+    silently mislabels every fact's turn number from here on -- worth
+    getting right the first time, not caught by a type error.
+
+    prior_chat_summary: when turns is a slice, the model can't see whatever
+    came before offset -- but a real conversation routinely references it
+    ("yeah let's go with that", "the second option you mentioned"). Passed
+    as lightweight already-established-facts context (not the raw
+    pre-cursor turns -- prior_chat_summary is already condensed, cheaper,
+    and is exactly the same context reconcile_fact() itself works from) so
+    the model can resolve those references without re-reading everything
+    it already distilled once. It must NOT re-extract anything already in
+    this list -- context to resolve against, not new material."""
     model, config = AgentFactory.get_summarizer()
 
-    numbered_turns = "\n".join(f"{i}: [{t['role']}] {t['content']}" for i, t in enumerate(turns))
+    numbered_turns = "\n".join(f"{i}: [{t['role']}] {t['content']}" for i, t in enumerate(turns, start=offset))
 
     mandate = (
         "You are a fact-extraction function. Given a numbered conversation, extract "
@@ -104,11 +127,26 @@ def extract_facts(turns, required_questions=None, purpose=None):
         "  settled: the conversation shows a genuine resolution or confirmation of "
         "this specific thing -- not just that it was said once."
     )
+    if prior_chat_summary:
+        mandate += (
+            "\nThe conversation below may be only the newest portion, not the whole "
+            "thing -- ALREADY-ESTABLISHED FACTS below is what's already been "
+            "distilled from everything before it. Use it to resolve references in "
+            "the new turns ('that', 'the second option', 'like we discussed') "
+            "against what's already known. Do NOT re-extract anything already "
+            "listed there -- only genuinely new content from the conversation below."
+        )
     truth = f"CONVERSATION (numbered):\n{numbered_turns}"
     if required_questions:
         truth += f"\n\nMILESTONE REQUIRED QUESTIONS:\n{required_questions}"
     if purpose:
         truth += f"\n\nMILESTONE PURPOSE:\n{purpose}"
+    if prior_chat_summary:
+        established = "\n".join(
+            f"- [{f['type']}] {f['content']} (turn {f['turn_index']}, {f['speaker']})"
+            for f in prior_chat_summary if f.get("status", "current") == "current"
+        )
+        truth += f"\n\nALREADY-ESTABLISHED FACTS:\n{established}"
 
     work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=EXTRACTION_SCHEMA)

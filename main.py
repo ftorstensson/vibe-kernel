@@ -35,6 +35,8 @@ async def invoke(req: SovereignRequest):
             schema_map=req.schema_map,
             coverage_mandate=req.coverage_mandate,
             coverage_skill=req.coverage_skill,
+            chat_summary=req.chat_summary,
+            chat_summary_cursor=req.chat_summary_cursor,
         )
 
         result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)
@@ -45,7 +47,9 @@ async def invoke(req: SovereignRequest):
             "status": result.get("status"),
             "data_patch": result.get("data_patch"),
             "brief": result.get("brief"),
-            "appendix": result.get("appendix")
+            "appendix": result.get("appendix"),
+            "chat_summary": result.get("chat_summary"),
+            "chat_summary_cursor": result.get("chat_summary_cursor"),
         }
 
     except ValueError as ve:
@@ -174,14 +178,19 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
 
 # A conversation's real chat_summary (L5) on demand, from history the
 # caller already has -- Kernel no longer fetches a project's stored
-# chat_history itself. NOT free like preview -- this genuinely calls the
-# model (extract_facts, then a reconcile_fact pass per fact) -- Studio
-# treats this as a deliberate, on-demand fetch (a button), not something
-# that auto-fires on every render.
+# chat_history itself. Incremental when prior_chat_summary/cursor are given
+# (Kernel slices history[cursor:] itself, same as /kernel/invoke); a full
+# recompute when they're omitted, same as before this pass. NOT free like
+# preview -- this genuinely calls the model (extract_facts, then a
+# reconcile_fact pass per fact) -- Studio treats this as a deliberate,
+# on-demand fetch (a button), not something that auto-fires on every render.
 @app.post("/kernel/chat_summary", response_model=ChatSummaryResponse)
 async def invoke_chat_summary(req: ChatSummaryRequest):
     try:
-        result = build_chat_summary(req.history, required_questions=req.required_questions, purpose=req.purpose)
+        result = build_chat_summary(
+            req.history, required_questions=req.required_questions, purpose=req.purpose,
+            prior_chat_summary=req.prior_chat_summary, cursor=req.cursor,
+        )
         return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
