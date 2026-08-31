@@ -226,38 +226,51 @@ def _pick_chat_whisper(pending):
     return ranked[0]["clarifying_question"]
 
 
-def build_chat_summary(turns, required_questions=None, purpose=None):
+def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_summary=None, cursor=0):
     """Chat Manager's real output -- named chat_summary throughout (renamed
     from build_durable_facts()/durable_facts, matching Gatekeeper's own
-    canvas board target display name). Runs extract_facts() over the full
-    conversation (not a trailing window -- an early fact must not disappear
-    just because the conversation got long) and folds each item through
-    reconcile_fact() in order, so the result is one clean current list: new
-    facts appended, revisions merged with lineage preserved, contradictions
-    superseded rather than silently overwritten. Still a full recompute every
-    call, not incremental -- the target design (read newest history since
-    last run + the current chat_summary, fold in, return updated
-    chat_summary) needs Backend's persistence contract for what a prior
-    chat_summary looks like arriving in the envelope (shape, None-on-fresh-
-    conversation semantics) before it can be built; this pass is the rename
-    only, behavior unchanged for the summary itself.
+    canvas board target display name). Folds each newly extracted item
+    through reconcile_fact() in order, so the result is one clean current
+    list: new facts appended, revisions merged with lineage preserved,
+    contradictions superseded rather than silently overwritten.
+
+    Incremental now, closing the real persistence gap a full recompute every
+    turn used to be: prior_chat_summary/cursor are Backend's persisted state
+    from the last time this ran for this conversation (empty list / 0 on a
+    fresh conversation, or when the caller wants a full recompute -- turns[0:]
+    is still every real turn in that case, same as before this pass).
+    Kernel slices turns[cursor:] itself -- it already has the full history,
+    so there's no reason to make Backend compute and send a delta; cursor is
+    the one raw ingredient needed, same principle as every other raw
+    ingredient in this contract. extract_facts() gets offset=cursor (so
+    turn_index reflects true position, not position within the slice) and
+    prior_chat_summary as lightweight context (so backward references in
+    the new turns can resolve against what's already known, without
+    re-reading the raw pre-cursor turns) -- see extract_facts()'s own
+    docstring for both.
 
     required_questions/purpose are threaded into extract_facts() so it can
     judge each item's bucket against real milestone relevance, not guess in
     a vacuum -- optional, since not every caller has milestone scope.
 
-    chat_whisper is new: the real reason it exists (Fred's own words) is
-    that when Chat Manager can't confidently classify something as new/
-    update/conflict, it should tell the PM to ask the Director to clarify,
-    not guess or silently drop it. reconcile_fact() already computed
+    chat_whisper: the real reason it exists (Fred's own words) is that when
+    Chat Manager can't confidently classify something as new/update/
+    conflict, it should tell the PM to ask the Director to clarify, not
+    guess or silently drop it. reconcile_fact() already computes
     needs_confirmation/clarifying_question per-item on every CONTRADICTION
-    (and now the unresolved-match fallback too) -- this was previously
-    discarded every loop iteration; now it's collected and reduced to the
+    (and the unresolved-match fallback) -- collected here and reduced to the
     single most pressing one via _pick_chat_whisper().
 
-    Returns {chat_summary: [...], chat_whisper: str|None}."""
-    items = extract_facts(turns, required_questions=required_questions, purpose=purpose)
-    chat_summary = []
+    Returns {chat_summary: [...], chat_whisper: str|None, chat_summary_cursor: int}
+    -- chat_summary_cursor is len(turns), for the caller to persist forward
+    as next call's cursor."""
+    prior_chat_summary = prior_chat_summary or []
+    new_turns = turns[cursor:]
+    items = extract_facts(
+        new_turns, required_questions=required_questions, purpose=purpose,
+        offset=cursor, prior_chat_summary=prior_chat_summary,
+    )
+    chat_summary = list(prior_chat_summary)
     pending = []
     for item in items:
         result = reconcile_fact(chat_summary, item)
@@ -267,4 +280,8 @@ def build_chat_summary(turns, required_questions=None, purpose=None):
                 "bucket": item.get("bucket", "Miscellaneous"),
                 "clarifying_question": result["clarifying_question"],
             })
-    return {"chat_summary": chat_summary, "chat_whisper": _pick_chat_whisper(pending)}
+    return {
+        "chat_summary": chat_summary,
+        "chat_whisper": _pick_chat_whisper(pending),
+        "chat_summary_cursor": len(turns),
+    }

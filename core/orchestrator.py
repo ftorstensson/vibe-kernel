@@ -50,17 +50,31 @@ class MasterOrchestrator:
         required_questions = resolve_required_questions(envelope.milestone_config)
         chat_summary = []
         ready = False
+        chat_computed = False
         envelope.coverage_whisper = None
         envelope.chat_whisper = None
         if required_questions:
             try:
+                # prior_chat_summary/cursor are envelope state Backend sent
+                # (empty/0 on a fresh conversation) -- Kernel slices
+                # envelope.history[cursor:] itself inside build_chat_summary(),
+                # it already has the full history, so there's no reason to
+                # make Backend compute and send a delta.
                 chat_result = build_chat_summary(
                     envelope.history,
                     required_questions=required_questions,
                     purpose=envelope.milestone_config.get("output", ""),
+                    prior_chat_summary=envelope.chat_summary,
+                    cursor=envelope.chat_summary_cursor,
                 )
                 chat_summary = chat_result["chat_summary"]
                 envelope.chat_whisper = chat_result["chat_whisper"]
+                # Overwrite in place with this turn's advanced state -- same
+                # dual-purpose input/output pattern physics_open and
+                # knowledge_bricks already use on this envelope.
+                envelope.chat_summary = chat_summary
+                envelope.chat_summary_cursor = chat_result["chat_summary_cursor"]
+                chat_computed = True
                 # Coverage's real L1 (judge archetype)/L3 (mission+app_manual)/
                 # skill (the assessment procedure), composed from raw
                 # ingredients already on the envelope -- not fetched here, and
@@ -150,14 +164,21 @@ class MasterOrchestrator:
                 "data_patch": bricks,
                 "brief": brief,
                 "appendix": appendix,
-                "status": "STABLE"
+                "status": "STABLE",
+                "chat_summary": chat_summary if chat_computed else None,
+                "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
             }
 
         else:
             # Turn A: Social
             response = await SocialEngine.run_turn(envelope)
             status = "AUTHORIZED" if envelope.physics_open else "PROBING"
-            return {"social_response": response, "status": status}
+            return {
+                "social_response": response,
+                "status": status,
+                "chat_summary": chat_summary if chat_computed else None,
+                "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
+            }
 
     @staticmethod
     def weld_links(text, treasure_chest):
