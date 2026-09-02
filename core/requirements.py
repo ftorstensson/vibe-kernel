@@ -1,4 +1,5 @@
 from core.agent_factory import AgentFactory
+from core.composition import compose_l4_lens, join_blocks
 from core.kernel_utils import get_clean_text, hammer_json
 from core.prompt_builder import PromptBuilder
 
@@ -54,8 +55,23 @@ def derive_requirements(purpose, target_structure, l1, l3, skill):
     better derivation than jumping straight to a list."""
     model, config = AgentFactory.get_summarizer()
 
-    truth = f"PURPOSE:\n{purpose}\n\nTARGET OUTPUT STRUCTURE:\n{target_structure}"
-    lens = f"{l3}\n\n{skill}" if l3 else skill
+    # L5 (Signal), not L4 (Task) -- resolved, not left open. The real L4-vs-
+    # L5 boundary isn't "does this change turn-to-turn" (Gate Maker has no
+    # turns at all, so that test doesn't even apply here) -- it's whether
+    # the content is INVARIANT PER-FUNCTION (L4/skill: the same fixed text
+    # from functions_registry no matter which milestone is being processed)
+    # or VARIES PER-CALL (L5: different depending on what's actually being
+    # processed). purpose/target_structure come from the milestone doc
+    # itself and differ from one milestone to the next -- the same category
+    # of variance Coverage's required_questions/chat_summary have, not
+    # Skill's. "Stable for the whole milestone" is true but doesn't
+    # distinguish L4 from L5 -- required_questions is equally stable across
+    # a milestone's whole life and is still genuinely L5, not L4; applying
+    # "milestone-stable -> L4" consistently would wrongly reclassify that
+    # too. No L6/memory concept for Gate Maker -- it runs once per
+    # milestone, nothing accumulates across calls.
+    truth = join_blocks(f"PURPOSE:\n{purpose}", f"TARGET OUTPUT STRUCTURE:\n{target_structure}")
+    lens = compose_l4_lens(l3, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=REQUIREMENTS_SCHEMA)

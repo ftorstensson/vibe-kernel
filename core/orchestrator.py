@@ -30,20 +30,20 @@ class MasterOrchestrator:
         # 3. Detect readiness -- gate-driven, not keyword matching. Fred's
         # explicit design: he tried "go"/"yes"/etc. substring matching before
         # and abandoned it as unreliable (real bug: "grow"/"good" false-
-        # trigger it). Coverage is computed once here (not duplicated inside
-        # run_turn) and threaded through envelope.coverage_whisper for the PM
+        # trigger it). Gatekeeper is computed once here (not duplicated inside
+        # run_turn) and threaded through envelope.gatekeeper_whisper for the PM
         # to read -- same scratch-field pattern as kaiser_mandate.
         # resolve_required_questions() prefers Requirements' real derived
         # output (milestone_config's derived_requirements) once it exists,
         # falling back to the static required_questions field otherwise.
         #
-        # Coverage is the one real declared gate mechanism now -- it used to
+        # Gatekeeper is the one real declared gate mechanism now -- it used to
         # run alongside a separate, undeclared "Clerk" audit inside
         # run_turn() (its own LLM call, its own criteria, its own
         # physics_open, reading the static required_questions field only,
         # never Requirements' derived output) that independently drove
         # envelope.physics_open/status. Retired: physics_open is now always
-        # exactly `ready` (Coverage's own gate_status == GREEN), computed
+        # exactly `ready` (Gatekeeper's own gate_status == GREEN), computed
         # once here, not carried over from a stale prior value on a
         # transient failure -- "ground truth" means this turn's honest
         # answer, not a cached guess.
@@ -51,7 +51,7 @@ class MasterOrchestrator:
         chat_summary = []
         ready = False
         chat_computed = False
-        envelope.coverage_whisper = None
+        envelope.gatekeeper_whisper = None
         envelope.chat_whisper = None
         if required_questions:
             try:
@@ -91,26 +91,26 @@ class MasterOrchestrator:
                 envelope.chat_summary = chat_summary
                 envelope.chat_summary_cursor = chat_result["chat_summary_cursor"]
                 chat_computed = True
-                # Coverage's real L1 (judge archetype)/L3 (mission+app_manual)/
+                # Gatekeeper's real L1 (judge archetype)/L3 (mission+app_manual)/
                 # skill (the assessment procedure), composed from raw
                 # ingredients already on the envelope -- not fetched here, and
                 # not a hand-written mandate baked into assess_coverage()
                 # itself. platform.mandate/app_manual/global_mission are the
                 # exact same values already on persona_config (identical for
-                # the agent and for Coverage); only the judge archetype's
-                # mandate and Coverage's skill text are genuinely Coverage's
-                # own (see SovereignRequest's docstring).
+                # the agent and for Gatekeeper); only the judge archetype's
+                # mandate and Gatekeeper's skill text are genuinely
+                # Gatekeeper's own (see SovereignRequest's docstring).
                 identity = compose_function_identity(
-                    envelope.coverage_mandate,
+                    envelope.gatekeeper_mandate,
                     (envelope.persona_config.get("platform") or {}).get("mandate"),
                     envelope.persona_config.get("app_manual"),
                     envelope.persona_config.get("global_mission"),
                 )
                 coverage = assess_coverage(
                     required_questions, chat_summary,
-                    identity["l1"], identity["l3"], envelope.coverage_skill or "",
+                    identity["l1"], identity["l3"], envelope.gatekeeper_skill or "",
                 )
-                envelope.coverage_whisper = coverage.get("whisper")
+                envelope.gatekeeper_whisper = coverage.get("whisper")
                 ready = coverage.get("gate_status") == "GREEN"
             except Exception:
                 ready = False

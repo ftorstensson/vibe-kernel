@@ -1,4 +1,5 @@
 from core.agent_factory import AgentFactory
+from core.composition import compose_l4_lens, join_blocks
 from core.kernel_utils import get_clean_text, hammer_json
 from core.prompt_builder import PromptBuilder
 
@@ -82,8 +83,14 @@ def assess_coverage(required_questions, chat_summary, l1, l3, skill):
         for f in current_facts
     ) or "(none yet)"
 
-    truth = f"REQUIRED QUESTIONS (GATES):\n{required_questions}\n\nCHAT SUMMARY:\n{facts_listing}"
-    lens = f"{l3}\n\n{skill}" if l3 else skill
+    # L5 (Signal): required_questions, the gates currently being checked --
+    # per-milestone current data, not accumulated state. L6 (Memory):
+    # chat_summary, the real reconciled fact record built up across turns --
+    # genuinely accumulated memory, correctly placed. Taxonomy checked, not
+    # assumed: this is the one function where L6 is unambiguous (it's
+    # literally named for it -- chat_summary IS the memory layer).
+    truth = join_blocks(f"REQUIRED QUESTIONS (GATES):\n{required_questions}", f"CHAT SUMMARY:\n{facts_listing}")
+    lens = compose_l4_lens(l3, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=COVERAGE_SCHEMA)

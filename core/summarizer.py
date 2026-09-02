@@ -1,4 +1,5 @@
 from core.agent_factory import AgentFactory
+from core.composition import compose_l4_lens, join_blocks
 from core.kernel_utils import get_clean_text, hammer_json
 from core.prompt_builder import PromptBuilder
 
@@ -78,18 +79,27 @@ def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_
 
     numbered_turns = "\n".join(f"{i}: [{t['role']}] {t['content']}" for i, t in enumerate(turns, start=offset))
 
-    truth = f"CONVERSATION (numbered):\n{numbered_turns}"
-    if required_questions:
-        truth += f"\n\nMILESTONE REQUIRED QUESTIONS:\n{required_questions}"
-    if purpose:
-        truth += f"\n\nMILESTONE PURPOSE:\n{purpose}"
+    established = ""
     if prior_chat_summary:
         established = "\n".join(
             f"- [{f['type']}] {f['content']} (turn {f['turn_index']}, {f['speaker']})"
             for f in prior_chat_summary if f.get("status", "current") == "current"
         )
-        truth += f"\n\nALREADY-ESTABLISHED FACTS:\n{established}"
-    lens = f"{l3}\n\n{skill}" if l3 else skill
+    # L5 (Signal): the new conversation slice being processed right now,
+    # plus required_questions/purpose (per-milestone current data, same
+    # role as Gate Maker's/Gatekeeper's own L5 usage). L6 (Memory):
+    # prior_chat_summary (as ALREADY-ESTABLISHED FACTS) -- the accumulated,
+    # reconciled record this call extends. Taxonomy checked, not assumed:
+    # numbered_turns is genuinely signal (this call's own immediate input),
+    # not memory -- it's never persisted or reconciled itself, only the
+    # extracted items downstream are.
+    truth = join_blocks(
+        f"CONVERSATION (numbered):\n{numbered_turns}",
+        f"MILESTONE REQUIRED QUESTIONS:\n{required_questions}" if required_questions else "",
+        f"MILESTONE PURPOSE:\n{purpose}" if purpose else "",
+        f"ALREADY-ESTABLISHED FACTS:\n{established}" if prior_chat_summary else "",
+    )
+    lens = compose_l4_lens(l3, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=EXTRACTION_SCHEMA)
