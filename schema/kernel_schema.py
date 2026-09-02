@@ -25,18 +25,21 @@ class SovereignRequest(BaseModel):
     schema_map["schema_keys"]["pm_checklist"/"brick_list"] to build the
     Clerk's lens, so dropping it would break the live PM turn.
 
-    coverage_mandate/coverage_skill: Coverage's own identity for the live
+    gatekeeper_mandate/gatekeeper_skill: Gatekeeper's own identity for the live
     turn's gate check (core/orchestrator.py) -- the "judge" archetype's real
-    mandate content and the real functions_registry "Coverage" skill text.
-    Not derived from persona_config (that's the AGENT's own archetype, e.g.
-    "navigator" for a PM persona, a different archetype than Coverage's
-    fixed "judge") -- but platform/app_manual/global_mission for Coverage's
-    L1/L3 are NOT duplicated here, they're the exact same values already on
-    persona_config (platform-wide/app-wide, identical for the agent and for
-    Coverage), reused directly. Kept as a flat field here (not record-
-    wrapped like persona_config's archetype/platform) since it's Kernel's
-    own addition to the contract, not part of the shared persona_config
-    shape Backend assembles the same way for every agent.
+    mandate content and the real functions_registry "Coverage" skill text
+    (renamed from coverage_mandate/coverage_skill -- "Coverage" was the old
+    function name; the fields now match the function's real name,
+    Gatekeeper). Not derived from persona_config (that's the AGENT's own
+    archetype, e.g. "navigator" for a PM persona, a different archetype
+    than Gatekeeper's fixed "judge") -- but platform/app_manual/
+    global_mission for Gatekeeper's L1/L3 are NOT duplicated here, they're
+    the exact same values already on persona_config (platform-wide/app-
+    wide, identical for the agent and for Gatekeeper), reused directly.
+    Kept as a flat field here (not record-wrapped like persona_config's
+    archetype/platform) since it's Kernel's own addition to the contract,
+    not part of the shared persona_config shape Backend assembles the same
+    way for every agent.
 
     milestone_id is Optional -- genuinely unused on the is_global=True path.
     process_turn() returns from that branch (core/orchestrator.py) before
@@ -63,8 +66,8 @@ class SovereignRequest(BaseModel):
     chat_manager_mandate/chat_manager_skill: Chat Manager's own identity for
     the live turn's extraction step (core/orchestrator.py) -- the "scribe"
     archetype's real mandate content and the real functions_registry
-    "Chat Manager" skill text, same pattern as coverage_mandate/
-    coverage_skill above (Kernel's own addition to the contract, not part
+    "Chat Manager" skill text, same pattern as gatekeeper_mandate/
+    gatekeeper_skill above (Kernel's own addition to the contract, not part
     of the shared persona_config shape, kept flat not record-wrapped).
 
     keymaster_mandate/keymaster_skill: same pattern again, for
@@ -74,7 +77,27 @@ class SovereignRequest(BaseModel):
     Kernel just receives the raw string, agnostic to that. No l3 for
     Keymaster -- confirmed no genuine mission/app_manual use for this
     function's narrow intent-classification task, unlike Coverage's/Chat
-    Manager's topic-relevance judgments."""
+    Manager's topic-relevance judgments.
+
+    partner_protocols: general, not per-function -- a list of
+    {source: str, content: str} entries, each one function's standing
+    explanation of what its own dynamic signal means (e.g. Gatekeeper's
+    real functions_registry Partner Protocol content: "Gates are scored
+    RED, AMBER, or GREEN..."), separate from gatekeeper_whisper/
+    chat_whisper (the dynamic per-turn VALUES those explanations describe).
+    Backend sends one entry per function that's structurally active this
+    turn (required_questions truthy) -- the coarsest-grained thing it can
+    know ahead of time, since assemble_envelope() runs entirely before
+    Kernel's own turn and whether a whisper actually fires is computed
+    later, inside Kernel's orchestrator, on data Backend hasn't seen yet.
+    Kernel narrows structurally-active down to genuinely-fired at real
+    composition time (pods/social/engine.py's _active_partner_protocols(),
+    checked against the same gatekeeper_whisper/chat_whisper this turn
+    already computed) before composing into L3 (see compose_l3_lens). One
+    shared field rather than gatekeeper_partner_protocol/chat_manager_
+    partner_protocol/... deliberately, so a new function's protocol needs
+    no schema change to reach the PM -- same per-function-field-drift
+    pattern the coverage_*->gatekeeper_* rename above just cleaned up."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -87,12 +110,13 @@ class SovereignRequest(BaseModel):
     history: List[Dict[str, str]] = Field(default_factory=list)
     physics_open: bool = False
     schema_map: Dict[str, Any]
-    coverage_mandate: Optional[str] = None
-    coverage_skill: Optional[str] = None
+    gatekeeper_mandate: Optional[str] = None
+    gatekeeper_skill: Optional[str] = None
     chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     chat_summary_cursor: int = 0
     chat_manager_mandate: Optional[str] = None
     chat_manager_skill: Optional[str] = None
+    partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
     keymaster_mandate: Optional[str] = None
     keymaster_skill: Optional[str] = None
 
@@ -355,7 +379,7 @@ class ChatSummaryResponse(BaseModel):
 class AgentEnvelope(BaseModel):
     """Internal briefcase containing the Map and the Data -- populated
     directly from SovereignRequest's fields now (main.py's /kernel/invoke),
-    no Firestore fetch in between. kaiser_mandate/coverage_whisper are pure
+    no Firestore fetch in between. kaiser_mandate/gatekeeper_whisper are pure
     turn-local scratch state, always computed fresh within the turn, never
     part of the incoming request."""
     app_id: str
@@ -367,20 +391,22 @@ class AgentEnvelope(BaseModel):
     schema_map: Dict[str, Any] = Field(default_factory=dict)
     physics_open: bool = False
     kaiser_mandate: str = ""
-    # Computed once per turn in orchestrator.py (Coverage's real gate_status
+    # Computed once per turn in orchestrator.py (Gatekeeper's real gate_status
     # and whisper), read by pods/social/engine.py's run_turn -- same scratch
-    # pattern as kaiser_mandate, avoids computing Coverage twice per turn.
-    coverage_whisper: Optional[str] = None
+    # pattern as kaiser_mandate, avoids computing Gatekeeper twice per turn.
+    # Renamed from coverage_whisper -- "Coverage" was the old function name.
+    gatekeeper_whisper: Optional[str] = None
     # Same pattern, Chat Manager's real output (core/reconcile.py's
     # build_chat_summary()): the single most pressing thing it couldn't
     # confidently classify as new/update/conflict, surfaced so the PM asks
     # the Director to clarify instead of guessing or silently dropping it.
     chat_whisper: Optional[str] = None
-    # Coverage's own identity for the live turn's gate check -- see
+    # Gatekeeper's own identity for the live turn's gate check -- see
     # SovereignRequest's docstring for why these two specifically (everything
-    # else Coverage's L1/L3 needs is already on persona_config).
-    coverage_mandate: Optional[str] = None
-    coverage_skill: Optional[str] = None
+    # else Gatekeeper's L1/L3 needs is already on persona_config). Renamed
+    # from coverage_mandate/coverage_skill.
+    gatekeeper_mandate: Optional[str] = None
+    gatekeeper_skill: Optional[str] = None
     # Chat Manager's persisted state -- prior state in from SovereignRequest,
     # overwritten in place with this turn's advanced state during
     # process_turn(), same dual-purpose input/output pattern physics_open
@@ -392,6 +418,10 @@ class AgentEnvelope(BaseModel):
     # else Chat Manager's L1/L3 needs is already on persona_config).
     chat_manager_mandate: Optional[str] = None
     chat_manager_skill: Optional[str] = None
+    # See SovereignRequest's docstring -- straight copy-through, read by
+    # pods/social/engine.py's compose_l3_lens() call, same pattern
+    # persona_config's own fields already use.
+    partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
     # Keymaster's own identity for confirm_launch_intent() -- see
     # SovereignRequest's docstring. No l3 field: confirmed no genuine
     # mission/app_manual use for this function.

@@ -1,4 +1,5 @@
 from core.agent_factory import AgentFactory
+from core.composition import compose_l4_lens, join_blocks
 from core.kernel_utils import get_clean_text, hammer_json
 from core.prompt_builder import PromptBuilder
 
@@ -46,8 +47,12 @@ def confirm_launch_intent(history, l1=None, skill=""):
     l3 param here would be unused indirection, not real support."""
     model, config = AgentFactory.get_clerk()
 
-    truth = f"RECENT CONVERSATION (last message is the Director's reply to judge):\n{history[-5:]}"
+    # L5 (Signal): the recent conversation window, this call's own
+    # immediate input -- no L6/memory concept for Keymaster, confirmed
+    # (already noted above: no persisted state, re-derived fresh each turn).
+    truth = join_blocks(f"RECENT CONVERSATION (last message is the Director's reply to judge):\n{history[-5:]}")
+    lens = compose_l4_lens(None, skill)
 
-    work_order = PromptBuilder.assemble(mandate=l1, lens=skill, truth=truth)
+    work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
     response = model.generate_content(work_order, generation_config=config, response_schema=LAUNCH_CONFIRM_SCHEMA)
     return hammer_json(get_clean_text(response)).get("confirmed", False)
