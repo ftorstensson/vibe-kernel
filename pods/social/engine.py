@@ -20,6 +20,22 @@ _WHISPER_FIELD_BY_SOURCE = {
     "Chat Manager": "chat_whisper",
 }
 
+# Fallback when envelope.tool_law is None -- Backend resolves the real
+# registry_docs/tool_law content and sends it (same pattern platform.
+# mandate/gatekeeper_mandate/... already use: Backend fetches, Kernel
+# never does its own Firestore I/O), but a missing/unresolved doc must
+# fail open to this, not silently drop the Tool Law entirely -- it's the
+# one piece of L1 that's genuinely load-bearing for output safety (no
+# tool-call syntax leaking into prose). Verbatim copy of the text this
+# replaces, confirmed byte-identical against the real registry_docs/
+# tool_law content (label added at composition time, same as
+# platform_logic -- the doc itself stores no "TOOL LAW:" prefix).
+DEFAULT_TOOL_LAW = (
+    "You have NO callable tools in this context. Never emit tool calls, "
+    "function-call syntax, or JSON of any kind as literal text -- prose only, always. "
+    "This overrides anything your persona implies about calling tools or delegating to other agents."
+)
+
 
 def _active_partner_protocols(envelope: AgentEnvelope):
     """Narrows envelope.partner_protocols (Backend's structurally-active
@@ -95,11 +111,7 @@ class SocialEngine:
         # build_chat_summary()/_pick_chat_whisper()).
         if envelope.chat_whisper:
             pm_mandate_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
-        pm_mandate_lines.append(
-            "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
-            "function-call syntax, or JSON of any kind as literal text -- prose only, always. "
-            "This overrides anything your persona implies about calling tools or delegating to other agents."
-        )
+        pm_mandate_lines.append(f"TOOL LAW: {envelope.tool_law or DEFAULT_TOOL_LAW}")
         pm_mandate = "\n".join(pm_mandate_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 
@@ -127,11 +139,7 @@ class SocialEngine:
         pm_lens = compose_l3_lens(envelope.persona_config, partner_protocols=_active_partner_protocols(envelope))
 
         pm_mandate_lines = compose_l1_lines(envelope.persona_config)
-        pm_mandate_lines.append(
-            "TOOL LAW: You have NO callable tools in this context. Never emit tool calls, "
-            "function-call syntax, or JSON of any kind as literal text -- prose only, always. "
-            "This overrides anything your persona implies about calling tools or delegating to other agents."
-        )
+        pm_mandate_lines.append(f"TOOL LAW: {envelope.tool_law or DEFAULT_TOOL_LAW}")
         pm_mandate = "\n".join(pm_mandate_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 

@@ -42,6 +42,7 @@ async def invoke(req: SovereignRequest):
             chat_manager_mandate=req.chat_manager_mandate,
             chat_manager_skill=req.chat_manager_skill,
             partner_protocols=req.partner_protocols,
+            tool_law=req.tool_law,
             keymaster_mandate=req.keymaster_mandate,
             keymaster_skill=req.keymaster_skill,
         )

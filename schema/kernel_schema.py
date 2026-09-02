@@ -97,7 +97,19 @@ class SovereignRequest(BaseModel):
     shared field rather than gatekeeper_partner_protocol/chat_manager_
     partner_protocol/... deliberately, so a new function's protocol needs
     no schema change to reach the PM -- same per-function-field-drift
-    pattern the coverage_*->gatekeeper_* rename above just cleaned up."""
+    pattern the coverage_*->gatekeeper_* rename above just cleaned up.
+
+    tool_law: Backend resolves the real registry_docs/tool_law content
+    (content: JSON-stringified string, matching platform_logic's own
+    convention exactly -- no "TOOL LAW:" label stored, added at
+    composition time) and sends the parsed raw string, same pattern as
+    platform.mandate/gatekeeper_mandate/... -- Kernel never fetches this
+    itself. Optional/fail-open: pods/social/engine.py falls back to its
+    own hardcoded DEFAULT_TOOL_LAW (verbatim copy of the real content) when
+    this is None, since Tool Law is genuinely load-bearing for output
+    safety (no tool-call syntax leaking into prose) and must never
+    silently disappear just because Backend's resolve failed or hasn't
+    shipped yet."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -117,6 +129,7 @@ class SovereignRequest(BaseModel):
     chat_manager_mandate: Optional[str] = None
     chat_manager_skill: Optional[str] = None
     partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
+    tool_law: Optional[str] = None
     keymaster_mandate: Optional[str] = None
     keymaster_skill: Optional[str] = None
 
@@ -422,6 +435,10 @@ class AgentEnvelope(BaseModel):
     # pods/social/engine.py's compose_l3_lens() call, same pattern
     # persona_config's own fields already use.
     partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
+    # See SovereignRequest's docstring -- straight copy-through, read by
+    # pods/social/engine.py at both run_turn/run_global_turn call sites,
+    # falling back to DEFAULT_TOOL_LAW there when None.
+    tool_law: Optional[str] = None
     # Keymaster's own identity for confirm_launch_intent() -- see
     # SovereignRequest's docstring. No l3 field: confirmed no genuine
     # mission/app_manual use for this function.
