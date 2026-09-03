@@ -12,6 +12,63 @@ from schema.kernel_schema import AgentEnvelope
 
 class MasterOrchestrator:
     @staticmethod
+    def _run_chat_manager(envelope: AgentEnvelope, required_questions=None):
+        """Chat Manager's real extraction+reconcile pass for this turn --
+        updates envelope.chat_summary/chat_summary_cursor/chat_whisper in
+        place, matching the dual-purpose input/output pattern
+        knowledge_bricks/physics_open already use. Shared by the task-
+        scoped path (inside `if required_questions:` below, passing the
+        milestone's real required_questions) and the Global Agent path
+        (unconditional -- Fred's product call: staying continuously aware
+        of the conversation is core to the PM's job regardless of
+        milestone state, so required_questions stays None there, no
+        milestone to gate against) -- genuinely the same logic needed in
+        two places now, extracted rather than kept as a second copy that
+        can drift.
+
+        required_questions=None (the global path) degrades gracefully, not
+        as a new capability added for this -- confirmed directly against
+        build_chat_summary()/extract_facts()'s own signatures and
+        docstrings: both already default required_questions/purpose to
+        None and explicitly document "optional, since not every caller has
+        milestone scope." purpose is always envelope.milestone_config.get(
+        "output", ""), which is naturally "" on the global path (empty
+        milestone_config) -- also falsy, also already handled, no
+        special-casing needed here either.
+
+        Composed from raw ingredients already on the envelope -- same
+        pattern Gatekeeper's identity resolution uses right below in
+        process_turn(). platform.mandate/app_manual/global_mission are the
+        exact same values already on persona_config; only the scribe
+        archetype's mandate and Chat Manager's skill text are genuinely
+        its own."""
+        chat_manager_identity = compose_function_identity(
+            envelope.chat_manager_mandate,
+            (envelope.persona_config.get("platform") or {}).get("mandate"),
+            envelope.persona_config.get("app_manual"),
+            envelope.persona_config.get("global_mission"),
+        )
+        # prior_chat_summary/cursor are envelope state Backend sent (empty/0
+        # on a fresh conversation) -- Kernel slices envelope.history[cursor:]
+        # itself inside build_chat_summary(), it already has the full
+        # history, so there's no reason to make Backend compute and send a
+        # delta.
+        chat_result = build_chat_summary(
+            envelope.history,
+            required_questions=required_questions,
+            purpose=envelope.milestone_config.get("output", ""),
+            prior_chat_summary=envelope.chat_summary,
+            cursor=envelope.chat_summary_cursor,
+            l1=chat_manager_identity["l1"],
+            l3=chat_manager_identity["l3"],
+            skill=envelope.chat_manager_skill or "",
+        )
+        envelope.chat_whisper = chat_result["chat_whisper"]
+        envelope.chat_summary = chat_result["chat_summary"]
+        envelope.chat_summary_cursor = chat_result["chat_summary_cursor"]
+        return chat_result["chat_summary"]
+
+    @staticmethod
     async def process_turn(envelope: AgentEnvelope, user_input: str, is_global: bool = False):
         # 1. The Clock (Self-Cleaning)
         await TheClock.maintenance_pulse(envelope)
@@ -23,9 +80,28 @@ class MasterOrchestrator:
             # Global Agent: free-form chat, no scoped milestone, no second agent to
             # hand off to. The Clerk/gate/Strike-Team machinery below exists to
             # arbitrate handoff between agents -- there's nothing here to arbitrate,
-            # so it doesn't run. Nothing below this block is touched by this branch.
+            # so it doesn't run. Chat Manager DOES run here though, unconditionally
+            # (Fred's product call -- see _run_chat_manager()'s own docstring):
+            # reset chat_whisper fresh each turn first (same "not a stale value
+            # from an earlier turn" pattern the task-scoped path below uses),
+            # then run it wrapped in try/except so a Chat Manager failure fails
+            # open -- the Global Agent should still respond even if extraction
+            # breaks, just without this turn's chat_summary update, same as the
+            # task-scoped path already fails open on Gatekeeper/ignition errors.
+            envelope.chat_whisper = None
+            chat_computed = False
+            try:
+                MasterOrchestrator._run_chat_manager(envelope)
+                chat_computed = True
+            except Exception:
+                pass
             response = await SocialEngine.run_global_turn(envelope)
-            return {"social_response": response, "status": "GLOBAL"}
+            return {
+                "social_response": response,
+                "status": "GLOBAL",
+                "chat_summary": envelope.chat_summary if chat_computed else None,
+                "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
+            }
 
         # 3. Detect readiness -- gate-driven, not keyword matching. Fred's
         # explicit design: he tried "go"/"yes"/etc. substring matching before
@@ -68,44 +144,12 @@ class MasterOrchestrator:
 
         if required_questions:
             try:
-                # Chat Manager's real L1 (scribe archetype)/L3 (mission+app_manual)/
-                # skill (the extraction procedure), composed from raw
-                # ingredients already on the envelope -- same pattern as
-                # Coverage's identity resolution right below. platform.mandate/
-                # app_manual/global_mission are the exact same values already
-                # on persona_config; only the scribe archetype's mandate and
-                # Chat Manager's skill text are genuinely its own. Always
-                # runs, launched or not -- Fred's product call: staying
-                # continuously aware of the conversation is core to the PM's
-                # job regardless of milestone state, unlike Gatekeeper below.
-                chat_manager_identity = compose_function_identity(
-                    envelope.chat_manager_mandate,
-                    (envelope.persona_config.get("platform") or {}).get("mandate"),
-                    envelope.persona_config.get("app_manual"),
-                    envelope.persona_config.get("global_mission"),
-                )
-                # prior_chat_summary/cursor are envelope state Backend sent
-                # (empty/0 on a fresh conversation) -- Kernel slices
-                # envelope.history[cursor:] itself inside build_chat_summary(),
-                # it already has the full history, so there's no reason to
-                # make Backend compute and send a delta.
-                chat_result = build_chat_summary(
-                    envelope.history,
-                    required_questions=required_questions,
-                    purpose=envelope.milestone_config.get("output", ""),
-                    prior_chat_summary=envelope.chat_summary,
-                    cursor=envelope.chat_summary_cursor,
-                    l1=chat_manager_identity["l1"],
-                    l3=chat_manager_identity["l3"],
-                    skill=envelope.chat_manager_skill or "",
-                )
-                chat_summary = chat_result["chat_summary"]
-                envelope.chat_whisper = chat_result["chat_whisper"]
-                # Overwrite in place with this turn's advanced state -- same
-                # dual-purpose input/output pattern physics_open and
-                # knowledge_bricks already use on this envelope.
-                envelope.chat_summary = chat_summary
-                envelope.chat_summary_cursor = chat_result["chat_summary_cursor"]
+                # Always runs, launched or not -- Fred's product call:
+                # staying continuously aware of the conversation is core to
+                # the PM's job regardless of milestone state, unlike
+                # Gatekeeper below. Shared with the Global Agent path -- see
+                # _run_chat_manager()'s own docstring.
+                chat_summary = MasterOrchestrator._run_chat_manager(envelope, required_questions)
                 chat_computed = True
 
                 if already_fired:
