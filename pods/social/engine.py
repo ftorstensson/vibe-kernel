@@ -1,5 +1,5 @@
 from core.agent_factory import AgentFactory
-from core.composition import compose_l1_lines, compose_l3_lens
+from core.composition import compose_l1_lines, compose_l3_lens, compose_project_map_lens
 from core.kernel_utils import get_clean_text
 from core.prompt_builder import PromptBuilder
 from schema.kernel_schema import AgentEnvelope
@@ -138,7 +138,15 @@ class SocialEngine:
         wiring added the L3 side (_active_partner_protocols below) to both
         run_turn and run_global_turn -- the two channels are related but
         separate; L3's Partner Protocol explains what a whisper means, this
-        L1 line is the whisper itself, and only run_turn had it."""
+        L1 line is the whisper itself, and only run_turn had it.
+
+        PROJECT MAP is new here and here only -- see
+        compose_project_map_lens()'s own docstring for why it's appended
+        directly, not threaded through compose_l3_lens() as a fourth
+        parameter the way partner_protocols is: it must reach ONLY the
+        Global PM, and a separate function makes that true by construction
+        rather than by every future caller of compose_l3_lens remembering
+        not to pass it."""
         pm_model, pm_config = AgentFactory.get_partner_pm()
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         # partner_protocols wired in for consistency with run_turn, via the
@@ -146,6 +154,14 @@ class SocialEngine:
         # this path (no gate to check), but chat_whisper now genuinely can
         # be, so a Chat Manager Partner Protocol entry can surface here too.
         pm_lens = compose_l3_lens(envelope.persona_config, partner_protocols=_active_partner_protocols(envelope))
+        # Appended, not threaded through compose_l3_lens -- see this
+        # function's own docstring above. compose_project_map_lens()
+        # returns "" when project_map is empty/absent, so this is a no-op
+        # (identical output to before this field existed) whenever Backend
+        # hasn't sent one.
+        project_map_block = compose_project_map_lens(envelope.project_map)
+        if project_map_block:
+            pm_lens = f"{pm_lens}\n\n{project_map_block}" if pm_lens else project_map_block
 
         pm_mandate_lines = compose_l1_lines(envelope.persona_config)
         if envelope.chat_whisper:

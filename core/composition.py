@@ -129,6 +129,61 @@ def compose_l3_lens(persona_config, default_exo_brain="Blunt, high-speed facilit
     return "\n".join(lines)
 
 
+def compose_project_map_lens(project_map):
+    """L3 context for the Global PM's own turn specifically
+    (pods/social/engine.py's run_global_turn) -- deliberately NOT threaded
+    through compose_l3_lens() above, unlike partner_protocols. That
+    function is shared by run_turn/run_global_turn/compose_function_
+    identity; project_map must reach ONLY the Global PM, never the task-
+    scoped agent turn or any Function -- both of those are already
+    correctly scoped to one milestone and don't need the whole app's
+    structure, and giving compose_l3_lens a parameter that must never
+    actually be passed by two of its three callers would be a foot-gun,
+    not a convenience. A separate function, called and appended only at
+    run_global_turn's own call site, makes "only the Global PM" true by
+    construction (nothing to accidentally wire up elsewhere), not by
+    caller discipline.
+
+    project_map: Backend's resolved [{phase, milestones: [{name, status,
+    purpose}]}] tree -- every non-archived phase in order, each with its
+    non-archived milestones in order (Backend's job to filter/order, not
+    Kernel's -- this function only renders what it's given). Gives the
+    Global PM real visibility into what's done and what's next across the
+    whole app, instead of only ever seeing one milestone in isolation --
+    the actual gap this exists to close.
+
+    Rendered as a compressed name+status+one-line-purpose list, not a raw
+    dump: real research on exactly this kind of always-present context
+    recommends a compressed full-picture view over dumping full milestone
+    records. Plain text, no markdown -- consistent with compose_l1_lines'
+    own "no robot-speak formatting" rule; a phase name gets its own line,
+    each milestone one line under it.
+
+    Defensive about missing keys (.get chains, never bare [] that can
+    KeyError) -- same discipline compose_l1_lines/compose_l3_lens already
+    apply to persona_config's own possibly-partial records. Returns "" when
+    project_map is empty/absent, same falsy-skip convention as every other
+    optional L3 piece, so a caller can unconditionally interpolate the
+    result without a separate presence check."""
+    if not project_map:
+        return ""
+    lines = ["PROJECT MAP:"]
+    for phase in project_map:
+        lines.append("")
+        lines.append(phase.get("phase", ""))
+        for milestone in phase.get("milestones") or []:
+            name = milestone.get("name", "")
+            status = milestone.get("status", "")
+            purpose = milestone.get("purpose", "")
+            entry = f"- {name}"
+            if status:
+                entry += f" ({status})"
+            if purpose:
+                entry += f": {purpose}"
+            lines.append(entry)
+    return "\n".join(lines)
+
+
 def compose_l4_lens(l3, skill):
     """L4 (Task/Skill), combined with L3 into PromptBuilder's physical LENS
     block -- PromptBuilder has exactly 3 physical blocks (MANDATE/LENS/TRUTH)
