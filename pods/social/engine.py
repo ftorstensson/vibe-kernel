@@ -126,19 +126,30 @@ class SocialEngine:
         hand off to. Single PM call, no gate audit -- Gatekeeper/gate/Kaiser
         mandate exist to arbitrate handoff between agents, and there's nothing
         here to arbitrate. Real L1 (archetype_rules) and TOOL LAW stay; the
-        situational [STATUS]/KAISER MANDATE lines from run_turn are dropped
-        since there's no gate for them to describe."""
+        gate-specific situational [STATUS]/KAISER MANDATE lines from run_turn
+        are dropped since there's no gate for them to describe.
+
+        CHAT WHISPER stays, unlike those -- it's Chat Manager's own signal,
+        not gate-specific, and orchestrator.py's is_global branch now runs
+        Chat Manager unconditionally (Fred's product call: continuous
+        conversational awareness isn't gated behind milestone scope, see
+        core/orchestrator.py's _run_chat_manager()). Checked, not assumed:
+        this line was genuinely missing here even after partner_protocols
+        wiring added the L3 side (_active_partner_protocols below) to both
+        run_turn and run_global_turn -- the two channels are related but
+        separate; L3's Partner Protocol explains what a whisper means, this
+        L1 line is the whisper itself, and only run_turn had it."""
         pm_model, pm_config = AgentFactory.get_partner_pm()
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         # partner_protocols wired in for consistency with run_turn, via the
-        # same real-time filter -- on a real global turn, gatekeeper_whisper/
-        # chat_whisper are never computed (the is_global branch in
-        # orchestrator.py returns before that machinery runs), so this
-        # naturally resolves to an empty list, not unconditionally dropped
-        # like the gate-specific STATUS line below.
+        # same real-time filter -- gatekeeper_whisper is never computed on
+        # this path (no gate to check), but chat_whisper now genuinely can
+        # be, so a Chat Manager Partner Protocol entry can surface here too.
         pm_lens = compose_l3_lens(envelope.persona_config, partner_protocols=_active_partner_protocols(envelope))
 
         pm_mandate_lines = compose_l1_lines(envelope.persona_config)
+        if envelope.chat_whisper:
+            pm_mandate_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
         pm_mandate_lines.append(f"TOOL LAW: {envelope.tool_law or DEFAULT_TOOL_LAW}")
         pm_mandate = "\n".join(pm_mandate_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"

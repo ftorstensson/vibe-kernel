@@ -139,8 +139,14 @@ class SovereignResponse(BaseModel):
     chat_summary/chat_summary_cursor: the advanced state after this turn's
     Chat Manager pass, for Backend to persist forward as next turn's
     chat_summary/chat_summary_cursor input -- None when Chat Manager didn't
-    run this turn (no required_questions, or is_global), meaning "nothing
-    changed, keep what you already have," not "reset to empty."."""
+    run (or failed) this turn, meaning "nothing changed, keep what you
+    already have," not "reset to empty." Chat Manager runs on BOTH the
+    task-scoped path (when the milestone has required_questions) and the
+    Global Agent path (is_global=True, unconditionally -- Fred's product
+    call: continuous conversational awareness isn't gated behind milestone
+    scope, see core/orchestrator.py's _run_chat_manager()); None is only
+    the task-scoped-milestone-with-no-required_questions case, or a
+    genuine Chat Manager failure on either path (both fail open)."""
     social_response: str
     status: str  # PROBING | AUTHORIZED | STABLE | GLOBAL
     data_patch: Optional[Dict[str, str]] = None
