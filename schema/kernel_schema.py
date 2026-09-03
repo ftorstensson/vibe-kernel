@@ -111,7 +111,7 @@ class SovereignRequest(BaseModel):
     silently disappear just because Backend's resolve failed or hasn't
     shipped yet.
 
-    project_map: [{phase, milestones: [{name, status, purpose}]}] --
+    project_map: [{phase, milestones: [{id, name, status, purpose}]}] --
     Backend's resolved view of the whole app's structure (every
     non-archived phase in order, each with its non-archived milestones in
     order, status the real execution_status), giving the Global PM actual
@@ -124,7 +124,15 @@ class SovereignRequest(BaseModel):
     milestone and don't need the whole tree. Optional/fail-open, same
     pattern as partner_protocols/tool_law: default empty, a missing/
     unresolved project_map just means the Global PM composes without that
-    context this turn, not a crash."""
+    context this turn, not a crash.
+
+    Each milestone's real id is required, not optional decoration:
+    run_global_turn's start_milestone_work tool (see pods/social/
+    engine.py) needs a real, addressable id to fill in as the tool call's
+    own milestone_id argument -- without it rendered somewhere in the
+    composed PROJECT MAP text, the model has nothing valid to reference
+    and can only guess or fabricate one. compose_project_map_lens()
+    renders it inline per milestone."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -162,9 +170,22 @@ class SovereignResponse(BaseModel):
     call: continuous conversational awareness isn't gated behind milestone
     scope, see core/orchestrator.py's _run_chat_manager()); None is only
     the task-scoped-milestone-with-no-required_questions case, or a
-    genuine Chat Manager failure on either path (both fail open)."""
+    genuine Chat Manager failure on either path (both fail open).
+
+    tool_call: {name, args} when the Global PM's own turn calls
+    start_milestone_work (native Gemini function-calling, real litellm
+    tool_calls parsed and json.loads()'d in core/agent_factory.py's
+    LiteLLMResponse -- Backend never touches raw JSON-in-a-string).
+    status is "TOOL_CALL" whenever this is set, same branch-on-status-
+    first pattern as PROBING/AUTHORIZED/STABLE/GLOBAL. social_response is
+    STILL populated on a TOOL_CALL turn (the model's own real
+    acknowledgment text, litellm returns both together in one response --
+    confirmed empirically, not assumed) -- real raw material for
+    Backend's synthesis step, not meant to be shown to the Director
+    directly as its own message (Fred's call: one synthesized final reply,
+    not two)."""
     social_response: str
-    status: str  # PROBING | AUTHORIZED | STABLE | GLOBAL
+    status: str  # PROBING | AUTHORIZED | STABLE | GLOBAL | TOOL_CALL
     data_patch: Optional[Dict[str, str]] = None
     # Restores the real v32.0-era API contract (confirmed still expected by
     # the-co-founder's app/agency/architect.py and rendered by
@@ -176,6 +197,7 @@ class SovereignResponse(BaseModel):
     appendix: Optional[List[Dict[str, Any]]] = None
     chat_summary: Optional[List[Dict[str, Any]]] = None
     chat_summary_cursor: Optional[int] = None
+    tool_call: Optional[Dict[str, Any]] = None
 
 class DeriveRequirementsRequest(BaseModel):
     """Functions Library, entry 1: derive_requirements() needs no conversation
@@ -228,6 +250,68 @@ class ConfirmLaunchIntentRequest(BaseModel):
 
 class ConfirmLaunchIntentResponse(BaseModel):
     confirmed: bool
+
+class SynthesizeDispatchRequest(BaseModel):
+    """The last step of start_milestone_work's real round-trip (see
+    pods/social/engine.py's run_global_turn / START_MILESTONE_WORK_TOOL):
+    once Backend has resolved the dispatched milestone's own data and run
+    it through its own turn (the same Gatekeeper->Keymaster->Strike-Team
+    pipeline every task-scoped turn already uses), this turns the two raw
+    pieces -- the Global PM's own initial reaction, and what actually
+    happened at the milestone -- into ONE natural reply for the Director
+    to see. Fred's explicit call: one synthesized message, never two
+    separate chat bubbles for what should read as one continuous thought.
+
+    persona_config: the blob, not raw archetype/platform records like
+    other Functions Library endpoints use -- Backend's own choice,
+    confirmed with them directly: they've never computed L1/L3 themselves
+    (that composition has stayed entirely Kernel's job all session), and
+    this is literally the same object their own execute_global call
+    already built via assemble_envelope() -- passing raw l1/l3 strings
+    instead would mean Backend taking on work it's never done, for zero
+    benefit. Composed via compose_l1_lines/compose_l3_lens, same as every
+    real agent turn.
+
+    trigger_message: the Director's own real message that caused the tool
+    call -- not a derived summary.
+
+    global_response: the Global PM's own text from that SAME call
+    (litellm returns it alongside the tool call itself -- see
+    core/agent_factory.py's LiteLLMResponse). Optional/can be genuinely
+    empty: confirmed by real testing, not assumed -- a real Vertex/Gemini
+    call returned a tool call with EMPTY accompanying text, not always
+    the non-empty acknowledgment an earlier test happened to produce. This
+    function must compose sensibly either way, not assume it's always
+    there.
+
+    milestone_name/milestone_purpose: light grounding only, not the full
+    PROJECT MAP entry -- this call needs just enough to talk about the
+    right thing, not the whole map again.
+
+    dispatch_status/dispatch_response: the dispatched milestone's own real
+    turn result -- status (PROBING/AUTHORIZED/STABLE) and its own
+    social_response. Deliberately NOT separate gate_status/whisper/brief
+    fields: SovereignResponse has no gatekeeper_whisper/gate_status field
+    today (checked, not assumed -- Backend confirmed by reading
+    orchestrator.py's own return dicts), and dispatch_response already
+    narratively reflects it -- Gatekeeper's whisper is folded into the
+    milestone's own L1 mandate before that response is ever generated
+    (see pods/social/engine.py's run_turn), and knowledge_bricks are
+    updated before run_turn generates its response on a STABLE turn, so
+    the brief's findings are already reflected in dispatch_response's own
+    prose too. One real result string carries what would otherwise be
+    three separate fields."""
+    app_id: str
+    persona_config: Dict[str, Any]
+    trigger_message: str
+    global_response: str = ""
+    milestone_name: str = ""
+    milestone_purpose: str = ""
+    dispatch_status: str
+    dispatch_response: str
+
+class SynthesizeDispatchResponse(BaseModel):
+    social_response: str
 
 class PreviewFunctionRequest(BaseModel):
     """Test Lab preview -- function-agnostic composition, but each function's

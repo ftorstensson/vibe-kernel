@@ -6,6 +6,7 @@ from schema.kernel_schema import (
     AssessCoverageRequest, AssessCoverageResponse,
     ChatSummaryRequest, ChatSummaryResponse,
     ConfirmLaunchIntentRequest, ConfirmLaunchIntentResponse,
+    SynthesizeDispatchRequest, SynthesizeDispatchResponse,
 )
 from core.orchestrator import MasterOrchestrator
 from core.requirements import derive_requirements
@@ -13,6 +14,7 @@ from core.coverage import assess_coverage, resolve_required_questions
 from core.reconcile import build_chat_summary
 from core.ignition import confirm_launch_intent
 from core.composition import compose_function_identity
+from pods.social.engine import SocialEngine
 import uvicorn
 import os
 
@@ -43,6 +45,17 @@ async def invoke(req: SovereignRequest):
             chat_manager_skill=req.chat_manager_skill,
             partner_protocols=req.partner_protocols,
             tool_law=req.tool_law,
+            # Real bug fix, found while wiring tool_call below: this field
+            # was added to SovereignRequest/AgentEnvelope and to
+            # run_global_turn's own composition in an earlier pass, but
+            # never actually copied from req to envelope here -- so
+            # envelope.project_map was always [] regardless of what
+            # Backend sent, and the whole PROJECT MAP feature has been a
+            # silent no-op since it shipped. Confirmed by grep (zero
+            # occurrences of "project_map" anywhere in this file before
+            # this line) before concluding it was missing, not just hard
+            # to spot.
+            project_map=req.project_map,
             keymaster_mandate=req.keymaster_mandate,
             keymaster_skill=req.keymaster_skill,
         )
@@ -58,6 +71,7 @@ async def invoke(req: SovereignRequest):
             "appendix": result.get("appendix"),
             "chat_summary": result.get("chat_summary"),
             "chat_summary_cursor": result.get("chat_summary_cursor"),
+            "tool_call": result.get("tool_call"),
         }
 
     except ValueError as ve:
@@ -107,6 +121,29 @@ async def invoke_confirm_launch_intent(req: ConfirmLaunchIntentRequest):
         )
         result = confirm_launch_intent(req.history, l1=identity["l1"], skill=req.skill)
         return {"confirmed": result}
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# start_milestone_work's real round-trip, final step -- see
+# SynthesizeDispatchRequest's own docstring (schema/kernel_schema.py) and
+# pods/social/engine.py's synthesize_dispatch() for the full trace. Not
+# under /kernel/functions/ despite the standalone-no-envelope shape (same
+# as confirm_launch_intent/assess_coverage above) -- this isn't a Functions
+# Library identity/skill composition, it's the PM's own voice finishing a
+# turn, so it lives with the rest of the PM's endpoints conceptually even
+# though the URL doesn't need to say so for routing purposes.
+@app.post("/kernel/synthesize_dispatch", response_model=SynthesizeDispatchResponse)
+async def invoke_synthesize_dispatch(req: SynthesizeDispatchRequest):
+    try:
+        result = await SocialEngine.synthesize_dispatch(
+            req.persona_config, req.trigger_message, req.global_response,
+            req.milestone_name, req.milestone_purpose, req.dispatch_status, req.dispatch_response,
+        )
+        return {"social_response": result}
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:

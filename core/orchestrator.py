@@ -95,10 +95,24 @@ class MasterOrchestrator:
                 chat_computed = True
             except Exception:
                 pass
-            response = await SocialEngine.run_global_turn(envelope)
+            # run_global_turn now returns {social_response, tool_call} --
+            # tool_call is real native function-calling output (Gemini's
+            # start_milestone_work, see pods/social/engine.py's own
+            # docstring), not something Kernel resolves further itself
+            # (stateless: only Backend has the dispatched milestone's real
+            # data). status flips to TOOL_CALL so Backend can branch on it
+            # the same way it already does for PROBING/AUTHORIZED/STABLE/
+            # GLOBAL -- social_response is still returned either way (the
+            # model's own real acknowledgment text when a tool call fires
+            # too, confirmed both come back together) as raw material for
+            # Backend's own synthesis step, not dropped just because a
+            # tool call also happened.
+            turn = await SocialEngine.run_global_turn(envelope)
+            tool_call = turn.get("tool_call")
             return {
-                "social_response": response,
-                "status": "GLOBAL",
+                "social_response": turn.get("social_response"),
+                "status": "TOOL_CALL" if tool_call else "GLOBAL",
+                "tool_call": tool_call,
                 "chat_summary": envelope.chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
             }

@@ -1,5 +1,5 @@
 from core.agent_factory import AgentFactory
-from core.composition import compose_l1_lines, compose_l3_lens, compose_project_map_lens
+from core.composition import compose_l1_lines, compose_l3_lens, compose_project_map_lens, join_blocks
 from core.kernel_utils import get_clean_text
 from core.prompt_builder import PromptBuilder
 from schema.kernel_schema import AgentEnvelope
@@ -34,6 +34,51 @@ DEFAULT_TOOL_LAW = (
     "You have NO callable tools in this context. Never emit tool calls, "
     "function-call syntax, or JSON of any kind as literal text -- prose only, always. "
     "This overrides anything your persona implies about calling tools or delegating to other agents."
+)
+
+# Native Gemini function-calling (real litellm tools=[...], not a text-marker
+# convention) -- scoped ONLY to run_global_turn, same isolation discipline
+# project_map already has: run_turn and every Function never see this.
+# Declared only when envelope.project_map is non-empty (see run_global_turn)
+# -- offering a tool with nothing real to dispatch to would let the model
+# fabricate a milestone_id against an empty map.
+START_MILESTONE_WORK_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "start_milestone_work",
+        "description": (
+            "Begin or continue focused work on ONE specific milestone from the "
+            "PROJECT MAP above, when the Director clearly wants to start or "
+            "resume work on it now. Only call this with a real milestone id "
+            "that actually appears in the PROJECT MAP -- never invent one."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "milestone_id": {
+                    "type": "string",
+                    "description": "The real id of the milestone to dispatch to, exactly as it appears in the PROJECT MAP.",
+                }
+            },
+            "required": ["milestone_id"],
+        },
+    },
+}
+
+# TOOL LAW when start_milestone_work IS being offered this turn -- the
+# blanket "you have NO callable tools" text above becomes actively false
+# once a real tool is declared, so it can't just stay unconditional here.
+# Same anti-hallucination intent as DEFAULT_TOOL_LAW (no fabricated OTHER
+# tool calls, no raw JSON leaking into prose for anything else), narrowed
+# to name the one real exception instead of denying everything.
+DISPATCH_TOOL_LAW = (
+    "You have exactly ONE callable tool: start_milestone_work. Call it only "
+    "when the Director clearly wants to begin or resume focused work on a "
+    "specific milestone from the PROJECT MAP above, with milestone_id set to "
+    "that milestone's real id. Never fabricate any other tool call, "
+    "function-call syntax, or JSON of any kind as literal text for anything "
+    "else -- prose only otherwise. This overrides anything your persona "
+    "implies about calling tools or delegating to other agents."
 )
 
 
@@ -146,7 +191,22 @@ class SocialEngine:
         parameter the way partner_protocols is: it must reach ONLY the
         Global PM, and a separate function makes that true by construction
         rather than by every future caller of compose_l3_lens remembering
-        not to pass it."""
+        not to pass it.
+
+        start_milestone_work is offered here too, and here only -- real
+        native function-calling (litellm's tools=[...], parsed back out
+        in core/agent_factory.py's LiteLLMResponse), not a text-marker
+        convention. Only declared when project_map is non-empty (nothing
+        real to dispatch to otherwise -- see START_MILESTONE_WORK_TOOL's
+        own comment). Confirmed empirically, not assumed: a real Vertex/
+        Gemini 2.5 Pro call returns genuine acknowledgment text AND a real
+        tool call together in one response, so this function always
+        returns BOTH social_response and tool_call (the latter None when
+        no call happened) -- the caller (core/orchestrator.py) decides
+        what to do with each; this function's own job stays "compose and
+        call the model," same as everywhere else in Kernel.
+
+        Returns {social_response: str, tool_call: {name, args} | None}."""
         pm_model, pm_config = AgentFactory.get_partner_pm()
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
         # partner_protocols wired in for consistency with run_turn, via the
@@ -163,12 +223,85 @@ class SocialEngine:
         if project_map_block:
             pm_lens = f"{pm_lens}\n\n{project_map_block}" if pm_lens else project_map_block
 
+        # Only offered when there's a real map to dispatch against -- an
+        # empty project_map means TOOL LAW reverts to the plain "no
+        # callable tools" text, accurately, since none is being declared.
+        tools = [START_MILESTONE_WORK_TOOL] if envelope.project_map else None
+
         pm_mandate_lines = compose_l1_lines(envelope.persona_config)
         if envelope.chat_whisper:
             pm_mandate_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
-        pm_mandate_lines.append(f"TOOL LAW: {envelope.tool_law or DEFAULT_TOOL_LAW}")
+        pm_mandate_lines.append(f"TOOL LAW: {DISPATCH_TOOL_LAW if tools else (envelope.tool_law or DEFAULT_TOOL_LAW)}")
         pm_mandate = "\n".join(pm_mandate_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
+
+        work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth)
+        response = pm_model.generate_content([work_order], generation_config=pm_config, tools=tools)
+
+        # Defensive against a hypothetical multiple-tool-calls response --
+        # the schema only ever declares one function, and the design is
+        # one dispatch per turn, so only the first is ever used; extras
+        # (which real testing never actually produced) are silently
+        # ignored rather than crashing or dispatching more than once.
+        tool_call = response.tool_calls[0] if response.tool_calls else None
+        return {"social_response": get_clean_text(response), "tool_call": tool_call}
+
+    @staticmethod
+    async def synthesize_dispatch(
+        persona_config, trigger_message, global_response,
+        milestone_name, milestone_purpose, dispatch_status, dispatch_response,
+    ):
+        """The last step of start_milestone_work's real round-trip (see
+        run_global_turn/START_MILESTONE_WORK_TOOL above, and
+        SynthesizeDispatchRequest's own docstring in schema/kernel_schema.py
+        for the full trace). Backend has already: seen the tool call, resolved
+        the dispatched milestone's real data, run it through the existing
+        Gatekeeper->Keymaster->Strike-Team pipeline (unchanged, a second
+        /kernel/invoke call scoped to that milestone). This is the one final
+        model call that turns the Global PM's own initial reaction and that
+        real result into ONE coherent reply -- Fred's explicit call: one
+        synthesized message, never two separate chat bubbles.
+
+        No tool declared here -- deliberately not recursive; v1 dispatches
+        once per turn, synthesis is where that resolves, not where another
+        dispatch begins. TOOL LAW here is the plain DEFAULT_TOOL_LAW, same
+        as any turn where no tool is being offered.
+
+        global_response can be genuinely empty (confirmed by real testing --
+        litellm/Gemini doesn't always return accompanying text alongside a
+        tool call, only sometimes) -- join_blocks() drops it cleanly rather
+        than this function assuming it's always there.
+
+        Mandate content (the SYNTHESIS TASK instruction below) is
+        hardcoded, not Firestore-sourced like the four declared Functions'
+        skill text -- this is Kernel's own internal composition step, not
+        Studio-editable content, same precedent core/reconcile.py's
+        reconcile_fact() already sets for a narrowly-scoped internal
+        mandate that stays hardcoded on purpose."""
+        pm_model, pm_config = AgentFactory.get_partner_pm()
+        pm_dna = persona_config.get("system_prompt", "Lead Co-founder.")
+        pm_lens = compose_l3_lens(persona_config)
+
+        pm_mandate_lines = compose_l1_lines(persona_config)
+        pm_mandate_lines.append(
+            "SYNTHESIS TASK: The Director just asked you to focus on a specific "
+            "milestone. You already began reacting to that (see YOUR INITIAL "
+            "REACTION below, if present) before the real work happened. Write ONE "
+            "natural, coherent reply that continues that same thought and folds in "
+            "the real result below -- as if this is one continuous response, never "
+            "two separate messages stitched together. Never mention dispatching, "
+            "tool calls, or any internal mechanism -- speak as their co-founder, "
+            "naturally, about the milestone and what you actually found."
+        )
+        pm_mandate_lines.append(f"TOOL LAW: {DEFAULT_TOOL_LAW}")
+        pm_mandate = "\n".join(pm_mandate_lines)
+
+        pm_truth = join_blocks(
+            f"THE DIRECTOR SAID:\n{trigger_message}",
+            f"YOUR INITIAL REACTION:\n{global_response}" if global_response else "",
+            f"MILESTONE: {milestone_name}\n{milestone_purpose}" if milestone_name else "",
+            f"WORK RESULT ({dispatch_status}):\n{dispatch_response}",
+        )
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth)
         response = pm_model.generate_content([work_order], generation_config=pm_config)
