@@ -53,6 +53,19 @@ class MasterOrchestrator:
         chat_computed = False
         envelope.gatekeeper_whisper = None
         envelope.chat_whisper = None
+
+        # Guard against re-firing the Strike Team every subsequent turn once
+        # already launched -- and, as of this pass, against re-running
+        # Gatekeeper's gate check post-launch too (see below). No new
+        # persistence needed: knowledge_bricks already round-trips through
+        # Backend's real ledger sync, so a non-empty knowledge_bricks on a
+        # fresh read is a real, already-persisted signal that the Strike
+        # Team has fired for this milestone before. Computed early now
+        # (used inside the required_questions block below, not just the
+        # Keymaster check further down) -- one computation, two consumers,
+        # not a second copy that can drift.
+        already_fired = bool(envelope.knowledge_bricks)
+
         if required_questions:
             try:
                 # Chat Manager's real L1 (scribe archetype)/L3 (mission+app_manual)/
@@ -61,7 +74,10 @@ class MasterOrchestrator:
                 # Coverage's identity resolution right below. platform.mandate/
                 # app_manual/global_mission are the exact same values already
                 # on persona_config; only the scribe archetype's mandate and
-                # Chat Manager's skill text are genuinely its own.
+                # Chat Manager's skill text are genuinely its own. Always
+                # runs, launched or not -- Fred's product call: staying
+                # continuously aware of the conversation is core to the PM's
+                # job regardless of milestone state, unlike Gatekeeper below.
                 chat_manager_identity = compose_function_identity(
                     envelope.chat_manager_mandate,
                     (envelope.persona_config.get("platform") or {}).get("mandate"),
@@ -91,37 +107,46 @@ class MasterOrchestrator:
                 envelope.chat_summary = chat_summary
                 envelope.chat_summary_cursor = chat_result["chat_summary_cursor"]
                 chat_computed = True
-                # Gatekeeper's real L1 (judge archetype)/L3 (mission+app_manual)/
-                # skill (the assessment procedure), composed from raw
-                # ingredients already on the envelope -- not fetched here, and
-                # not a hand-written mandate baked into assess_coverage()
-                # itself. platform.mandate/app_manual/global_mission are the
-                # exact same values already on persona_config (identical for
-                # the agent and for Gatekeeper); only the judge archetype's
-                # mandate and Gatekeeper's skill text are genuinely
-                # Gatekeeper's own (see SovereignRequest's docstring).
-                identity = compose_function_identity(
-                    envelope.gatekeeper_mandate,
-                    (envelope.persona_config.get("platform") or {}).get("mandate"),
-                    envelope.persona_config.get("app_manual"),
-                    envelope.persona_config.get("global_mission"),
-                )
-                coverage = assess_coverage(
-                    required_questions, chat_summary,
-                    identity["l1"], identity["l3"], envelope.gatekeeper_skill or "",
-                )
-                envelope.gatekeeper_whisper = coverage.get("whisper")
-                ready = coverage.get("gate_status") == "GREEN"
+
+                if already_fired:
+                    # The gate has already permanently passed -- Gatekeeper's
+                    # whole job (deciding whether the Strike Team should
+                    # fire) is moot once it already has, so there's nothing
+                    # left for it to say; gatekeeper_whisper stays None
+                    # (already set above), not a stale value from some
+                    # earlier turn. ready=True directly here, not re-derived
+                    # via assess_coverage, is what keeps physics_open
+                    # genuinely correct post-launch instead of silently
+                    # reverting to its False default just because Gatekeeper
+                    # didn't run this turn -- physics_open used to be a pure
+                    # byproduct of Gatekeeper running; this is the one place
+                    # that's no longer true, so it has to be set explicitly.
+                    ready = True
+                else:
+                    # Gatekeeper's real L1 (judge archetype)/L3 (mission+app_manual)/
+                    # skill (the assessment procedure), composed from raw
+                    # ingredients already on the envelope -- not fetched here, and
+                    # not a hand-written mandate baked into assess_coverage()
+                    # itself. platform.mandate/app_manual/global_mission are the
+                    # exact same values already on persona_config (identical for
+                    # the agent and for Gatekeeper); only the judge archetype's
+                    # mandate and Gatekeeper's skill text are genuinely
+                    # Gatekeeper's own (see SovereignRequest's docstring).
+                    identity = compose_function_identity(
+                        envelope.gatekeeper_mandate,
+                        (envelope.persona_config.get("platform") or {}).get("mandate"),
+                        envelope.persona_config.get("app_manual"),
+                        envelope.persona_config.get("global_mission"),
+                    )
+                    coverage = assess_coverage(
+                        required_questions, chat_summary,
+                        identity["l1"], identity["l3"], envelope.gatekeeper_skill or "",
+                    )
+                    envelope.gatekeeper_whisper = coverage.get("whisper")
+                    ready = coverage.get("gate_status") == "GREEN"
             except Exception:
                 ready = False
         envelope.physics_open = ready
-
-        # Guard against re-firing every subsequent turn once already
-        # launched. No new persistence needed: knowledge_bricks already
-        # round-trips through Backend's real ledger sync, so a non-empty
-        # knowledge_bricks on a fresh read is a real, already-persisted
-        # signal that the Strike Team has fired for this milestone before.
-        already_fired = bool(envelope.knowledge_bricks)
 
         # Keymaster's real L1/skill (the classifier role + confirmation
         # criteria), composed from raw ingredients already on the envelope --
