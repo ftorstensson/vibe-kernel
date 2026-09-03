@@ -109,7 +109,22 @@ class SovereignRequest(BaseModel):
     this is None, since Tool Law is genuinely load-bearing for output
     safety (no tool-call syntax leaking into prose) and must never
     silently disappear just because Backend's resolve failed or hasn't
-    shipped yet."""
+    shipped yet.
+
+    project_map: [{phase, milestones: [{name, status, purpose}]}] --
+    Backend's resolved view of the whole app's structure (every
+    non-archived phase in order, each with its non-archived milestones in
+    order, status the real execution_status), giving the Global PM actual
+    visibility into what's done and what's next across the whole app
+    instead of only ever seeing one milestone in isolation. Sent on every
+    envelope, not just global calls, but composed into L3 only for the
+    Global PM's own turn (pods/social/engine.py's run_global_turn via
+    core/composition.py's compose_project_map_lens()) -- the task-scoped
+    agent turn and every Function are already correctly scoped to one
+    milestone and don't need the whole tree. Optional/fail-open, same
+    pattern as partner_protocols/tool_law: default empty, a missing/
+    unresolved project_map just means the Global PM composes without that
+    context this turn, not a crash."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -130,6 +145,7 @@ class SovereignRequest(BaseModel):
     chat_manager_skill: Optional[str] = None
     partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
     tool_law: Optional[str] = None
+    project_map: List[Dict[str, Any]] = Field(default_factory=list)
     keymaster_mandate: Optional[str] = None
     keymaster_skill: Optional[str] = None
 
@@ -445,6 +461,11 @@ class AgentEnvelope(BaseModel):
     # pods/social/engine.py at both run_turn/run_global_turn call sites,
     # falling back to DEFAULT_TOOL_LAW there when None.
     tool_law: Optional[str] = None
+    # See SovereignRequest's docstring -- straight copy-through, read ONLY
+    # by pods/social/engine.py's run_global_turn (via core/composition.py's
+    # compose_project_map_lens()), not run_turn or any Function -- those
+    # stay correctly scoped to one milestone.
+    project_map: List[Dict[str, Any]] = Field(default_factory=list)
     # Keymaster's own identity for confirm_launch_intent() -- see
     # SovereignRequest's docstring. No l3 field: confirmed no genuine
     # mission/app_manual use for this function.
