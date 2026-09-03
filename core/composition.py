@@ -144,20 +144,24 @@ def compose_project_map_lens(project_map):
     construction (nothing to accidentally wire up elsewhere), not by
     caller discipline.
 
-    project_map: Backend's resolved [{phase, milestones: [{name, status,
-    purpose}]}] tree -- every non-archived phase in order, each with its
-    non-archived milestones in order (Backend's job to filter/order, not
-    Kernel's -- this function only renders what it's given). Gives the
-    Global PM real visibility into what's done and what's next across the
-    whole app, instead of only ever seeing one milestone in isolation --
-    the actual gap this exists to close.
+    project_map: Backend's resolved [{phase, milestones: [{id, name,
+    status, purpose}]}] tree -- every non-archived phase in order, each
+    with its non-archived milestones in order (Backend's job to
+    filter/order, not Kernel's -- this function only renders what it's
+    given). Gives the Global PM real visibility into what's done and
+    what's next across the whole app, instead of only ever seeing one
+    milestone in isolation -- the actual gap this exists to close.
 
-    Rendered as a compressed name+status+one-line-purpose list, not a raw
-    dump: real research on exactly this kind of always-present context
+    Rendered as a compressed id+name+status+one-line-purpose list, not a
+    raw dump: real research on exactly this kind of always-present context
     recommends a compressed full-picture view over dumping full milestone
     records. Plain text, no markdown -- consistent with compose_l1_lines'
     own "no robot-speak formatting" rule; a phase name gets its own line,
-    each milestone one line under it.
+    each milestone one line under it. id is rendered (not just used
+    internally) because run_global_turn's start_milestone_work tool needs
+    a real value here for the model to fill in as the tool call's own
+    milestone_id argument -- without it in the text the model sees, there
+    is nothing valid to reference.
 
     Defensive about missing keys (.get chains, never bare [] that can
     KeyError) -- same discipline compose_l1_lines/compose_l3_lens already
@@ -172,12 +176,20 @@ def compose_project_map_lens(project_map):
         lines.append("")
         lines.append(phase.get("phase", ""))
         for milestone in phase.get("milestones") or []:
+            milestone_id = milestone.get("id", "")
             name = milestone.get("name", "")
             status = milestone.get("status", "")
             purpose = milestone.get("purpose", "")
-            entry = f"- {name}"
+            # id rendered inline, not a separate line or heavier structure --
+            # stays within the compressed-list goal while still giving the
+            # model a real, addressable value to fill in as
+            # start_milestone_work's own milestone_id argument (see
+            # pods/social/engine.py) -- without this, the tool call would
+            # have nothing valid to reference.
+            tag = f"id: {milestone_id}" if milestone_id else ""
             if status:
-                entry += f" ({status})"
+                tag = f"{tag}, {status}" if tag else status
+            entry = f"- {name} ({tag})" if tag else f"- {name}"
             if purpose:
                 entry += f": {purpose}"
             lines.append(entry)

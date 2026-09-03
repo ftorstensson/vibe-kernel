@@ -1,3 +1,4 @@
+import json
 import os
 from dotenv import load_dotenv
 import litellm
@@ -16,7 +17,25 @@ class GenerationConfig:
 
 
 class LiteLLMResponse:
-    """Normalizes a litellm ModelResponse to what get_clean_text() and Hound expect."""
+    """Normalizes a litellm ModelResponse to what get_clean_text() and Hound
+    expect. tool_calls (real Gemini native function-calling, for
+    run_global_turn's start_milestone_work -- see pods/social/engine.py)
+    is the one new piece: litellm's own message.tool_calls, each a
+    {function: {name, arguments}} object with arguments as a JSON string
+    (confirmed empirically against a real Vertex/Gemini 2.5 Pro call, not
+    assumed) -- parsed here into plain {name, args: dict} entries so
+    nothing downstream (Kernel's own code, or Backend reading
+    SovereignResponse.tool_call) ever touches raw JSON-in-a-string.
+    text and tool_calls are NOT mutually exclusive -- the same real test
+    call returned a genuine acknowledgment string AND a real tool call
+    together, so both are always populated from what the model actually
+    returned, never one at the expense of the other.
+
+    A single malformed tool call (arguments that don't parse as JSON) is
+    dropped, not allowed to crash the whole turn -- same fail-open
+    principle as everywhere else a real external response gets parsed in
+    this codebase; the rest of a normal, non-tool-calling turn should
+    never be at risk because of it."""
     def __init__(self, litellm_response):
         message = litellm_response.choices[0].message
         self.text = message.content or ""
@@ -28,6 +47,13 @@ class LiteLLMResponse:
                     "title": citation.get("title") or "Source",
                     "url": citation.get("url"),
                 })
+        self.tool_calls = []
+        for tool_call in (getattr(message, "tool_calls", None) or []):
+            try:
+                args = json.loads(tool_call.function.arguments)
+            except (TypeError, ValueError):
+                continue
+            self.tool_calls.append({"name": tool_call.function.name, "args": args})
 
 
 class LiteLLMModel:
@@ -35,7 +61,16 @@ class LiteLLMModel:
         self.model_name = model_name
         self.tools = tools
 
-    def generate_content(self, prompt, generation_config=None, response_schema=None):
+    def generate_content(self, prompt, generation_config=None, response_schema=None, tools=None):
+        """tools (per-call) lets one shared model config (e.g.
+        AgentFactory.get_partner_pm(), used by both run_turn and
+        run_global_turn) offer a real tool on only SOME calls -- run_turn
+        never passes this, run_global_turn does, without needing a second
+        factory method just to carry a different fixed tools list.
+        Overrides self.tools (construction-time, used by get_hound's
+        Google Search grounding) rather than merging with it -- no
+        current caller needs both at once, and merging silently would
+        make it easy to accidentally combine two unrelated tool sets."""
         content = prompt if isinstance(prompt, str) else "\n".join(str(p) for p in prompt)
         kwargs = {
             "model": self.model_name,
@@ -47,8 +82,9 @@ class LiteLLMModel:
             kwargs["temperature"] = generation_config.temperature
             if generation_config.reasoning_effort:
                 kwargs["reasoning_effort"] = generation_config.reasoning_effort
-        if self.tools:
-            kwargs["tools"] = self.tools
+        effective_tools = tools or self.tools
+        if effective_tools:
+            kwargs["tools"] = effective_tools
         if response_schema is not None:
             kwargs["response_format"] = {
                 "type": "json_schema",
