@@ -313,6 +313,79 @@ class SynthesizeDispatchRequest(BaseModel):
 class SynthesizeDispatchResponse(BaseModel):
     social_response: str
 
+class CompileIdentityRequest(BaseModel):
+    """The Materialized View scoping pass's first build item: wraps
+    compose_l1_lines/compose_l3_lens/compose_function_identity (all
+    unchanged) behind one endpoint Backend can call at publish time
+    instead of only mid-turn, so the L1/L3 an agent or Function's identity
+    actually resolves to can be written into a compiled record once,
+    rather than recomposed from raw ingredients on every real turn.
+
+    Kernel does zero new work here -- same composition logic, same
+    "Backend resolves raw ingredients, Kernel composes" split this whole
+    session has protected, just triggered from a new entry point. Kernel
+    still writes nothing to Firestore itself; this returns strings,
+    Backend persists them.
+
+    Two raw-ingredient shapes, matching the two real shapes this
+    contract's ingredients already come in elsewhere -- persona_config is
+    the discriminator, not an explicit type flag, same "which fields are
+    populated decides the path" precedent PreviewFunctionRequest's own
+    l4_data already sets:
+
+    persona_config given -> agent shape. The exact dict SovereignRequest.
+    persona_config already is (archetype/platform record-wrapped,
+    app_manual, global_mission, system_prompt, exo_brain). Composed via
+    compose_l1_lines(persona_config)/compose_l3_lens(persona_config) with
+    the real agent default_exo_brain -- NOT compose_function_identity,
+    which deliberately suppresses that fallback for Functions Library
+    entries (default_exo_brain=None) and would silently break an agent's
+    real voice fallback if reused here by mistake. This is the same
+    dispatch a real agent turn (pods/social/engine.py) already does today,
+    just called at compile time instead of live-turn time.
+
+    persona_config absent, archetype/platform/app_manual/global_mission
+    given instead -> Functions Library shape, same flat raw-ingredient
+    fields DeriveRequirementsRequest/AssessCoverageRequest/... already
+    use. Composed via compose_function_identity(), identical to every
+    other Functions Library endpoint's own identity resolution.
+
+    L2 (persona/voice, an agent's own system_prompt) and L4 (skill, a
+    Function's own functions_registry text) are NOT returned here --
+    deliberately, not an oversight: neither one is actually composed by
+    Kernel at all, in either the live-turn path or here. Both are already-
+    resolved Firestore content Backend passes straight through unchanged;
+    the only real composition work Kernel ever does is L1 and L3.
+    Combining L2+L3 (an agent's own physical lens block) or L3+L4 (a
+    Function's own physical lens block, compose_l4_lens) happens at
+    prompt-assembly time on the live-turn path, not here -- this endpoint
+    hands back the two layers Kernel actually transforms, not a
+    pre-assembled block that would need re-splitting later."""
+    app_id: str
+    persona_config: Optional[Dict[str, Any]] = None
+    archetype: Optional[Dict[str, Any]] = None
+    platform: Optional[Dict[str, Any]] = None
+    app_manual: Optional[str] = None
+    global_mission: Optional[str] = None
+
+class CompileIdentityResponse(BaseModel):
+    l1: str
+    l3: Optional[str] = None
+
+class AgentPreviewRequest(BaseModel):
+    """The agent-side sibling of PreviewFunctionRequest -- Test Lab has
+    never had a way to preview an agent's own L1+L2+L3 composition
+    without a live /kernel/invoke turn, unlike Functions (which have had
+    /kernel/functions/preview all along). Same real gap CompileIdentityRequest's
+    own docstring names for the compile step; this is the same gap
+    surfacing again for Studio's Test Lab specifically, not a
+    coincidence -- both need the identical composition Kernel already
+    does for a real agent turn, just without an actual model call or a
+    milestone-scoped envelope."""
+    app_id: str
+    agent_id: str
+    persona_config: Dict[str, Any]
+
 class PreviewFunctionRequest(BaseModel):
     """Test Lab preview -- function-agnostic composition, but each function's
     L4/L5 data has its own shape, so this request carries both a legacy,
