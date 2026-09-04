@@ -7,13 +7,15 @@ from schema.kernel_schema import (
     ChatSummaryRequest, ChatSummaryResponse,
     ConfirmLaunchIntentRequest, ConfirmLaunchIntentResponse,
     SynthesizeDispatchRequest, SynthesizeDispatchResponse,
+    CompileIdentityRequest, CompileIdentityResponse,
+    AgentPreviewRequest,
 )
 from core.orchestrator import MasterOrchestrator
 from core.requirements import derive_requirements
 from core.coverage import assess_coverage, resolve_required_questions
 from core.reconcile import build_chat_summary
 from core.ignition import confirm_launch_intent
-from core.composition import compose_function_identity
+from core.composition import compose_function_identity, compose_agent_identity
 from pods.social.engine import SocialEngine
 import uvicorn
 import os
@@ -144,6 +146,62 @@ async def invoke_synthesize_dispatch(req: SynthesizeDispatchRequest):
             req.milestone_name, req.milestone_purpose, req.dispatch_status, req.dispatch_response,
         )
         return {"social_response": result}
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Materialized View scoping pass, build item 1: wraps compose_l1_lines/
+# compose_l3_lens/compose_function_identity (all unchanged) behind one
+# endpoint Backend can call at publish time -- see CompileIdentityRequest's
+# own docstring (schema/kernel_schema.py) for the full reasoning, including
+# why persona_config is the shape discriminator and why L2/L4 are
+# deliberately not returned here. Kernel still writes nothing to Firestore
+# -- this returns strings, Backend persists them.
+@app.post("/kernel/compile_identity", response_model=CompileIdentityResponse)
+async def invoke_compile_identity(req: CompileIdentityRequest):
+    try:
+        if req.persona_config is not None:
+            identity = compose_agent_identity(req.persona_config)
+        else:
+            identity = compose_function_identity(
+                (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
+                req.app_manual, req.global_mission,
+            )
+        return {"l1": identity["l1"], "l3": identity["l3"]}
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Materialized View scoping pass, build item 2: the agent-side sibling of
+# /kernel/functions/preview below -- same real gap named in
+# AgentPreviewRequest's own docstring (Test Lab has never had a way to
+# preview an agent's own L1+L2+L3 without a live turn). Reuses
+# PreviewFunctionResponse's exact shape (not a new response schema) --
+# that shape was deliberately named by layer so Test Lab can render the
+# same five boxes consistently across agents and Functions (see
+# PreviewFunctionResponse's own docstring); l2 is real here (an agent's
+# own system_prompt, unlike a Function's always-None l2), l4 is {} (not
+# applicable -- an agent turn has no fixed Skill/Task the way a Function
+# does, same "explicit not-applicable, not a missing fetch" precedent
+# l2/l3 already set on the Function side), l5 is None (no conversation
+# state to preview here, same as a stateless Function like Requirements).
+@app.post("/kernel/agents/preview", response_model=PreviewFunctionResponse)
+async def invoke_agent_preview(req: AgentPreviewRequest):
+    try:
+        identity = compose_agent_identity(req.persona_config)
+        return {
+            "l1": identity["l1"],
+            "l2": req.persona_config.get("system_prompt"),
+            "l3": identity["l3"],
+            "l4": {},
+            "l5": None,
+        }
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:

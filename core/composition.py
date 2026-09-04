@@ -274,3 +274,38 @@ def compose_function_identity(archetype_mandate, platform_mandate, app_manual, g
         default_exo_brain=None,
     ) or None
     return {"l1": l1, "l3": l3}
+
+
+def compose_agent_identity(persona_config):
+    """L1/L3 for a real agent turn (e.g. the PM), composed from
+    persona_config -- the agent-shaped sibling of compose_function_identity()
+    above, needed for the same reason: a caller wanting an agent's own
+    identity without going through a live turn (Backend's Materialized
+    View compile step at publish time; Test Lab's agent preview, see
+    AgentPreviewRequest in schema/kernel_schema.py). Both callers need the
+    EXACT composition a real turn does, not a close approximation --
+    hence this, not a second hand-rolled call to compose_l1_lines/
+    compose_l3_lens with slightly different defaults that could drift.
+
+    Deliberately does NOT reuse compose_function_identity() itself even
+    though the underlying calls are nearly identical -- that function
+    hardcodes default_exo_brain=None (correct for a Function, which has no
+    persona/voice concept at all) and takes flat mandate strings instead
+    of a persona_config dict. Calling it for an agent would silently
+    suppress a real agent's own exo_brain fallback -- a live agent turn
+    (pods/social/engine.py) always uses compose_l3_lens's own real
+    default ("Blunt, high-speed facilitator."), and this must match that
+    exactly, not compose_function_identity's Functions-only shape.
+
+    Takes the persona_config dict directly (not unwrapped mandate
+    strings) -- unlike compose_function_identity's callers, which have no
+    persona_config to nest inside, an agent identity caller already has
+    this exact dict (it's SovereignRequest.persona_config's own shape),
+    so there's nothing to unwrap.
+
+    Returns {l1: str, l3: str|None} -- same return shape as
+    compose_function_identity(), for a consistent contract across both,
+    even though the l3 default_exo_brain differs."""
+    l1 = "\n".join(compose_l1_lines(persona_config))
+    l3 = compose_l3_lens(persona_config) or None
+    return {"l1": l1, "l3": l3}
