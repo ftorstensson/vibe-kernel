@@ -46,14 +46,13 @@ def compose_l1_lines(persona_config):
     return lines
 
 
-def compose_l3_lens(persona_config, default_exo_brain="Blunt, high-speed facilitator.", partner_protocols=None):
-    """L3 (Deep Knowledge/Exo-Brain): mission, app_manual, partner_protocols,
-    and exo_brain, in that order, each its own clearly labeled piece
-    separated by a blank line. Mission and app_manual are both context/
-    knowledge about the app, not behavioral rules, so they live here rather
-    than in the L1 Mandate block -- core system-prompt constraints (L1)
-    should stay lean; reference material belongs with the rest of the
-    domain knowledge.
+def compose_l3_lens(persona_config, default_exo_brain="Blunt, high-speed facilitator."):
+    """L3 (Deep Knowledge/Exo-Brain): mission, app_manual, and exo_brain, in
+    that order, each its own clearly labeled piece separated by a blank
+    line. Mission and app_manual are both context/knowledge about the app,
+    not behavioral rules, so they live here rather than in the L1 Mandate
+    block -- core system-prompt constraints (L1) should stay lean;
+    reference material belongs with the rest of the domain knowledge.
 
     default_exo_brain lets callers with no real persona/voice concept (e.g.
     compose_function_identity() below, for the Functions Library) suppress
@@ -61,49 +60,20 @@ def compose_l3_lens(persona_config, default_exo_brain="Blunt, high-speed facilit
     into a function's mandate just because the dict it was given has no
     "exo_brain" key. Real agent turns keep the default unchanged.
 
-    partner_protocols: optional list of {source, content} dicts -- each
-    function's standing explanation of what its own dynamic per-turn signal
-    means (e.g. Gatekeeper's real functions_registry content: "Gates are
-    scored RED, AMBER, or GREEN..."), as opposed to gatekeeper_whisper/
-    chat_whisper, the dynamic per-turn VALUE those standing explanations
-    describe. The two were designed together but are genuinely separate
-    channels -- a whisper without its protocol is a value with no frame of
-    reference; a protocol without a whisper is instructions with nothing to
-    apply them to.
-
-    This function renders whatever final list it's handed -- it does NOT
-    itself decide which entries are relevant this turn, deliberately: it
-    has no concept of "whisper" and callers other than the PM's own turn
-    (compose_function_identity() below, for the Functions Library) have no
-    such thing to check against. The real per-turn relevance filter (does
-    THIS entry's own function actually have something to say right now)
-    lives in the caller, pods/social/engine.py, immediately before this is
-    called -- the two-stage design forced by a real sequencing constraint:
-    Backend's assemble_envelope() runs entirely before Kernel's own turn,
-    so it can only send one entry per function that's structurally active
-    this turn (required_questions truthy), never per whether that
-    function's whisper will actually fire -- that's computed later, inside
-    Kernel's own orchestrator, on data Backend hasn't seen yet. So Backend
-    sends the coarse structurally-active set; Kernel narrows it to the
-    real-fired set right before composing, using the exact same
-    gatekeeper_whisper/chat_whisper truthy checks that already gate whisper
-    injection into pm_mandate_lines. An empty/absent list reaching this
-    function (either because Backend sent nothing, e.g. run_global_turn's
-    no-gate path, or because the caller's own filter found nothing active)
-    is a normal turn where nothing needs explaining, not an error.
-
-    Explanatory reference content about how to interpret a signal, not
-    behavioral law itself, so it lives here in L3 alongside mission/
-    app_manual, not L1 -- same reasoning compose_l1_lines already gives for
-    keeping context/knowledge out of the Mandate block. Deliberately one
-    general field (not gatekeeper_partner_protocol/chat_manager_
-    partner_protocol/... one-off fields per function) -- exactly the
-    per-function-field-name-drift pattern the coverage_*->gatekeeper_*
-    rename just cleaned up; a new function's protocol needs zero schema
-    changes to show up here, just another {source, content} entry (though
-    the caller's own source->whisper-field filter map does need extending
-    for a new function to ever actually surface -- see pods/social/
-    engine.py)."""
+    No partner_protocols parameter -- moved out to its own
+    compose_partner_protocols_lens() (below), composed and appended
+    separately by the caller, same pattern compose_project_map_lens()
+    already uses. This isn't a style preference: this function's whole
+    output is meant to become a value Kernel can read PRE-COMPUTED off a
+    compiled record (see CompileIdentityRequest/AgentEnvelope.compiled_l3)
+    instead of calling this every turn. partner_protocols is genuinely
+    per-turn dynamic content (Backend can only resolve it after Kernel's
+    own turn computes which whisper fired -- see
+    compose_partner_protocols_lens()'s own docstring) -- folding it into
+    THIS function's output would have meant it silently stopped reaching
+    the model the moment a live turn started reading compiled_l3 instead
+    of calling this live. Caught and fixed as part of the same cutover
+    that introduced compiled_l3, not after."""
     lines = []
     global_mission = persona_config.get("global_mission")
     if global_mission:
@@ -113,6 +83,59 @@ def compose_l3_lens(persona_config, default_exo_brain="Blunt, high-speed facilit
         if lines:
             lines.append("")
         lines.append(f"HOW THIS APP WORKS: {app_manual}")
+    exo_brain = persona_config.get("exo_brain", default_exo_brain)
+    if exo_brain:
+        if lines:
+            lines.append("")
+        lines.append(exo_brain)
+    return "\n".join(lines)
+
+
+def compose_partner_protocols_lens(partner_protocols):
+    """Each active function's standing explanation of what its own dynamic
+    per-turn signal means (e.g. Gatekeeper's real functions_registry
+    content: "Gates are scored RED, AMBER, or GREEN..."), as opposed to
+    gatekeeper_whisper/chat_whisper, the dynamic per-turn VALUE those
+    standing explanations describe. The two were designed together but
+    are genuinely separate channels -- a whisper without its protocol is
+    a value with no frame of reference; a protocol without a whisper is
+    instructions with nothing to apply them to.
+
+    Composed and appended separately by the caller (pods/social/
+    engine.py), not threaded through compose_l3_lens() as a parameter the
+    way it used to be -- pulled out specifically because it can't live
+    inside L3's own composition anymore. L1/L3 are now readable pre-
+    compiled off AgentEnvelope.compiled_l1/compiled_l3 (see
+    CompileIdentityRequest), and once a live turn reads compiled_l3
+    instead of calling compose_l3_lens() fresh, there is no live call left
+    for a partner_protocols parameter to plug into -- it would have
+    silently stopped reaching the model. This function is what makes it
+    reach the model either way, compiled L3 or freshly-composed L3,
+    identically. Same real per-turn relevance filter as before this
+    refactor (this function itself renders whatever list it's handed; the
+    caller narrows Backend's structurally-active set down to the
+    genuinely-fired set first, via _active_partner_protocols() and the
+    same gatekeeper_whisper/chat_whisper truthy checks -- see that
+    function's own docstring in pods/social/engine.py for the full two-
+    stage reasoning, unchanged by this move).
+
+    Explanatory reference content about how to interpret a signal, not
+    behavioral law itself, so it's appended alongside L3 (mission/
+    app_manual), not folded into L1 -- same reasoning compose_l1_lines
+    already gives for keeping context/knowledge out of the Mandate block.
+    Deliberately one general field (not gatekeeper_partner_protocol/
+    chat_manager_partner_protocol/... one-off fields per function) --
+    exactly the per-function-field-name-drift pattern the
+    coverage_*->gatekeeper_* rename already cleaned up elsewhere; a new
+    function's protocol needs zero schema changes to show up here, just
+    another {source, content} entry (though the caller's own source->
+    whisper-field filter map does need extending for a new function to
+    ever actually surface -- see pods/social/engine.py).
+
+    Returns "" when the list is empty/absent, same falsy-skip convention
+    every other optional appended block (compose_project_map_lens) uses,
+    so a caller can unconditionally check truthiness before appending."""
+    lines = []
     for protocol in (partner_protocols or []):
         content = protocol.get("content")
         if not content:
@@ -121,11 +144,6 @@ def compose_l3_lens(persona_config, default_exo_brain="Blunt, high-speed facilit
         if lines:
             lines.append("")
         lines.append(f"PARTNER PROTOCOL ({source}): {content}" if source else f"PARTNER PROTOCOL: {content}")
-    exo_brain = persona_config.get("exo_brain", default_exo_brain)
-    if exo_brain:
-        if lines:
-            lines.append("")
-        lines.append(exo_brain)
     return "\n".join(lines)
 
 

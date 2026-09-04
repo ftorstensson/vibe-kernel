@@ -143,6 +143,20 @@ class MasterOrchestrator:
         chat_computed = False
         envelope.gatekeeper_whisper = None
         envelope.chat_whisper = None
+        # Real Gatekeeper output, for SovereignResponse -- today only Test
+        # Lab's standalone assess_coverage endpoint returns this shape; a
+        # real live turn computed it internally every time but discarded
+        # everything except gate_status (folded into ready) and whisper
+        # (already on envelope.gatekeeper_whisper). Backend's own
+        # persistence function already exists for this exact shape, it's
+        # just never had real data to call with. None (not fabricated)
+        # whenever Gatekeeper genuinely didn't run this turn -- no
+        # required_questions, already_fired skipped it, or a real
+        # exception -- same "None means nothing to report" semantics
+        # chat_summary already uses, not a guess at what it would have
+        # said.
+        gate_status = None
+        assessments = None
 
         # Guard against re-firing the Strike Team every subsequent turn once
         # already launched -- and, as of this pass, against re-running
@@ -201,7 +215,9 @@ class MasterOrchestrator:
                         identity["l1"], identity["l3"], envelope.gatekeeper_skill or "",
                     )
                     envelope.gatekeeper_whisper = coverage.get("whisper")
-                    ready = coverage.get("gate_status") == "GREEN"
+                    gate_status = coverage.get("gate_status")
+                    assessments = coverage.get("assessments")
+                    ready = gate_status == "GREEN"
             except Exception:
                 ready = False
         envelope.physics_open = ready
@@ -282,6 +298,9 @@ class MasterOrchestrator:
                 "status": "STABLE",
                 "chat_summary": chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
+                "gate_status": gate_status,
+                "whisper": envelope.gatekeeper_whisper,
+                "assessments": assessments,
             }
 
         else:
@@ -293,6 +312,9 @@ class MasterOrchestrator:
                 "status": status,
                 "chat_summary": chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
+                "gate_status": gate_status,
+                "whisper": envelope.gatekeeper_whisper,
+                "assessments": assessments,
             }
 
     @staticmethod

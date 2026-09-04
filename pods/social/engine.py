@@ -1,5 +1,8 @@
 from core.agent_factory import AgentFactory
-from core.composition import compose_l1_lines, compose_l3_lens, compose_project_map_lens, join_blocks
+from core.composition import (
+    compose_l1_lines, compose_l3_lens, compose_partner_protocols_lens,
+    compose_project_map_lens, join_blocks,
+)
 from core.kernel_utils import get_clean_text
 from core.prompt_builder import PromptBuilder
 from schema.kernel_schema import AgentEnvelope
@@ -85,18 +88,48 @@ DISPATCH_TOOL_LAW = (
 def _active_partner_protocols(envelope: AgentEnvelope):
     """Narrows envelope.partner_protocols (Backend's structurally-active
     set) down to entries whose own function's whisper actually fired this
-    turn -- the real-time half of the two-stage relevance filter described
-    in compose_l3_lens()'s docstring. Uses the exact same truthy check
-    run_turn already applies to gatekeeper_whisper/chat_whisper before
-    injecting them into pm_mandate_lines, so a Partner Protocol can never
-    appear without its whisper also appearing, and vice versa -- the two
-    channels stay in lockstep by construction, not by convention."""
+    turn -- the real-time half of a two-stage relevance filter (Backend
+    can only send the coarse structurally-active set ahead of Kernel's own
+    turn; this is the fine-grained narrowing that happens after, once a
+    real whisper either did or didn't fire). Uses the exact same truthy
+    check run_turn already applies to gatekeeper_whisper/chat_whisper
+    before injecting them into pm_mandate_lines, so a Partner Protocol can
+    never appear without its whisper also appearing, and vice versa -- the
+    two channels stay in lockstep by construction, not by convention. See
+    compose_partner_protocols_lens()'s own docstring (core/composition.py)
+    for how the result of this gets rendered and appended."""
     active = []
     for protocol in envelope.partner_protocols:
         field = _WHISPER_FIELD_BY_SOURCE.get(protocol.get("source"))
         if field and getattr(envelope, field, None):
             active.append(protocol)
     return active
+
+
+def _compiled_l1_lines(envelope: AgentEnvelope):
+    """L1, the Materialized View cutover: reads envelope.compiled_l1
+    directly when Backend's compile step has attached one, instead of
+    calling compose_l1_lines(persona_config) fresh -- the actual cutover,
+    not new capability. Falls back to live composition when compiled_l1
+    is absent/empty, mirroring Backend's own compiled-record fallback
+    exactly, so an app that hasn't republished under the new scheme keeps
+    working unchanged. Returns a list either way (compiled_l1 wrapped as
+    the list's one element) so the caller's existing
+    .append()-then-"\\n".join() pattern needs no changes downstream --
+    compiled_l1 is already the fully-joined string a live
+    compose_l1_lines() call would produce."""
+    if envelope.compiled_l1:
+        return [envelope.compiled_l1]
+    return compose_l1_lines(envelope.persona_config)
+
+
+def _compiled_l3(envelope: AgentEnvelope):
+    """L3, same cutover as _compiled_l1_lines above: reads
+    envelope.compiled_l3 directly when present, falls back to live
+    compose_l3_lens(persona_config) otherwise."""
+    if envelope.compiled_l3:
+        return envelope.compiled_l3
+    return compose_l3_lens(envelope.persona_config)
 
 
 class SocialEngine:
@@ -120,19 +153,28 @@ class SocialEngine:
         # field names agency_roster docs actually have; "dna"/"lens" never existed
         # on any real agent doc, so this always fell back to generic placeholders.
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
-        # partner_protocols: each active function's standing explanation of
-        # its own whisper (e.g. Gatekeeper's real "what RED/AMBER/GREEN
-        # means" content) -- reference material, not law, so it folds into
-        # L3 alongside mission/app_manual, not L1. Backend only sent the
-        # structurally-active set (required_questions truthy); narrowed
-        # here to the genuinely-fired set via _active_partner_protocols()
-        # (see its own docstring) so a protocol never shows up detached
-        # from the whisper it explains.
-        pm_lens = compose_l3_lens(envelope.persona_config, partner_protocols=_active_partner_protocols(envelope))
+        # L3: reads Backend's precompiled envelope.compiled_l3 when present
+        # (the Materialized View cutover), falls back to a live
+        # compose_l3_lens() call otherwise -- see _compiled_l3()'s own
+        # docstring. partner_protocols is appended separately, not
+        # threaded through either path -- each active function's standing
+        # explanation of its own whisper (e.g. Gatekeeper's real "what
+        # RED/AMBER/GREEN means" content), narrowed to the genuinely-fired
+        # set via _active_partner_protocols() (see its own docstring) so a
+        # protocol never shows up detached from the whisper it explains.
+        # Composed and appended here rather than folded into compiled_l3
+        # itself because it's genuinely per-turn dynamic -- Backend
+        # resolves it before this turn even runs, but whether it's
+        # RELEVANT is only known once this turn's own whisper fires.
+        pm_lens = _compiled_l3(envelope)
+        partner_protocols_block = compose_partner_protocols_lens(_active_partner_protocols(envelope))
+        if partner_protocols_block:
+            pm_lens = f"{pm_lens}\n\n{partner_protocols_block}" if pm_lens else partner_protocols_block
 
-        # L1 -- see compose_l1_lines(). Everything below is situational and
-        # layered on top as overrides; none of the L1 pieces replace it.
-        pm_mandate_lines = compose_l1_lines(envelope.persona_config)
+        # L1: same cutover as L3 above -- see _compiled_l1_lines()'s own
+        # docstring. Everything below is situational and layered on top as
+        # overrides; none of the L1 pieces replace it.
+        pm_mandate_lines = _compiled_l1_lines(envelope)
         pm_mandate_lines.append(f"[STATUS: {'GREEN' if envelope.physics_open else 'RED'}]")
         # kaiser_mandate is turn-local scratch state for concerns unrelated
         # to gating now (e.g. orchestrator.py's post-Strike-Team-fire
@@ -187,11 +229,12 @@ class SocialEngine:
 
         PROJECT MAP is new here and here only -- see
         compose_project_map_lens()'s own docstring for why it's appended
-        directly, not threaded through compose_l3_lens() as a fourth
-        parameter the way partner_protocols is: it must reach ONLY the
-        Global PM, and a separate function makes that true by construction
-        rather than by every future caller of compose_l3_lens remembering
-        not to pass it.
+        directly rather than folded into L3's own composition: it must
+        reach ONLY the Global PM, and a separate function makes that true
+        by construction rather than by every future caller remembering
+        not to pass it. partner_protocols (below) is appended the same
+        way now too, for a related but distinct reason -- see
+        compose_partner_protocols_lens()'s own docstring.
 
         start_milestone_work is offered here too, and here only -- real
         native function-calling (litellm's tools=[...], parsed back out
@@ -209,12 +252,18 @@ class SocialEngine:
         Returns {social_response: str, tool_call: {name, args} | None}."""
         pm_model, pm_config = AgentFactory.get_partner_pm()
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
-        # partner_protocols wired in for consistency with run_turn, via the
-        # same real-time filter -- gatekeeper_whisper is never computed on
-        # this path (no gate to check), but chat_whisper now genuinely can
-        # be, so a Chat Manager Partner Protocol entry can surface here too.
-        pm_lens = compose_l3_lens(envelope.persona_config, partner_protocols=_active_partner_protocols(envelope))
-        # Appended, not threaded through compose_l3_lens -- see this
+        # L3: same compiled-first, live-fallback cutover as run_turn -- see
+        # _compiled_l3()'s own docstring. partner_protocols wired in for
+        # consistency with run_turn, via the same real-time filter and the
+        # same appended-not-folded-in reasoning -- gatekeeper_whisper is
+        # never computed on this path (no gate to check), but chat_whisper
+        # now genuinely can be, so a Chat Manager Partner Protocol entry
+        # can surface here too.
+        pm_lens = _compiled_l3(envelope)
+        partner_protocols_block = compose_partner_protocols_lens(_active_partner_protocols(envelope))
+        if partner_protocols_block:
+            pm_lens = f"{pm_lens}\n\n{partner_protocols_block}" if pm_lens else partner_protocols_block
+        # Appended, not folded into L3's own composition -- see this
         # function's own docstring above. compose_project_map_lens()
         # returns "" when project_map is empty/absent, so this is a no-op
         # (identical output to before this field existed) whenever Backend
@@ -228,7 +277,9 @@ class SocialEngine:
         # callable tools" text, accurately, since none is being declared.
         tools = [START_MILESTONE_WORK_TOOL] if envelope.project_map else None
 
-        pm_mandate_lines = compose_l1_lines(envelope.persona_config)
+        # L1: same cutover as run_turn -- see _compiled_l1_lines()'s own
+        # docstring.
+        pm_mandate_lines = _compiled_l1_lines(envelope)
         if envelope.chat_whisper:
             pm_mandate_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
         pm_mandate_lines.append(f"TOOL LAW: {DISPATCH_TOOL_LAW if tools else (envelope.tool_law or DEFAULT_TOOL_LAW)}")
