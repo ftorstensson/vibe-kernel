@@ -132,7 +132,27 @@ class SovereignRequest(BaseModel):
     own milestone_id argument -- without it rendered somewhere in the
     composed PROJECT MAP text, the model has nothing valid to reference
     and can only guess or fabricate one. compose_project_map_lens()
-    renders it inline per milestone."""
+    renders it inline per milestone.
+
+    compiled_l1/compiled_l3: the Materialized View cutover -- Backend's
+    compile step (see CompileIdentityRequest) now attaches these to every
+    envelope as a dormant additive superset alongside the same raw
+    ingredients (persona_config) Kernel has always composed from. When
+    present, run_turn/run_global_turn read them directly instead of
+    calling compose_l1_lines()/compose_l3_lens() -- the actual cutover,
+    not a new capability. Optional/fail-open, same pattern as everything
+    else in this contract: an app that hasn't republished under the new
+    scheme sends these as None, and Kernel falls back to live composition
+    from persona_config exactly as it always has, unchanged behavior.
+    This mirrors Backend's own compiled-record fallback deliberately --
+    same safety pattern on both sides of the same cutover, not two
+    independent ones that could disagree.
+
+    Scoped to the agent turn only (run_turn/run_global_turn), not the
+    four Functions -- Gatekeeper/Chat Manager/Keymaster/Gate Maker still
+    compose via compose_function_identity() from raw ingredients every
+    turn, unchanged. Extending compilation to Functions is a real,
+    separate future question, not assumed to fall out of this for free."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -154,6 +174,8 @@ class SovereignRequest(BaseModel):
     partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
     tool_law: Optional[str] = None
     project_map: List[Dict[str, Any]] = Field(default_factory=list)
+    compiled_l1: Optional[str] = None
+    compiled_l3: Optional[str] = None
     keymaster_mandate: Optional[str] = None
     keymaster_skill: Optional[str] = None
 
@@ -198,6 +220,22 @@ class SovereignResponse(BaseModel):
     chat_summary: Optional[List[Dict[str, Any]]] = None
     chat_summary_cursor: Optional[int] = None
     tool_call: Optional[Dict[str, Any]] = None
+    # gate_status/whisper/assessments: the same real Gatekeeper output
+    # (core/coverage.py's assess_coverage()) a task-scoped turn already
+    # computes internally every time -- previously discarded except for
+    # gate_status folded into physics_open and whisper folded into the
+    # PM's own L1. Same field names as AssessCoverageResponse
+    # (Test Lab's standalone endpoint) deliberately, so Backend's existing
+    # persistence function for that shape needs no translation, just a
+    # second real caller. All three None whenever Gatekeeper genuinely
+    # didn't run this turn (no required_questions, already-launched and
+    # correctly skipped, or a real exception) -- "nothing to report," not
+    # a guess, same semantics chat_summary's own None already uses. Never
+    # populated on a GLOBAL/TOOL_CALL turn -- there's no gate concept on
+    # that path at all.
+    gate_status: Optional[str] = None
+    whisper: Optional[str] = None
+    assessments: Optional[List[Dict[str, Any]]] = None
 
 class DeriveRequirementsRequest(BaseModel):
     """Functions Library, entry 1: derive_requirements() needs no conversation
@@ -623,6 +661,12 @@ class AgentEnvelope(BaseModel):
     # compose_project_map_lens()), not run_turn or any Function -- those
     # stay correctly scoped to one milestone.
     project_map: List[Dict[str, Any]] = Field(default_factory=list)
+    # See SovereignRequest's docstring -- the Materialized View cutover.
+    # Straight copy-through, read by pods/social/engine.py's run_turn/
+    # run_global_turn in place of a live compose_l1_lines()/
+    # compose_l3_lens() call whenever present.
+    compiled_l1: Optional[str] = None
+    compiled_l3: Optional[str] = None
     # Keymaster's own identity for confirm_launch_intent() -- see
     # SovereignRequest's docstring. No l3 field: confirmed no genuine
     # mission/app_manual use for this function.

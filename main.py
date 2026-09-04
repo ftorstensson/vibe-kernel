@@ -58,6 +58,8 @@ async def invoke(req: SovereignRequest):
             # this line) before concluding it was missing, not just hard
             # to spot.
             project_map=req.project_map,
+            compiled_l1=req.compiled_l1,
+            compiled_l3=req.compiled_l3,
             keymaster_mandate=req.keymaster_mandate,
             keymaster_skill=req.keymaster_skill,
         )
@@ -74,6 +76,9 @@ async def invoke(req: SovereignRequest):
             "chat_summary": result.get("chat_summary"),
             "chat_summary_cursor": result.get("chat_summary_cursor"),
             "tool_call": result.get("tool_call"),
+            "gate_status": result.get("gate_status"),
+            "whisper": result.get("whisper"),
+            "assessments": result.get("assessments"),
         }
 
     except ValueError as ve:
