@@ -147,6 +147,42 @@ def compose_partner_protocols_lens(partner_protocols):
     return "\n".join(lines)
 
 
+def compose_phase_context_lens(phase_purpose):
+    """L3 context for a real milestone-scoped turn specifically (run_turn)
+    -- the Phase this milestone belongs to, and why that Phase exists.
+    Backend's real, confirmed gap: project_map already gives the Global
+    PM visibility into every phase/milestone, but that's deliberately
+    Global-PM-only -- a milestone-scoped turn had zero visibility into
+    its OWN parent Phase's purpose until now.
+
+    Same L3 layer as mission/app_manual (framing-context information, one
+    level down in scope: app-wide -> phase-wide -> this specific
+    milestone), but deliberately NOT threaded through compose_l3_lens()
+    as a parameter the way mission/app_manual are -- same reason
+    partner_protocols had to be pulled out into its own function: an
+    agent's compose_l3_lens() output is now cacheable
+    (AgentEnvelope.compiled_l3, the Materialized View cutover), compiled
+    ONCE per agent-per-app at publish time, not per-milestone. A single
+    agent (e.g. master_pm) is reused across every milestone under every
+    phase in the app -- baking one specific milestone's phase_purpose
+    into that shared, cached record would mean every OTHER milestone
+    under a different phase silently inherits the wrong one the moment
+    compiled_l3 starts getting read instead of composed live. Genuinely
+    per-milestone dynamic content, exactly like partner_protocols is
+    genuinely per-turn dynamic -- neither can live inside something
+    compiled at a coarser scope than the thing itself varies at.
+
+    Appended by the caller (pods/social/engine.py's run_turn) after L3's
+    own (possibly precompiled) value, same pattern
+    compose_partner_protocols_lens()/compose_project_map_lens() already
+    use. Returns "" when phase_purpose is empty/absent, same falsy-skip
+    convention as those, so a caller can unconditionally check
+    truthiness before appending."""
+    if not phase_purpose:
+        return ""
+    return f"PHASE PURPOSE: {phase_purpose}"
+
+
 def compose_project_map_lens(project_map):
     """L3 context for the Global PM's own turn specifically
     (pods/social/engine.py's run_global_turn) -- deliberately NOT threaded

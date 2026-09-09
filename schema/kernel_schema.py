@@ -152,7 +152,27 @@ class SovereignRequest(BaseModel):
     four Functions -- Gatekeeper/Chat Manager/Keymaster/Gate Maker still
     compose via compose_function_identity() from raw ingredients every
     turn, unchanged. Extending compilation to Functions is a real,
-    separate future question, not assumed to fall out of this for free."""
+    separate future question, not assumed to fall out of this for free.
+
+    phase_purpose: the purpose of the Phase this milestone belongs to --
+    Backend's real, confirmed gap: project_map already gives the Global
+    PM visibility into every phase/milestone, but that's deliberately
+    Global-PM-only, so a real milestone-scoped turn (run_turn) had zero
+    visibility into its OWN parent Phase's purpose. Same L3 layer as
+    mission/app_manual (framing-context info, one level down in scope),
+    but deliberately NOT folded into compiled_l3 above or threaded
+    through compose_l3_lens() -- see compose_phase_context_lens()'s own
+    docstring (core/composition.py) for why: it's genuinely per-milestone
+    dynamic, exactly like partner_protocols is genuinely per-turn dynamic,
+    and compiled_l3 is cached per-agent-per-app (one agent serves many
+    milestones under many phases) -- baking one milestone's phase_purpose
+    into that shared cache would leak it onto every other milestone the
+    same agent handles. Composed separately and appended after L3
+    (compiled or freshly-composed, either way) in run_turn only -- not
+    run_global_turn (project_map already covers that path's own phase
+    visibility) and not the four Functions (out of scope for this pass,
+    same as compiled_l1/l3 above). Optional/fail-open, same pattern as
+    everything else here."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -176,6 +196,7 @@ class SovereignRequest(BaseModel):
     project_map: List[Dict[str, Any]] = Field(default_factory=list)
     compiled_l1: Optional[str] = None
     compiled_l3: Optional[str] = None
+    phase_purpose: Optional[str] = None
     keymaster_mandate: Optional[str] = None
     keymaster_skill: Optional[str] = None
 
@@ -236,6 +257,25 @@ class SovereignResponse(BaseModel):
     gate_status: Optional[str] = None
     whisper: Optional[str] = None
     assessments: Optional[List[Dict[str, Any]]] = None
+    # trigger_log: the real per-turn trigger-decision trace (core/
+    # triggers.py's evaluate_triggers()) -- one entry per real trigger
+    # actually evaluated this turn (gatekeeper_assessment/
+    # keymaster_confirmation/strike_team_launch on a milestone-scoped
+    # turn, global_dispatch_choice on a global one): {trigger_id, scope,
+    # pattern, condition_result, fired, outcome, skip_reason (only when
+    # relevant)}. Kernel is stateless and forgets everything after
+    # answering, so this is the only place this data can ever come from
+    # -- Backend owns actually persisting it into the real per-milestone
+    # trigger-decision log Item 2 asks for. Additive alongside gate_status/
+    # whisper/assessments above, not a replacement for them -- Backend
+    # already has real persistence wired against that shape; a later,
+    # separate pass can consider whether those become derived views
+    # computed from this instead, not forced now. Always a real list
+    # (possibly holding entries whose condition_result is False) whenever
+    # this turn's evaluator actually ran, which is every real turn --
+    # unlike chat_summary's None-means-didn't-run semantics, there's no
+    # "the evaluator didn't run" case on a real turn to represent.
+    trigger_log: Optional[List[Dict[str, Any]]] = None
 
 class DeriveRequirementsRequest(BaseModel):
     """Functions Library, entry 1: derive_requirements() needs no conversation
@@ -409,6 +449,25 @@ class CompileIdentityRequest(BaseModel):
 class CompileIdentityResponse(BaseModel):
     l1: str
     l3: Optional[str] = None
+
+class SummarizeForMapRequest(BaseModel):
+    """Test Run 1, items 6/7: the real summarization half of the Global Map
+    split (see core/map_summary.py's own docstring for the full trace).
+    Backend calls this once per milestone/phase at publish/compile time
+    (same trigger as CompileIdentityRequest), caching the result in the
+    compiled record -- replacing a crude 140-char truncation with a
+    genuine 1-2 sentence condensation.
+
+    text: the milestone's or phase's own real purpose/output text, raw --
+    Kernel doesn't fetch or assume any additional context beyond what's
+    given here, same stateless-executor principle as everywhere else in
+    this contract. app_id is identification only, same as every other
+    standalone endpoint's app_id field."""
+    app_id: str
+    text: str
+
+class SummarizeForMapResponse(BaseModel):
+    summary: str
 
 class AgentPreviewRequest(BaseModel):
     """The agent-side sibling of PreviewFunctionRequest -- Test Lab has
@@ -667,6 +726,11 @@ class AgentEnvelope(BaseModel):
     # compose_l3_lens() call whenever present.
     compiled_l1: Optional[str] = None
     compiled_l3: Optional[str] = None
+    # See SovereignRequest's docstring -- straight copy-through, read
+    # ONLY by pods/social/engine.py's run_turn (via core/composition.py's
+    # compose_phase_context_lens()), not run_global_turn (project_map
+    # already covers that path) or any Function.
+    phase_purpose: Optional[str] = None
     # Keymaster's own identity for confirm_launch_intent() -- see
     # SovereignRequest's docstring. No l3 field: confirmed no genuine
     # mission/app_manual use for this function.

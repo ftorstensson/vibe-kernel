@@ -1,13 +1,13 @@
-import re
-from core.brief import derive_brief
 from core.clock import TheClock
 from core.composition import compose_function_identity
-from core.coverage import assess_coverage, resolve_required_questions
-from core.ignition import confirm_launch_intent
+from core.coverage import resolve_required_questions
 from core.reconcile import build_chat_summary
+from core.triggers import (
+    evaluate_triggers, resolve_already_fired,
+    GATEKEEPER_ASSESSMENT, KEYMASTER_CONFIRMATION, STRIKE_TEAM_LAUNCH,
+    GLOBAL_DISPATCH_CHOICE,
+)
 from pods.social.engine import SocialEngine
-from pods.strike_team.engine import StrikeEngine
-from pods.synthesis.engine import SynthesisEngine
 from schema.kernel_schema import AgentEnvelope
 
 class MasterOrchestrator:
@@ -95,26 +95,27 @@ class MasterOrchestrator:
                 chat_computed = True
             except Exception:
                 pass
-            # run_global_turn now returns {social_response, tool_call} --
-            # tool_call is real native function-calling output (Gemini's
-            # start_milestone_work, see pods/social/engine.py's own
-            # docstring), not something Kernel resolves further itself
-            # (stateless: only Backend has the dispatched milestone's real
-            # data). status flips to TOOL_CALL so Backend can branch on it
-            # the same way it already does for PROBING/AUTHORIZED/STABLE/
-            # GLOBAL -- social_response is still returned either way (the
-            # model's own real acknowledgment text when a tool call fires
-            # too, confirmed both come back together) as raw material for
-            # Backend's own synthesis step, not dropped just because a
-            # tool call also happened.
-            turn = await SocialEngine.run_global_turn(envelope)
-            tool_call = turn.get("tool_call")
+            # GLOBAL_DISPATCH_CHOICE (core/triggers.py) runs run_global_turn
+            # for real -- tool_call is real native function-calling output
+            # (Gemini's start_milestone_work), not something Kernel resolves
+            # further itself (stateless: only Backend has the dispatched
+            # milestone's real data). status flips to TOOL_CALL so Backend
+            # can branch on it the same way it already does for
+            # PROBING/AUTHORIZED/STABLE/GLOBAL -- social_response is still
+            # returned either way (the model's own real acknowledgment text
+            # when a tool call fires too, confirmed both come back together)
+            # as raw material for Backend's own synthesis step, not dropped
+            # just because a tool call also happened.
+            context = {"envelope": envelope}
+            trigger_log = await evaluate_triggers([GLOBAL_DISPATCH_CHOICE], context)
+            tool_call = context.get("tool_call")
             return {
-                "social_response": turn.get("social_response"),
+                "social_response": context.get("social_response"),
                 "status": "TOOL_CALL" if tool_call else "GLOBAL",
                 "tool_call": tool_call,
                 "chat_summary": envelope.chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
+                "trigger_log": trigger_log,
             }
 
         # 3. Detect readiness -- gate-driven, not keyword matching. Fred's
@@ -138,46 +139,57 @@ class MasterOrchestrator:
         # transient failure -- "ground truth" means this turn's honest
         # answer, not a cached guess.
         required_questions = resolve_required_questions(envelope.milestone_config)
-        chat_summary = []
-        ready = False
         chat_computed = False
         envelope.gatekeeper_whisper = None
         envelope.chat_whisper = None
-        # Real Gatekeeper output, for SovereignResponse -- today only Test
-        # Lab's standalone assess_coverage endpoint returns this shape; a
-        # real live turn computed it internally every time but discarded
-        # everything except gate_status (folded into ready) and whisper
-        # (already on envelope.gatekeeper_whisper). Backend's own
-        # persistence function already exists for this exact shape, it's
-        # just never had real data to call with. None (not fabricated)
-        # whenever Gatekeeper genuinely didn't run this turn -- no
-        # required_questions, already_fired skipped it, or a real
-        # exception -- same "None means nothing to report" semantics
-        # chat_summary already uses, not a guess at what it would have
-        # said.
-        gate_status = None
-        assessments = None
 
         # Guard against re-firing the Strike Team every subsequent turn once
-        # already launched -- and, as of this pass, against re-running
-        # Gatekeeper's gate check post-launch too (see below). No new
-        # persistence needed: knowledge_bricks already round-trips through
-        # Backend's real ledger sync, so a non-empty knowledge_bricks on a
-        # fresh read is a real, already-persisted signal that the Strike
-        # Team has fired for this milestone before. Computed early now
-        # (used inside the required_questions block below, not just the
-        # Keymaster check further down) -- one computation, two consumers,
-        # not a second copy that can drift.
-        already_fired = bool(envelope.knowledge_bricks)
+        # already launched -- and against re-running Gatekeeper's gate check
+        # post-launch too. No new persistence needed: knowledge_bricks
+        # already round-trips through Backend's real ledger sync, so a
+        # non-empty knowledge_bricks on a fresh read is a real, already-
+        # persisted signal that the Strike Team has fired for this milestone
+        # before. Now a named context fact (core/triggers.py's
+        # resolve_already_fired()) both Gatekeeper's and Keymaster's real
+        # trigger conditions read by name, rather than an inline local
+        # variable each branch checked separately -- see that function's
+        # own docstring for why the underlying check itself is unchanged.
+        already_fired = resolve_already_fired(envelope)
+
+        # The shared state threaded through this turn's trigger chain (see
+        # core/triggers.py's Trigger/evaluate_triggers docstrings for the
+        # full reasoning behind this shape -- an ordered, stateful
+        # evaluator, not a flat independent-rule table, because Keymaster's
+        # own condition genuinely needs Gatekeeper's real output, and Strike
+        # Team's needs Keymaster's). Chat Manager is deliberately NOT one of
+        # these triggers, on purpose, not an oversight: it runs every turn
+        # unconditionally regardless of readiness state (Fred's product
+        # call -- see _run_chat_manager()'s own docstring), which doesn't
+        # fit any of the four real gated firing patterns (once-at-creation /
+        # every-turn-until-satisfied-then-never-again / bound-to-one-piece-
+        # of-work / live-in-the-moment-choice) this rework represents --
+        # it's a fifth, genuinely different shape (always-on, never gated),
+        # so it stays a plain unconditional call below instead.
+        context = {
+            "envelope": envelope,
+            "required_questions": required_questions,
+            "chat_summary": [],
+            "strike_team_already_fired": already_fired,
+            "ready": False,
+            "gate_status": None,
+            "assessments": None,
+            "confirmed": False,
+        }
+        trigger_log = []
 
         if required_questions:
             try:
                 # Always runs, launched or not -- Fred's product call:
                 # staying continuously aware of the conversation is core to
-                # the PM's job regardless of milestone state, unlike
-                # Gatekeeper below. Shared with the Global Agent path -- see
-                # _run_chat_manager()'s own docstring.
-                chat_summary = MasterOrchestrator._run_chat_manager(envelope, required_questions)
+                # the PM's job regardless of milestone state, unlike the
+                # real triggers below. Shared with the Global Agent path --
+                # see _run_chat_manager()'s own docstring.
+                context["chat_summary"] = MasterOrchestrator._run_chat_manager(envelope, required_questions)
                 chat_computed = True
 
                 if already_fired:
@@ -187,120 +199,51 @@ class MasterOrchestrator:
                     # left for it to say; gatekeeper_whisper stays None
                     # (already set above), not a stale value from some
                     # earlier turn. ready=True directly here, not re-derived
-                    # via assess_coverage, is what keeps physics_open
-                    # genuinely correct post-launch instead of silently
-                    # reverting to its False default just because Gatekeeper
-                    # didn't run this turn -- physics_open used to be a pure
-                    # byproduct of Gatekeeper running; this is the one place
-                    # that's no longer true, so it has to be set explicitly.
-                    ready = True
-                else:
-                    # Gatekeeper's real L1 (judge archetype)/L3 (mission+app_manual)/
-                    # skill (the assessment procedure), composed from raw
-                    # ingredients already on the envelope -- not fetched here, and
-                    # not a hand-written mandate baked into assess_coverage()
-                    # itself. platform.mandate/app_manual/global_mission are the
-                    # exact same values already on persona_config (identical for
-                    # the agent and for Gatekeeper); only the judge archetype's
-                    # mandate and Gatekeeper's skill text are genuinely
-                    # Gatekeeper's own (see SovereignRequest's docstring).
-                    identity = compose_function_identity(
-                        envelope.gatekeeper_mandate,
-                        (envelope.persona_config.get("platform") or {}).get("mandate"),
-                        envelope.persona_config.get("app_manual"),
-                        envelope.persona_config.get("global_mission"),
-                    )
-                    coverage = assess_coverage(
-                        required_questions, chat_summary,
-                        identity["l1"], identity["l3"], envelope.gatekeeper_skill or "",
-                    )
-                    envelope.gatekeeper_whisper = coverage.get("whisper")
-                    gate_status = coverage.get("gate_status")
-                    assessments = coverage.get("assessments")
-                    ready = gate_status == "GREEN"
+                    # via GATEKEEPER_ASSESSMENT's own action, is what keeps
+                    # physics_open genuinely correct post-launch instead of
+                    # silently reverting to its False default just because
+                    # Gatekeeper didn't run this turn -- physics_open used
+                    # to be a pure byproduct of Gatekeeper running; this is
+                    # the one place that's no longer true, so it has to be
+                    # set explicitly. GATEKEEPER_ASSESSMENT's own condition
+                    # still runs right after regardless (required_questions
+                    # is truthy here) -- its condition correctly evaluates
+                    # False (already_fired), so it won't overwrite this, but
+                    # the trace log still gets a real entry explaining why
+                    # it didn't run this turn, not silence.
+                    context["ready"] = True
+                trigger_log += await evaluate_triggers([GATEKEEPER_ASSESSMENT], context)
             except Exception:
-                ready = False
-        envelope.physics_open = ready
+                context["ready"] = False
+        envelope.physics_open = context["ready"]
 
-        # Keymaster's real L1/skill (the classifier role + confirmation
-        # criteria), composed from raw ingredients already on the envelope --
-        # same pattern as Coverage's/Chat Manager's identity resolution
-        # above. No l3: confirmed no genuine mission/app_manual use for this
-        # function's narrow intent-classification task. Composed
-        # unconditionally here (cheap, pure string work, no I/O) rather than
-        # only inside the ready-and-not-fired branch, so the short-circuit
-        # below still reads cleanly as one condition.
-        keymaster_identity = compose_function_identity(
-            envelope.keymaster_mandate,
-            (envelope.persona_config.get("platform") or {}).get("mandate"),
-            None, None,
-        )
+        # Keymaster's and Strike Team's own triggers run unprotected by the
+        # try/except above, exactly matching the pre-refactor code's own
+        # error-handling scope: today, an exception inside
+        # confirm_launch_intent() itself was never caught either (it sits
+        # outside the try block that wraps Chat Manager/Gatekeeper) -- a
+        # real, pre-existing gap, not something this refactor introduces or
+        # silently changes. Unifying that scope is a genuine, separate
+        # decision for later, not folded in here.
+        trigger_log += await evaluate_triggers([KEYMASTER_CONFIRMATION, STRIKE_TEAM_LAUNCH], context)
 
-        if ready and not already_fired and confirm_launch_intent(
-            envelope.history, l1=keymaster_identity["l1"], skill=envelope.keymaster_skill or "",
-        ):
-            print(f"[ORCHESTRATOR] Strike Team Authorized (gate-driven).")
+        chat_summary = context["chat_summary"]
 
-            # The settled brief -- Phase 1 (core/brief.py), not gated/fail-open
-            # like Coverage's whisper since firing at all already implies
-            # gate_status GREEN; built from the same chat_summary pipeline
-            # as Coverage, so it can't be built on a fact that already
-            # scrolled out of view. Already computed above for the readiness
-            # check -- reused here, not recomputed.
-            brief = derive_brief(envelope.milestone_config.get("output", ""), chat_summary)
-
-            # Specialists/Hound only need the brief as readable text -- the
-            # structured {identity_narrative, founding_voice} shape below is
-            # for the final response/UI (content.brief), a separate concern.
-            brief_text = brief.get("identity_narrative", "")
-            if brief.get("founding_voice"):
-                quotes = "\n".join(f'- "{q}"' for q in brief["founding_voice"])
-                brief_text = f"{brief_text}\n\nIN THE DIRECTOR'S OWN WORDS:\n{quotes}"
-
-            # Turn B: Parallel Hunt
-            strike_results = await StrikeEngine.run_industrial_strike(envelope, brief_text)
-
-            # Turn C: Synthesis -- bricks (the paper sections) and appendix
-            # (each specialist's own raw report + sources) are genuinely
-            # different things now, not one blended dict.
-            synthesis = await SynthesisEngine.forge_truth(
-                specialist_outputs=strike_results['reports'],
-                milestone_config=envelope.milestone_config
-            )
-            bricks = synthesis['bricks']
-            appendix = synthesis['appendix']
-
-            # The Weld (Inject Links) -- both the synthesized sections and
-            # each specialist's own raw report can carry [N] citations back
-            # to the same global treasure_chest.
-            for key, content in bricks.items():
-                if isinstance(content, str):
-                    bricks[key] = MasterOrchestrator.weld_links(content, strike_results['treasure_chest'])
-            for entry in appendix:
-                if isinstance(entry.get('content'), str):
-                    entry['content'] = MasterOrchestrator.weld_links(entry['content'], strike_results['treasure_chest'])
-
-            # Update Knowledge -- only the flat brick_id->prose bricks belong
-            # in knowledge_bricks (Backend's ledger extraction and TheClock's
-            # compression both assume that flat shape); appendix/brief are
-            # carried in the response instead, not folded in here -- same
-            # reasoning as why they can't be smuggled into data_patch either.
-            envelope.knowledge_bricks.update(bricks)
-            envelope.kaiser_mandate = "RESEARCH COMPLETE. Discuss the new findings."
-
+        if context.get("strike_team_launched"):
             # Social Turn
             response = await SocialEngine.run_turn(envelope)
             return {
                 "social_response": response,
-                "data_patch": bricks,
-                "brief": brief,
-                "appendix": appendix,
+                "data_patch": context["bricks"],
+                "brief": context["brief"],
+                "appendix": context["appendix"],
                 "status": "STABLE",
                 "chat_summary": chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
-                "gate_status": gate_status,
+                "gate_status": context["gate_status"],
                 "whisper": envelope.gatekeeper_whisper,
-                "assessments": assessments,
+                "assessments": context["assessments"],
+                "trigger_log": trigger_log,
             }
 
         else:
@@ -312,17 +255,8 @@ class MasterOrchestrator:
                 "status": status,
                 "chat_summary": chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
-                "gate_status": gate_status,
+                "gate_status": context["gate_status"],
                 "whisper": envelope.gatekeeper_whisper,
-                "assessments": assessments,
+                "assessments": context["assessments"],
+                "trigger_log": trigger_log,
             }
-
-    @staticmethod
-    def weld_links(text, treasure_chest):
-        def replace(match):
-            source_id = match.group(1)
-            if source_id in treasure_chest:
-                s = treasure_chest[source_id]
-                return f"[{s['title']}]({s['url']})"
-            return f"[{source_id}]"
-        return re.sub(r'\[(\d+)\]', replace, text)
