@@ -8,6 +8,7 @@ from schema.kernel_schema import (
     ConfirmLaunchIntentRequest, ConfirmLaunchIntentResponse,
     SynthesizeDispatchRequest, SynthesizeDispatchResponse,
     CompileIdentityRequest, CompileIdentityResponse,
+    SummarizeForMapRequest, SummarizeForMapResponse,
     AgentPreviewRequest,
 )
 from core.orchestrator import MasterOrchestrator
@@ -16,6 +17,7 @@ from core.coverage import assess_coverage, resolve_required_questions
 from core.reconcile import build_chat_summary
 from core.ignition import confirm_launch_intent
 from core.composition import compose_function_identity, compose_agent_identity
+from core.map_summary import summarize_for_map
 from pods.social.engine import SocialEngine
 import uvicorn
 import os
@@ -60,6 +62,7 @@ async def invoke(req: SovereignRequest):
             project_map=req.project_map,
             compiled_l1=req.compiled_l1,
             compiled_l3=req.compiled_l3,
+            phase_purpose=req.phase_purpose,
             keymaster_mandate=req.keymaster_mandate,
             keymaster_skill=req.keymaster_skill,
         )
@@ -79,6 +82,7 @@ async def invoke(req: SovereignRequest):
             "gate_status": result.get("gate_status"),
             "whisper": result.get("whisper"),
             "assessments": result.get("assessments"),
+            "trigger_log": result.get("trigger_log"),
         }
 
     except ValueError as ve:
@@ -176,6 +180,22 @@ async def invoke_compile_identity(req: CompileIdentityRequest):
                 req.app_manual, req.global_mission,
             )
         return {"l1": identity["l1"], "l3": identity["l3"]}
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Test Run 1, items 6/7: the real summarization half of the Global Map
+# split -- see core/map_summary.py's own docstring for the full trace.
+# Same "compile-time, cached in the compiled record" trigger as
+# compile_identity above, not a live-turn concern; Kernel does no caching
+# itself, just returns the summary string for Backend to persist.
+@app.post("/kernel/summarize_for_map", response_model=SummarizeForMapResponse)
+async def invoke_summarize_for_map(req: SummarizeForMapRequest):
+    try:
+        return {"summary": summarize_for_map(req.text)}
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:

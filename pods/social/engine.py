@@ -1,7 +1,7 @@
 from core.agent_factory import AgentFactory
 from core.composition import (
     compose_l1_lines, compose_l3_lens, compose_partner_protocols_lens,
-    compose_project_map_lens, join_blocks,
+    compose_phase_context_lens, compose_project_map_lens, join_blocks,
 )
 from core.kernel_utils import get_clean_text
 from core.prompt_builder import PromptBuilder
@@ -61,9 +61,23 @@ START_MILESTONE_WORK_TOOL = {
                 "milestone_id": {
                     "type": "string",
                     "description": "The real id of the milestone to dispatch to, exactly as it appears in the PROJECT MAP.",
-                }
+                },
+                # Required, not optional prose -- Item 2's observability ask
+                # (core/triggers.py's GLOBAL_DISPATCH_CHOICE trace entry)
+                # needs a real "why" for every turn this actually fires,
+                # structurally guaranteed by the tool's own schema rather
+                # than hoped-for from free text. Only for the fire case, by
+                # design: forcing a similar explanation on every turn the
+                # model DOESN'T dispatch (the vast majority) would be real
+                # overhead for the uneventful default -- the trace log's own
+                # "condition_result: True, fired: False" entry already is
+                # the no-fire signal, no separate capture needed for that.
+                "reasoning": {
+                    "type": "string",
+                    "description": "One short sentence: why this milestone, why now -- what the Director said or did that makes this the right moment to dispatch.",
+                },
             },
-            "required": ["milestone_id"],
+            "required": ["milestone_id", "reasoning"],
         },
     },
 }
@@ -78,10 +92,11 @@ DISPATCH_TOOL_LAW = (
     "You have exactly ONE callable tool: start_milestone_work. Call it only "
     "when the Director clearly wants to begin or resume focused work on a "
     "specific milestone from the PROJECT MAP above, with milestone_id set to "
-    "that milestone's real id. Never fabricate any other tool call, "
-    "function-call syntax, or JSON of any kind as literal text for anything "
-    "else -- prose only otherwise. This overrides anything your persona "
-    "implies about calling tools or delegating to other agents."
+    "that milestone's real id, and reasoning set to one short, real sentence "
+    "explaining why this milestone, why now. Never fabricate any other tool "
+    "call, function-call syntax, or JSON of any kind as literal text for "
+    "anything else -- prose only otherwise. This overrides anything your "
+    "persona implies about calling tools or delegating to other agents."
 )
 
 
@@ -156,17 +171,24 @@ class SocialEngine:
         # L3: reads Backend's precompiled envelope.compiled_l3 when present
         # (the Materialized View cutover), falls back to a live
         # compose_l3_lens() call otherwise -- see _compiled_l3()'s own
-        # docstring. partner_protocols is appended separately, not
-        # threaded through either path -- each active function's standing
-        # explanation of its own whisper (e.g. Gatekeeper's real "what
-        # RED/AMBER/GREEN means" content), narrowed to the genuinely-fired
-        # set via _active_partner_protocols() (see its own docstring) so a
-        # protocol never shows up detached from the whisper it explains.
-        # Composed and appended here rather than folded into compiled_l3
-        # itself because it's genuinely per-turn dynamic -- Backend
-        # resolves it before this turn even runs, but whether it's
-        # RELEVANT is only known once this turn's own whisper fires.
+        # docstring. phase_purpose and partner_protocols are both appended
+        # separately, not threaded through either path -- both are
+        # genuinely per-milestone/per-turn dynamic, and compiled_l3 is
+        # cached per-agent-per-app (one agent serves many milestones), so
+        # neither can live inside something compiled at that coarser scope
+        # (see compose_phase_context_lens()'s own docstring for the real
+        # gap this closes: a milestone-scoped turn had zero visibility
+        # into its own parent Phase's purpose, unlike run_global_turn,
+        # which already gets that via project_map). partner_protocols:
+        # each active function's standing explanation of its own whisper
+        # (e.g. Gatekeeper's real "what RED/AMBER/GREEN means" content),
+        # narrowed to the genuinely-fired set via _active_partner_protocols()
+        # (see its own docstring) so a protocol never shows up detached
+        # from the whisper it explains.
         pm_lens = _compiled_l3(envelope)
+        phase_context_block = compose_phase_context_lens(envelope.phase_purpose)
+        if phase_context_block:
+            pm_lens = f"{pm_lens}\n\n{phase_context_block}" if pm_lens else phase_context_block
         partner_protocols_block = compose_partner_protocols_lens(_active_partner_protocols(envelope))
         if partner_protocols_block:
             pm_lens = f"{pm_lens}\n\n{partner_protocols_block}" if pm_lens else partner_protocols_block
