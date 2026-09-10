@@ -10,6 +10,27 @@ from core.triggers import (
 from pods.social.engine import SocialEngine
 from schema.kernel_schema import AgentEnvelope
 
+
+def _resolve_active_scope_path(envelope: AgentEnvelope):
+    """The real scope this turn's own facts belong to (markdown-6.md §5's
+    Memory resolution: "keyed by scope path (app/phase/milestone)") --
+    app_id alone when no milestone is active this turn, app_id/
+    milestone_id once one is. phase_id folds in as a real middle segment
+    once Kernel has one on the envelope -- it doesn't yet (no phase_id
+    field exists anywhere in this contract today, only phase_purpose's
+    own text, see SovereignRequest's docstring); flagged to Backend as a
+    real, separate follow-up, not silently worked around here. Used for
+    both jobs scope_path exists to do: TAGGING new facts
+    (build_chat_summary()'s own scope_path param, called from
+    _run_chat_manager() below) and FILTERING them back out at read time
+    (core/reconcile.py's filter_facts_by_scope(), called from
+    core/triggers.py's _gatekeeper_action()) -- same value, computed once
+    per call site, not two independent copies that could drift."""
+    if envelope.milestone_id:
+        return f"{envelope.app_id}/{envelope.milestone_id}"
+    return envelope.app_id
+
+
 class MasterOrchestrator:
     @staticmethod
     def _run_chat_manager(envelope: AgentEnvelope, required_questions=None):
@@ -62,6 +83,16 @@ class MasterOrchestrator:
             l1=chat_manager_identity["l1"],
             l3=chat_manager_identity["l3"],
             skill=envelope.chat_manager_skill or "",
+            # See _resolve_active_scope_path()'s own docstring -- tags
+            # every newly-extracted fact with the real scope this turn
+            # belongs to, app-level at minimum, milestone-level once one's
+            # active. Applies to every caller of this function, not just
+            # the new Global gate-loop -- markdown-6.md §5 doesn't carve
+            # out an exception for the task-scoped path, and a fact with
+            # no scope tag isn't a state anything should keep producing
+            # going forward, just a migration-compatibility shim for
+            # facts extracted before this pass.
+            scope_path=_resolve_active_scope_path(envelope),
         )
         envelope.chat_whisper = chat_result["chat_whisper"]
         envelope.chat_summary = chat_result["chat_summary"]
@@ -109,14 +140,93 @@ class MasterOrchestrator:
             context = {"envelope": envelope}
             trigger_log = await evaluate_triggers([GLOBAL_DISPATCH_CHOICE], context)
             tool_call = context.get("tool_call")
+            status = "TOOL_CALL" if tool_call else "GLOBAL"
+            social_response = context.get("social_response")
+            data_patch = brief = appendix = None
+            gate_status = None
+            assessments = None
+
+            # The automatic Gatekeeper/Keymaster/Strike-Team loop, taking
+            # over on every turn after a milestone's been dispatched
+            # (PM14's explicit resolution: Test Run 0 decommissioned the
+            # separate Task-scoped conversation this used to run inside --
+            # same chain, same firing patterns, GATEKEEPER_ASSESSMENT/
+            # KEYMASTER_CONFIRMATION/STRIKE_TEAM_LAUNCH unchanged from
+            # core/triggers.py, just riding the Global conversation now).
+            # Only attempted when Backend's active_milestone_already_fired
+            # is not None -- None means this milestone has never been
+            # dispatched at all (see SovereignRequest's own docstring for
+            # the real three-state meaning), which is exactly today's
+            # original unconditional skip, preserved for that real case.
+            if envelope.milestone_id and envelope.active_milestone_already_fired is not None:
+                gate_context = {
+                    "envelope": envelope,
+                    "required_questions": resolve_required_questions(envelope.milestone_config),
+                    "chat_summary": envelope.chat_summary,
+                    "active_scope_path": _resolve_active_scope_path(envelope),
+                    # Deliberately NOT envelope.knowledge_bricks -- Backend
+                    # traced a real conflict: on a Global turn that field is
+                    # the whole App's own accumulated findings across every
+                    # milestone (what ESTABLISHED_KNOWLEDGE shows the PM),
+                    # not this one milestone's launch state. This explicit
+                    # field is why already_fired never has to touch it here.
+                    "strike_team_already_fired": envelope.active_milestone_already_fired,
+                    "ready": False,
+                    "gate_status": None,
+                    "assessments": None,
+                    "confirmed": False,
+                }
+                try:
+                    if gate_context["strike_team_already_fired"]:
+                        # Same shortcut the task-scoped path already uses --
+                        # the gate's already permanently passed, nothing
+                        # left for Gatekeeper to say. Its own trigger still
+                        # runs right after regardless (condition correctly
+                        # evaluates False), so the trace log gets a real
+                        # skip_reason entry, not silence.
+                        gate_context["ready"] = True
+                    trigger_log += await evaluate_triggers([GATEKEEPER_ASSESSMENT], gate_context)
+                except Exception:
+                    gate_context["ready"] = False
+                envelope.physics_open = gate_context["ready"]
+                # Keymaster/Strike-Team run unprotected, exactly matching
+                # the task-scoped path's own error-handling scope (see that
+                # branch's own comment on this asymmetry) -- deliberately
+                # NOT unified into one shared try/except here either, same
+                # reasoning, not a new inconsistency introduced by this pass.
+                trigger_log += await evaluate_triggers([KEYMASTER_CONFIRMATION, STRIKE_TEAM_LAUNCH], gate_context)
+                gate_status = gate_context["gate_status"]
+                assessments = gate_context["assessments"]
+
+                if gate_context.get("strike_team_launched"):
+                    # Strike Team fired directly from this Global turn's own
+                    # automatic loop. Deliberately calls run_turn(), not
+                    # run_global_turn() again -- the latter would re-declare
+                    # start_milestone_work and risk a second, spurious
+                    # dispatch on the exact turn Strike Team just launched
+                    # from. Same STABLE shape the task-scoped path already
+                    # uses for this moment, same social_response mechanism,
+                    # proven and tested there already.
+                    status = "STABLE"
+                    data_patch = gate_context["bricks"]
+                    brief = gate_context["brief"]
+                    appendix = gate_context["appendix"]
+                    social_response = await SocialEngine.run_turn(envelope)
+
             return {
-                "social_response": context.get("social_response"),
-                "status": "TOOL_CALL" if tool_call else "GLOBAL",
+                "social_response": social_response,
+                "status": status,
+                "data_patch": data_patch,
+                "brief": brief,
+                "appendix": appendix,
                 "tool_call": tool_call,
                 "chat_summary": envelope.chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
                 "trigger_log": trigger_log,
                 "chat_whisper": envelope.chat_whisper,
+                "gate_status": gate_status,
+                "whisper": envelope.gatekeeper_whisper,
+                "assessments": assessments,
             }
 
         # 3. Detect readiness -- gate-driven, not keyword matching. Fred's

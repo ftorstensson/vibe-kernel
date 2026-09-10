@@ -2,6 +2,7 @@ from core.brief import derive_brief
 from core.composition import compose_function_identity
 from core.coverage import assess_coverage
 from core.ignition import confirm_launch_intent
+from core.reconcile import filter_facts_by_scope
 from pods.social.engine import SocialEngine
 from pods.strike_team.engine import StrikeEngine
 from pods.synthesis.engine import SynthesisEngine
@@ -127,7 +128,17 @@ def _gatekeeper_action(context):
     app_manual/global_mission are the exact same values already on
     persona_config (identical for the agent and for Gatekeeper); only the
     judge archetype's mandate and Gatekeeper's skill text are genuinely
-    Gatekeeper's own (see SovereignRequest's docstring)."""
+    Gatekeeper's own (see SovereignRequest's docstring).
+
+    filter_facts_by_scope() runs here, right before assess_coverage(),
+    not earlier -- context["chat_summary"] itself stays the caller's real
+    full value (needed unfiltered elsewhere, e.g. Strike Team's own brief
+    derivation reads the whole thing); only what Gatekeeper actually SEES
+    gets narrowed. context.get("active_scope_path") is None on the task-
+    scoped path (never set there -- that context dict has no such key at
+    all, see core/orchestrator.py), which the filter treats as "no active
+    scope, don't filter" -- so this is a genuine no-op for every existing
+    caller, confirmed by that same fallback, not just assumed safe."""
     envelope = context["envelope"]
     identity = compose_function_identity(
         envelope.gatekeeper_mandate,
@@ -135,8 +146,9 @@ def _gatekeeper_action(context):
         envelope.persona_config.get("app_manual"),
         envelope.persona_config.get("global_mission"),
     )
+    scoped_chat_summary = filter_facts_by_scope(context["chat_summary"], context.get("active_scope_path"))
     coverage = assess_coverage(
-        context["required_questions"], context["chat_summary"],
+        context["required_questions"], scoped_chat_summary,
         identity["l1"], identity["l3"], envelope.gatekeeper_skill or "",
     )
     envelope.gatekeeper_whisper = coverage.get("whisper")
