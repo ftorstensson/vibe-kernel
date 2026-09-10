@@ -179,6 +179,19 @@ def reconcile_fact(existing_facts, new_item):
                 # at all are unaffected.
                 if "scope_path" in new_item:
                     f["scope_path"] = new_item["scope_path"]
+                # A REVISION is only ever classified here because the model
+                # judged this new content is NOT a genuine conflict with the
+                # matched fact -- so whatever status that fact carried before
+                # (including "superseded", if it was contradicted earlier and
+                # is now being reconfirmed/refined) is stale and must clear
+                # back to "current". Without this, a fact reconfirmed after
+                # an earlier CONTRADICTION stays permanently invisible to
+                # coverage.py's current_facts filter, and Gatekeeper can
+                # never see it as settled even though the real answer is
+                # sitting right there in chat_summary. Confirmed live in
+                # production (real end-to-end Global-turn pass) before this
+                # fix -- not a hypothetical.
+                f["status"] = "current"
                 break
     elif classification == "contradiction" and resolved_id:
         for f in facts:
