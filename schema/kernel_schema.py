@@ -41,14 +41,37 @@ class SovereignRequest(BaseModel):
     not part of the shared persona_config shape Backend assembles the same
     way for every agent.
 
-    milestone_id is Optional -- genuinely unused on the is_global=True path.
-    process_turn() returns from that branch (core/orchestrator.py) before
-    milestone_config is ever read, and run_global_turn() (pods/social/
-    engine.py) only touches persona_config/knowledge_bricks/history --
-    confirmed by tracing both, not assumed. Required for a real
-    milestone-scoped call (is_global=False); Backend enforces that, not a
-    Kernel-side validator, since Kernel has no way to distinguish "caller
-    forgot it" from "global call, doesn't apply" from the value alone.
+    milestone_id: no longer genuinely unused on the is_global=True path --
+    that was true before Test Run 0 decommissioned Task-execution.
+    Backend's execute_global always sends it (whichever milestone is
+    currently in view), but presence alone doesn't mean a milestone has
+    actually been dispatched (see active_milestone_already_fired below).
+    Required for a real milestone-scoped call (is_global=False) same as
+    always; Backend enforces that, not a Kernel-side validator, since
+    Kernel has no way to distinguish "caller forgot it" from "global call,
+    doesn't apply" from the value alone.
+
+    active_milestone_already_fired: Optional[bool] -- the real per-
+    Milestone dispatch/Ledger state on a Global turn, resolved by Backend
+    from that milestone's own separate dispatch conversation (the one
+    start_milestone_work's original design already creates and writes
+    Strike Team's results to -- see SynthesizeDispatchRequest's own
+    history). Three real states packed into one optional bool, not two
+    fields: None means this milestone has never been dispatched at all
+    (no separate conversation doc exists yet) -- the signal that tells
+    Kernel whether to run the Gatekeeper/Keymaster/Strike-Team loop on
+    this Global turn AT ALL, not just whether it's already fired. False
+    means dispatched, not yet fired -- run the loop for real. True means
+    already fired -- run it, but Gatekeeper/Keymaster correctly no-op via
+    their own existing skip_reason path, same as the task-scoped design
+    always worked. Deliberately NOT derived from envelope.knowledge_bricks
+    the way the task-scoped path's own already_fired check is -- Backend
+    traced a real conflict: knowledge_bricks on a Global turn is the whole
+    App's own accumulated findings across every milestone (what
+    ESTABLISHED_KNOWLEDGE shows the PM), not this one milestone's launch
+    state; scoping it to one milestone would have silently narrowed the
+    PM's own app-wide awareness. This field exists specifically so
+    already_fired never has to touch knowledge_bricks on this path at all.
 
     chat_summary/chat_summary_cursor: Chat Manager's persisted state from
     the last time it ran for this conversation -- Backend sends back
@@ -176,6 +199,7 @@ class SovereignRequest(BaseModel):
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
+    active_milestone_already_fired: Optional[bool] = None
     agent_id: Optional[str] = "master_pm"
     is_global: bool = False  # Global Agent conversation: PM-only, no Clerk/gate
     user_message: str
@@ -687,6 +711,14 @@ class AgentEnvelope(BaseModel):
     part of the incoming request."""
     app_id: str
     project_id: str
+    # See SovereignRequest's docstring for both -- straight copy-through.
+    # milestone_id was genuinely unused before Test Run 0's Global-turn
+    # gate-loop; active_milestone_already_fired is new, resolved by
+    # Backend from that milestone's own separate dispatch conversation,
+    # deliberately not derived from knowledge_bricks (see that docstring
+    # for the real conflict this avoids).
+    milestone_id: Optional[str] = None
+    active_milestone_already_fired: Optional[bool] = None
     milestone_config: Dict[str, Any]
     persona_config: Dict[str, Any]
     knowledge_bricks: Dict[str, str] = Field(default_factory=dict)

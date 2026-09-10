@@ -167,6 +167,18 @@ def reconcile_fact(existing_facts, new_item):
                     f["bucket"] = new_item["bucket"]
                 if "resolution_status" in new_item:
                     f["resolution_status"] = new_item["resolution_status"]
+                # scope_path (Test Run 0's Global-turn gate-loop work):
+                # same re-derive-from-new_item reasoning as bucket/
+                # resolution_status above -- a fact revised while a
+                # DIFFERENT milestone is active should reflect that
+                # milestone's own scope now, not freeze whatever scope it
+                # was first tagged with. Only set when the new item
+                # actually carries one (build_chat_summary() only stamps
+                # this when a real scope_path was given -- see its own
+                # docstring), so older facts/callers that never tag scope
+                # at all are unaffected.
+                if "scope_path" in new_item:
+                    f["scope_path"] = new_item["scope_path"]
                 break
     elif classification == "contradiction" and resolved_id:
         for f in facts:
@@ -226,7 +238,7 @@ def _pick_chat_whisper(pending):
     return ranked[0]["clarifying_question"]
 
 
-def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_summary=None, cursor=0, l1=None, l3=None, skill=""):
+def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_summary=None, cursor=0, l1=None, l3=None, skill="", scope_path=None):
     """Chat Manager's real output -- named chat_summary throughout (renamed
     from build_durable_facts()/durable_facts, matching Gatekeeper's own
     canvas board target display name). Folds each newly extracted item
@@ -261,6 +273,19 @@ def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_
     judge each item's bucket against real milestone relevance, not guess in
     a vacuum -- optional, since not every caller has milestone scope.
 
+    scope_path (markdown-6.md §5's Memory resolution): the real scope this
+    call's own turns belong to right now (app_id, or app_id/milestone_id
+    once a milestone is active -- phase_id folded in once Kernel has one),
+    stamped onto every item extract_facts() returns, BEFORE reconcile_fact()
+    ever sees them -- deterministic tagging by the caller, never asked of
+    the extraction model itself (confirmed against the model's own real
+    schema: EXTRACTION_SCHEMA has no scope concept and this pass doesn't
+    add one). None (the default) tags nothing -- existing callers that
+    never pass this see byte-identical behavior, no scope_path key added
+    to their items at all, not a null one. See filter_facts_by_scope()
+    below for the read-time half of this (Gatekeeper's own hierarchical
+    filter over the resulting chat_summary).
+
     chat_whisper: the real reason it exists (Fred's own words) is that when
     Chat Manager can't confidently classify something as new/update/
     conflict, it should tell the PM to ask the Director to clarify, not
@@ -279,6 +304,9 @@ def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_
         offset=cursor, prior_chat_summary=prior_chat_summary,
         l1=l1, l3=l3, skill=skill,
     )
+    if scope_path:
+        for item in items:
+            item["scope_path"] = scope_path
     chat_summary = list(prior_chat_summary)
     pending = []
     for item in items:
@@ -294,3 +322,42 @@ def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_
         "chat_whisper": _pick_chat_whisper(pending),
         "chat_summary_cursor": len(turns),
     }
+
+
+def filter_facts_by_scope(chat_summary, active_scope_path):
+    """The read-time half of build_chat_summary()'s scope_path stamping --
+    markdown-6.md §5's own resolution: "Gatekeeper checking a Milestone's
+    readiness should see that Milestone's own facts plus everything above
+    it in the parent chain (its Phase's, the App's) -- never a sibling's,
+    never unfiltered access to everything ever said." Hierarchical
+    inclusion, not exact-match-only -- confirmed with PM14 directly, not
+    assumed: a broader-scope fact (e.g. an app-wide "target audience is X"
+    decision) should still inform a specific milestone's own gate check.
+
+    active_scope_path: the scope being assessed right now (e.g.
+    "app123/milestone5"). A fact is included when its own scope_path is
+    that exact scope, or a real ANCESTOR of it (a genuine path prefix,
+    checked with a trailing "/" so "app123/milestone5" isn't mistaken for
+    an ancestor of "app123/milestone59" -- a real near-miss this guards
+    against, not a hypothetical one). A fact tagged for a sibling scope
+    (same ancestor, different milestone) or an unrelated branch entirely
+    is excluded -- this is what actually prevents the cross-milestone
+    noise problem this whole feature exists to solve.
+
+    A fact with no scope_path at all (any chat_summary built before this
+    pass, or by a caller that never passes scope_path to
+    build_chat_summary()) is always included, treated as the broadest
+    possible scope -- fail-open for backward compatibility, not a bug:
+    nothing regresses for a caller that's never heard of scoping.
+
+    active_scope_path itself absent/empty returns chat_summary unfiltered
+    -- there's no active scope to filter against, so filtering would only
+    ever be able to guess wrong, not add real precision."""
+    if not active_scope_path:
+        return chat_summary
+    return [
+        fact for fact in chat_summary
+        if not fact.get("scope_path")
+        or fact["scope_path"] == active_scope_path
+        or active_scope_path.startswith(fact["scope_path"] + "/")
+    ]

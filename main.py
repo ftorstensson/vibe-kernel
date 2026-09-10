@@ -35,6 +35,8 @@ async def invoke(req: SovereignRequest):
         envelope = AgentEnvelope(
             app_id=req.app_id,
             project_id=req.project_id,
+            milestone_id=req.milestone_id,
+            active_milestone_already_fired=req.active_milestone_already_fired,
             milestone_config=req.milestone_config,
             persona_config=req.persona_config,
             knowledge_bricks=req.knowledge_bricks,
