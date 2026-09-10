@@ -276,6 +276,20 @@ class SovereignResponse(BaseModel):
     # unlike chat_summary's None-means-didn't-run semantics, there's no
     # "the evaluator didn't run" case on a real turn to represent.
     trigger_log: Optional[List[Dict[str, Any]]] = None
+    # chat_whisper: Chat Manager's own signal -- the single most pressing
+    # thing it couldn't confidently classify as new/update/conflict,
+    # already computed every real turn (both task-scoped and Global) and
+    # already folded into the PM's own L1 (see pods/social/engine.py's
+    # CHAT WHISPER injection) -- same "already computed, previously
+    # discarded from the response" story as gate_status/whisper/
+    # assessments before that fix. Read straight off envelope.chat_whisper
+    # after the turn, not recomputed. None whenever Chat Manager genuinely
+    # didn't run or found nothing to flag this turn -- same fail-open
+    # contract as chat_summary's own None semantics, not a guess at what
+    # it would have said. Present on the GLOBAL/TOOL_CALL path too, unlike
+    # gate_status/whisper/assessments -- Chat Manager runs unconditionally
+    # on both paths, this isn't gate-specific.
+    chat_whisper: Optional[str] = None
 
 class DeriveRequirementsRequest(BaseModel):
     """Functions Library, entry 1: derive_requirements() needs no conversation

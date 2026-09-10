@@ -116,6 +116,7 @@ class MasterOrchestrator:
                 "chat_summary": envelope.chat_summary if chat_computed else None,
                 "chat_summary_cursor": envelope.chat_summary_cursor if chat_computed else None,
                 "trigger_log": trigger_log,
+                "chat_whisper": envelope.chat_whisper,
             }
 
         # 3. Detect readiness -- gate-driven, not keyword matching. Fred's
@@ -244,6 +245,7 @@ class MasterOrchestrator:
                 "whisper": envelope.gatekeeper_whisper,
                 "assessments": context["assessments"],
                 "trigger_log": trigger_log,
+                "chat_whisper": envelope.chat_whisper,
             }
 
         else:
@@ -259,4 +261,5 @@ class MasterOrchestrator:
                 "whisper": envelope.gatekeeper_whisper,
                 "assessments": context["assessments"],
                 "trigger_log": trigger_log,
+                "chat_whisper": envelope.chat_whisper,
             }
