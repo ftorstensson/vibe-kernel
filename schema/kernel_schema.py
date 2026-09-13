@@ -41,6 +41,27 @@ class SovereignRequest(BaseModel):
     not part of the shared persona_config shape Backend assembles the same
     way for every agent.
 
+    gatekeeper_output_shape/chat_manager_output_shape/keymaster_output_shape
+    (Phase 1 of the output_shape pass): each function's own real
+    functions_registry entry can now carry its own literal JSON Schema for
+    that call's model response, same raw-ingredient status as mandate/
+    skill above -- Kernel doesn't author or validate these, just passes
+    them straight to core/coverage.py's assess_coverage()/core/reconcile.py's
+    build_chat_summary()/core/ignition.py's confirm_launch_intent() as their
+    own new output_shape= parameter. One field per function (matching the
+    existing _mandate/_skill per-function naming, not one shared field --
+    each function's response shape is genuinely its own, unlike
+    partner_protocols' one-shared-field case where the CONTENT is generic).
+    No requirements_output_shape here: derive_requirements() has no
+    envelope path at all (see its own docstring, core/requirements.py --
+    standalone-endpoint-only, same as it's always been for mandate/skill),
+    so its output_shape travels only on DeriveRequirementsRequest, not
+    here. Optional/fail-open, same pattern as tool_law/compiled_l1/
+    everything else in this contract: None (the default -- Backend's
+    resolve_function_ingredients() may not have shipped this yet) means
+    each function falls back to its own hardcoded schema constant,
+    byte-identical to behavior before this field existed.
+
     milestone_id: no longer genuinely unused on the is_global=True path --
     that was true before Test Run 0 decommissioned Task-execution.
     Backend's execute_global always sends it (whichever milestone is
@@ -211,10 +232,12 @@ class SovereignRequest(BaseModel):
     schema_map: Dict[str, Any]
     gatekeeper_mandate: Optional[str] = None
     gatekeeper_skill: Optional[str] = None
+    gatekeeper_output_shape: Optional[Dict[str, Any]] = None
     chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     chat_summary_cursor: int = 0
     chat_manager_mandate: Optional[str] = None
     chat_manager_skill: Optional[str] = None
+    chat_manager_output_shape: Optional[Dict[str, Any]] = None
     partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
     tool_law: Optional[str] = None
     project_map: List[Dict[str, Any]] = Field(default_factory=list)
@@ -223,6 +246,7 @@ class SovereignRequest(BaseModel):
     phase_purpose: Optional[str] = None
     keymaster_mandate: Optional[str] = None
     keymaster_skill: Optional[str] = None
+    keymaster_output_shape: Optional[Dict[str, Any]] = None
 
 class SovereignResponse(BaseModel):
     """The Formalized Interface for the App to consume.
@@ -341,6 +365,12 @@ class DeriveRequirementsRequest(BaseModel):
     app_manual: Optional[str] = None
     global_mission: Optional[str] = None
     skill: str = ""
+    # Backend's real functions_registry "Requirements" entry's own literal
+    # JSON Schema for this call's response, same raw-ingredient status as
+    # skill above -- threaded straight to derive_requirements()'s own
+    # output_shape= parameter. Optional/fail-open: None falls back to
+    # core/requirements.py's own REQUIREMENTS_SCHEMA constant.
+    output_shape: Optional[Dict[str, Any]] = None
 
 class DeriveRequirementsResponse(BaseModel):
     rationale: str
@@ -364,6 +394,12 @@ class ConfirmLaunchIntentRequest(BaseModel):
     archetype: Optional[Dict[str, Any]] = None
     platform: Optional[Dict[str, Any]] = None
     skill: str = ""
+    # Backend's real functions_registry "Keymaster" entry's own literal
+    # JSON Schema for this call's response, same raw-ingredient status as
+    # skill above -- threaded straight to confirm_launch_intent()'s own
+    # output_shape= parameter. Optional/fail-open: None falls back to
+    # core/ignition.py's own LAUNCH_CONFIRM_SCHEMA constant.
+    output_shape: Optional[Dict[str, Any]] = None
 
 class ConfirmLaunchIntentResponse(BaseModel):
     confirmed: bool
@@ -644,6 +680,12 @@ class AssessCoverageRequest(BaseModel):
     app_manual: Optional[str] = None
     global_mission: Optional[str] = None
     skill: str = ""
+    # Backend's real functions_registry "Coverage" entry's own literal
+    # JSON Schema for this call's response, same raw-ingredient status as
+    # skill above -- threaded straight to assess_coverage()'s own
+    # output_shape= parameter. Optional/fail-open: None falls back to
+    # core/coverage.py's own COVERAGE_SCHEMA constant.
+    output_shape: Optional[Dict[str, Any]] = None
 
 class AssessCoverageResponse(BaseModel):
     assessments: List[Dict[str, Any]]
@@ -690,6 +732,13 @@ class ChatSummaryRequest(BaseModel):
     app_manual: Optional[str] = None
     global_mission: Optional[str] = None
     skill: str = ""
+    # Backend's real functions_registry "Chat Manager" entry's own literal
+    # JSON Schema for this call's response, same raw-ingredient status as
+    # skill above -- threaded straight to build_chat_summary()'s own
+    # output_shape= parameter (which passes it on to extract_facts()).
+    # Optional/fail-open: None falls back to core/summarizer.py's own
+    # EXTRACTION_SCHEMA constant.
+    output_shape: Optional[Dict[str, Any]] = None
 
 class ChatSummaryResponse(BaseModel):
     """chat_whisper: the single most pressing thing Chat Manager couldn't
@@ -743,6 +792,10 @@ class AgentEnvelope(BaseModel):
     # from coverage_mandate/coverage_skill.
     gatekeeper_mandate: Optional[str] = None
     gatekeeper_skill: Optional[str] = None
+    # See SovereignRequest's docstring -- straight copy-through, read by
+    # core/triggers.py's _gatekeeper_action(). None falls back to
+    # core/coverage.py's own COVERAGE_SCHEMA constant.
+    gatekeeper_output_shape: Optional[Dict[str, Any]] = None
     # Chat Manager's persisted state -- prior state in from SovereignRequest,
     # overwritten in place with this turn's advanced state during
     # process_turn(), same dual-purpose input/output pattern physics_open
@@ -754,6 +807,10 @@ class AgentEnvelope(BaseModel):
     # else Chat Manager's L1/L3 needs is already on persona_config).
     chat_manager_mandate: Optional[str] = None
     chat_manager_skill: Optional[str] = None
+    # See SovereignRequest's docstring -- straight copy-through, read by
+    # core/orchestrator.py's _run_chat_manager(). None falls back to
+    # core/summarizer.py's own EXTRACTION_SCHEMA constant.
+    chat_manager_output_shape: Optional[Dict[str, Any]] = None
     # See SovereignRequest's docstring -- straight copy-through, read by
     # pods/social/engine.py's compose_l3_lens() call, same pattern
     # persona_config's own fields already use.
@@ -783,3 +840,7 @@ class AgentEnvelope(BaseModel):
     # mission/app_manual use for this function.
     keymaster_mandate: Optional[str] = None
     keymaster_skill: Optional[str] = None
+    # See SovereignRequest's docstring -- straight copy-through, read by
+    # core/triggers.py's _keymaster_action(). None falls back to
+    # core/ignition.py's own LAUNCH_CONFIRM_SCHEMA constant.
+    keymaster_output_shape: Optional[Dict[str, Any]] = None

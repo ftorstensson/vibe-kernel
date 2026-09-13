@@ -12,7 +12,7 @@ LAUNCH_CONFIRM_SCHEMA = {
 }
 
 
-def confirm_launch_intent(history, l1=None, skill=""):
+def confirm_launch_intent(history, l1=None, skill="", output_shape=None):
     """Standalone, Phase 1 only. Replaces the old `"go" in user_input.lower()`
     substring check (real, already-hit bug: "grow"/"good"/etc. false-trigger
     it) with a real model judgment -- Fred's explicit design, tried keyword
@@ -44,7 +44,15 @@ def confirm_launch_intent(history, l1=None, skill=""):
     relevance judgments -- it doesn't. This is a narrow, self-contained
     intent classification on the last few turns, not a topic/relevance
     judgment that benefits from broader app context. Adding an always-None
-    l3 param here would be unused indirection, not real support."""
+    l3 param here would be unused indirection, not real support.
+
+    output_shape: same real-ingredient status as skill -- Backend's real
+    functions_registry "Keymaster" entry can carry its own literal JSON
+    Schema for this call's response, threaded through from both the live
+    turn's _keymaster_action() (core/triggers.py) and this function's own
+    standalone endpoint. Optional/fail-open: None falls back to the
+    module-level LAUNCH_CONFIRM_SCHEMA constant below, byte-identical to
+    this function's behavior before this parameter existed."""
     model, config = AgentFactory.get_clerk()
 
     # L5 (Signal): the recent conversation window, this call's own
@@ -54,5 +62,5 @@ def confirm_launch_intent(history, l1=None, skill=""):
     lens = compose_l4_lens(None, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=LAUNCH_CONFIRM_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or LAUNCH_CONFIRM_SCHEMA)
     return hammer_json(get_clean_text(response)).get("confirmed", False)

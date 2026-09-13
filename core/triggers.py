@@ -150,6 +150,7 @@ def _gatekeeper_action(context):
     coverage = assess_coverage(
         context["required_questions"], scoped_chat_summary,
         identity["l1"], identity["l3"], envelope.gatekeeper_skill or "",
+        output_shape=envelope.gatekeeper_output_shape,
     )
     envelope.gatekeeper_whisper = coverage.get("whisper")
     gate_status = coverage.get("gate_status")
@@ -203,6 +204,7 @@ def _keymaster_action(context):
     )
     confirmed = confirm_launch_intent(
         envelope.history, l1=keymaster_identity["l1"], skill=envelope.keymaster_skill or "",
+        output_shape=envelope.keymaster_output_shape,
     )
     context["confirmed"] = confirmed
     return {"confirmed": confirmed}

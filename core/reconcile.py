@@ -251,7 +251,7 @@ def _pick_chat_whisper(pending):
     return ranked[0]["clarifying_question"]
 
 
-def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_summary=None, cursor=0, l1=None, l3=None, skill="", scope_path=None):
+def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_summary=None, cursor=0, l1=None, l3=None, skill="", scope_path=None, output_shape=None):
     """Chat Manager's real output -- named chat_summary throughout (renamed
     from build_durable_facts()/durable_facts, matching Gatekeeper's own
     canvas board target display name). Folds each newly extracted item
@@ -307,6 +307,13 @@ def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_
     (and the unresolved-match fallback) -- collected here and reduced to the
     single most pressing one via _pick_chat_whisper().
 
+    output_shape: same real-ingredient status as l1/l3/skill -- threaded
+    straight through to extract_facts() unchanged, not used by this
+    function itself (reconcile_fact() keeps its own separate hardcoded
+    schema, out of scope here same as its mandate already is). Optional/
+    fail-open: None passes None through, extract_facts() falls back to its
+    own EXTRACTION_SCHEMA exactly as it did before this parameter existed.
+
     Returns {chat_summary: [...], chat_whisper: str|None, chat_summary_cursor: int}
     -- chat_summary_cursor is len(turns), for the caller to persist forward
     as next call's cursor."""
@@ -315,7 +322,7 @@ def build_chat_summary(turns, required_questions=None, purpose=None, prior_chat_
     items = extract_facts(
         new_turns, required_questions=required_questions, purpose=purpose,
         offset=cursor, prior_chat_summary=prior_chat_summary,
-        l1=l1, l3=l3, skill=skill,
+        l1=l1, l3=l3, skill=skill, output_shape=output_shape,
     )
     if scope_path:
         for item in items:

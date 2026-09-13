@@ -83,6 +83,7 @@ class MasterOrchestrator:
             l1=chat_manager_identity["l1"],
             l3=chat_manager_identity["l3"],
             skill=envelope.chat_manager_skill or "",
+            output_shape=envelope.chat_manager_output_shape,
             # See _resolve_active_scope_path()'s own docstring -- tags
             # every newly-extracted fact with the real scope this turn
             # belongs to, app-level at minimum, milestone-level once one's
