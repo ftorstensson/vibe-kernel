@@ -1,0 +1,1054 @@
+{
+  "app_id": "phase15_fixture_gk_km_1789285303",
+  "milestone_id": "m_17892853031624",
+  "entities": [
+    {
+      "system_id": "app_17892853031621",
+      "entity_type": "APP",
+      "display_name": "Phase 1.5 Fixture App",
+      "parent_id": null,
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0",
+      "global_mission": "Building a regression-fixture test app for Phase 1.5's Gatekeeper/Keymaster sequencing migration.",
+      "app_manual": "Internal test app. Not a real product.",
+      "management_team": [
+        {
+          "id": "a_17892853031622",
+          "role": "project_manager"
+        }
+      ]
+    },
+    {
+      "system_id": "a_17892853031622",
+      "entity_type": "AGENT",
+      "display_name": "Fixture PM",
+      "parent_id": "app_17892853031621",
+      "archetype": "navigator",
+      "persona": "Direct, asks for concrete specifics.",
+      "role": "project_manager",
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0"
+    },
+    {
+      "system_id": "p_17892853031623",
+      "entity_type": "PHASE",
+      "display_name": "Fixture Phase",
+      "parent_id": "app_17892853031621",
+      "purpose": "Hold one milestone with a real required question, for fixture generation.",
+      "output": "N/A",
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0"
+    },
+    {
+      "system_id": "m_17892853031624",
+      "entity_type": "MILESTONE",
+      "display_name": "Rotation Schedule Audit",
+      "parent_id": "p_17892853031623",
+      "purpose": "Find out the household's real, current chore-rotation schedule.",
+      "output": "A written record of who does which chore on which day.",
+      "synthesis_output": "",
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0"
+    },
+    {
+      "system_id": "s_17892853031625",
+      "entity_type": "SLOT",
+      "display_name": "Current rotation schedule",
+      "parent_id": "m_17892853031624",
+      "slot_type": "milestone_input",
+      "data_type": "TEXT",
+      "order": "a0",
+      "data_payload": {
+        "text": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+      },
+      "archived": false,
+      "execution_status": "INERT"
+    }
+  ],
+  "turn_1": {
+    "trigger_message": "Hey, just checking in -- how's the audit going so far?",
+    "kernel_result": {
+      "social_response": "The initial audit is complete, and we have a clear path forward. To get the team started, we need to understand the exact chore schedule the app will be managing. What specific tasks need to be done and on which days?",
+      "status": "PROBING",
+      "data_patch": null,
+      "brief": null,
+      "appendix": null,
+      "chat_summary": [],
+      "chat_summary_cursor": 1,
+      "tool_call": null,
+      "gate_status": "RED",
+      "whisper": "We still need to know the specific chore schedule for the household.",
+      "assessments": [
+        {
+          "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?",
+          "status": "RED",
+          "is_satisfied": false
+        }
+      ],
+      "trigger_log": [
+        {
+          "trigger_id": "gatekeeper_assessment",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": true,
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We still need to know the specific chore schedule for the household.",
+            "assessments": [
+              {
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?",
+                "status": "RED",
+                "is_satisfied": false
+              }
+            ]
+          }
+        },
+        {
+          "trigger_id": "keymaster_confirmation",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        },
+        {
+          "trigger_id": "strike_team_launch",
+          "scope": "milestone",
+          "pattern": "once_per_milestone",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        }
+      ],
+      "chat_whisper": null
+    },
+    "snapshot_after": {
+      "label": "after_turn_1",
+      "milestone_doc": {
+        "coverage_result": {
+          "gate_status": "RED",
+          "whisper": "We still need to know the specific chore schedule for the household.",
+          "assessments": [
+            {
+              "is_satisfied": false,
+              "status": "RED",
+              "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+            }
+          ]
+        },
+        "checklist_prompt": "Find out the household's real, current chore-rotation schedule.",
+        "owner_id": "fredrik.t.torstensson@gmail.com",
+        "required_questions": [
+          "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+        ],
+        "specialists": [],
+        "output": "A written record of who does which chore on which day."
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "content": "Hey, just checking in -- how's the audit going so far?",
+            "role": "user"
+          },
+          {
+            "content": "The initial audit is complete, and we have a clear path forward. To get the team started, we need to understand the exact chore schedule the app will be managing. What specific tasks need to be done and on which days?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [],
+        "chat_summary_cursor": 1,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "trigger_log": [
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:54.995000+00:00",
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We still need to know the specific chore schedule for the household.",
+            "assessments": [
+              {
+                "is_satisfied": false,
+                "status": "RED",
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ]
+          },
+          "scope": "milestone",
+          "condition_result": true,
+          "trigger_id": "gatekeeper_assessment"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:55.028000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation"
+        },
+        {
+          "pattern": "once_per_milestone",
+          "logged_at": "2026-09-13 07:41:55.091000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch"
+        }
+      ]
+    },
+    "snapshot_before": {
+      "project_manifest": {
+        "chat_history": [],
+        "chat_summary": [],
+        "chat_summary_cursor": 0,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "milestone_doc": null,
+      "trigger_log": []
+    }
+  },
+  "turn_2": {
+    "trigger_message": "Okay, here's the real breakdown: Alex does dishes Monday/Wednesday/Friday, Sam takes out the trash Tuesday/Thursday, and bathroom cleaning rotates weekly starting every Monday between the two of them.",
+    "kernel_result": {
+      "social_response": "Thanks for clarifying the weekday schedule. That gives the team a solid foundation for the core logic. To complete the picture, how are the weekend responsibilities divided between them?",
+      "status": "PROBING",
+      "data_patch": null,
+      "brief": null,
+      "appendix": null,
+      "chat_summary": [
+        {
+          "content": "Alex does dishes Monday/Wednesday/Friday",
+          "type": "fact",
+          "speaker": "user",
+          "turn_index": 2,
+          "bucket": "Core Topic",
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "id": "6c31f8de-cd0f-41bf-8d35-4ca80ff2dd44",
+          "status": "current"
+        },
+        {
+          "content": "Sam takes out the trash Tuesday/Thursday",
+          "type": "fact",
+          "speaker": "user",
+          "turn_index": 2,
+          "bucket": "Core Topic",
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "id": "af6c4017-ff55-4f1c-9b23-360a4afb3946",
+          "status": "current"
+        },
+        {
+          "content": "bathroom cleaning rotates weekly starting every Monday between the two of them",
+          "type": "fact",
+          "speaker": "user",
+          "turn_index": 2,
+          "bucket": "Core Topic",
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "id": "a4a7d657-fd02-4e80-a609-5550927d1498",
+          "status": "current"
+        }
+      ],
+      "chat_summary_cursor": 3,
+      "tool_call": null,
+      "gate_status": "RED",
+      "whisper": "We have a good start on the chore schedule, but we still need to know who does what on the weekends.",
+      "assessments": [
+        {
+          "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?",
+          "status": "AMBER",
+          "is_satisfied": false
+        }
+      ],
+      "trigger_log": [
+        {
+          "trigger_id": "gatekeeper_assessment",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": true,
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We have a good start on the chore schedule, but we still need to know who does what on the weekends.",
+            "assessments": [
+              {
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?",
+                "status": "AMBER",
+                "is_satisfied": false
+              }
+            ]
+          }
+        },
+        {
+          "trigger_id": "keymaster_confirmation",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        },
+        {
+          "trigger_id": "strike_team_launch",
+          "scope": "milestone",
+          "pattern": "once_per_milestone",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        }
+      ],
+      "chat_whisper": null
+    },
+    "snapshot_after": {
+      "label": "after_turn_2",
+      "milestone_doc": {
+        "coverage_result": {
+          "gate_status": "RED",
+          "whisper": "We have a good start on the chore schedule, but we still need to know who does what on the weekends.",
+          "assessments": [
+            {
+              "is_satisfied": false,
+              "status": "AMBER",
+              "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+            }
+          ]
+        },
+        "checklist_prompt": "Find out the household's real, current chore-rotation schedule.",
+        "owner_id": "fredrik.t.torstensson@gmail.com",
+        "required_questions": [
+          "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+        ],
+        "specialists": [],
+        "output": "A written record of who does which chore on which day."
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "role": "user",
+            "content": "Hey, just checking in -- how's the audit going so far?"
+          },
+          {
+            "role": "assistant",
+            "content": "The initial audit is complete, and we have a clear path forward. To get the team started, we need to understand the exact chore schedule the app will be managing. What specific tasks need to be done and on which days?"
+          },
+          {
+            "content": "Okay, here's the real breakdown: Alex does dishes Monday/Wednesday/Friday, Sam takes out the trash Tuesday/Thursday, and bathroom cleaning rotates weekly starting every Monday between the two of them.",
+            "role": "user"
+          },
+          {
+            "content": "Thanks for clarifying the weekday schedule. That gives the team a solid foundation for the core logic. To complete the picture, how are the weekend responsibilities divided between them?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [
+          {
+            "status": "current",
+            "bucket": "Core Topic",
+            "content": "Alex does dishes Monday/Wednesday/Friday",
+            "turn_index": 2,
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "type": "fact",
+            "id": "6c31f8de-cd0f-41bf-8d35-4ca80ff2dd44",
+            "resolution_status": "settled",
+            "speaker": "user"
+          },
+          {
+            "status": "current",
+            "bucket": "Core Topic",
+            "content": "Sam takes out the trash Tuesday/Thursday",
+            "turn_index": 2,
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "type": "fact",
+            "id": "af6c4017-ff55-4f1c-9b23-360a4afb3946",
+            "resolution_status": "settled",
+            "speaker": "user"
+          },
+          {
+            "status": "current",
+            "bucket": "Core Topic",
+            "content": "bathroom cleaning rotates weekly starting every Monday between the two of them",
+            "turn_index": 2,
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "type": "fact",
+            "id": "a4a7d657-fd02-4e80-a609-5550927d1498",
+            "resolution_status": "settled",
+            "speaker": "user"
+          }
+        ],
+        "chat_summary_cursor": 3,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "trigger_log": [
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:54.995000+00:00",
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We still need to know the specific chore schedule for the household.",
+            "assessments": [
+              {
+                "is_satisfied": false,
+                "status": "RED",
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ]
+          },
+          "scope": "milestone",
+          "condition_result": true,
+          "trigger_id": "gatekeeper_assessment"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:55.028000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation"
+        },
+        {
+          "pattern": "once_per_milestone",
+          "logged_at": "2026-09-13 07:41:55.091000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:42:15.831000+00:00",
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We have a good start on the chore schedule, but we still need to know who does what on the weekends.",
+            "assessments": [
+              {
+                "is_satisfied": false,
+                "status": "AMBER",
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ]
+          },
+          "scope": "milestone",
+          "condition_result": true,
+          "trigger_id": "gatekeeper_assessment"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:42:15.858000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation"
+        },
+        {
+          "pattern": "once_per_milestone",
+          "logged_at": "2026-09-13 07:42:15.903000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch"
+        }
+      ]
+    },
+    "snapshot_before": {
+      "label": "after_turn_1",
+      "milestone_doc": {
+        "coverage_result": {
+          "gate_status": "RED",
+          "whisper": "We still need to know the specific chore schedule for the household.",
+          "assessments": [
+            {
+              "is_satisfied": false,
+              "status": "RED",
+              "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+            }
+          ]
+        },
+        "checklist_prompt": "Find out the household's real, current chore-rotation schedule.",
+        "owner_id": "fredrik.t.torstensson@gmail.com",
+        "required_questions": [
+          "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+        ],
+        "specialists": [],
+        "output": "A written record of who does which chore on which day."
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "content": "Hey, just checking in -- how's the audit going so far?",
+            "role": "user"
+          },
+          {
+            "content": "The initial audit is complete, and we have a clear path forward. To get the team started, we need to understand the exact chore schedule the app will be managing. What specific tasks need to be done and on which days?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [],
+        "chat_summary_cursor": 1,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "trigger_log": [
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:54.995000+00:00",
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We still need to know the specific chore schedule for the household.",
+            "assessments": [
+              {
+                "is_satisfied": false,
+                "status": "RED",
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ]
+          },
+          "scope": "milestone",
+          "condition_result": true,
+          "trigger_id": "gatekeeper_assessment"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:55.028000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation"
+        },
+        {
+          "pattern": "once_per_milestone",
+          "logged_at": "2026-09-13 07:41:55.091000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch"
+        }
+      ]
+    }
+  },
+  "turn_3": {
+    "trigger_message": "To be fully complete: weekends are covered too -- Alex handles vacuuming every Saturday, and Sam handles the weekly grocery run every Sunday. So the full week is: Mon/Wed/Fri dishes (Alex), Tue/Thu trash (Sam), Sat vacuuming (Alex), Sun groceries (Sam), and bathroom cleaning rotates weekly starting Monday.",
+    "kernel_result": {
+      "social_response": "Excellent, that gives us a complete seven-day schedule for both Alex and Sam. The team now has everything they need to build out the initial test cases. Are you ready for us to move forward and get the specialists started?",
+      "status": "AUTHORIZED",
+      "data_patch": null,
+      "brief": null,
+      "appendix": null,
+      "chat_summary": [
+        {
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "bucket": "Core Topic",
+          "type": "fact",
+          "content": "Alex does dishes Monday/Wednesday/Friday",
+          "id": "6c31f8de-cd0f-41bf-8d35-4ca80ff2dd44",
+          "speaker": "user",
+          "status": "current",
+          "turn_index": 2
+        },
+        {
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "bucket": "Core Topic",
+          "type": "fact",
+          "content": "Sam takes out the trash Tuesday/Thursday",
+          "id": "af6c4017-ff55-4f1c-9b23-360a4afb3946",
+          "speaker": "user",
+          "status": "current",
+          "turn_index": 2
+        },
+        {
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "bucket": "Core Topic",
+          "type": "fact",
+          "content": "bathroom cleaning rotates weekly starting every Monday between the two of them",
+          "id": "a4a7d657-fd02-4e80-a609-5550927d1498",
+          "speaker": "user",
+          "status": "current",
+          "turn_index": 2
+        },
+        {
+          "content": "Alex handles vacuuming every Saturday",
+          "type": "fact",
+          "speaker": "user",
+          "turn_index": 4,
+          "bucket": "Core Topic",
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "id": "dfe5de36-d5ba-4b5f-9ceb-48497678bce3",
+          "status": "current"
+        },
+        {
+          "content": "Sam handles the weekly grocery run every Sunday",
+          "type": "fact",
+          "speaker": "user",
+          "turn_index": 4,
+          "bucket": "Core Topic",
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+          "id": "c7d51556-6a80-4e10-9fb0-56a65b3bee3c",
+          "status": "current"
+        }
+      ],
+      "chat_summary_cursor": 5,
+      "tool_call": null,
+      "gate_status": "GREEN",
+      "whisper": "The chore schedule is fully detailed, so we're good to go.",
+      "assessments": [
+        {
+          "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?",
+          "status": "GREEN",
+          "is_satisfied": true
+        }
+      ],
+      "trigger_log": [
+        {
+          "trigger_id": "gatekeeper_assessment",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": true,
+          "fired": true,
+          "outcome": {
+            "gate_status": "GREEN",
+            "whisper": "The chore schedule is fully detailed, so we're good to go.",
+            "assessments": [
+              {
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?",
+                "status": "GREEN",
+                "is_satisfied": true
+              }
+            ]
+          }
+        },
+        {
+          "trigger_id": "keymaster_confirmation",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": true,
+          "fired": true,
+          "outcome": {
+            "confirmed": false
+          }
+        },
+        {
+          "trigger_id": "strike_team_launch",
+          "scope": "milestone",
+          "pattern": "once_per_milestone",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        }
+      ],
+      "chat_whisper": null
+    },
+    "snapshot_after": {
+      "label": "after_turn_3",
+      "milestone_doc": {
+        "output": "A written record of who does which chore on which day.",
+        "checklist_prompt": "Find out the household's real, current chore-rotation schedule.",
+        "specialists": [],
+        "required_questions": [
+          "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+        ],
+        "coverage_result": {
+          "assessments": [
+            {
+              "is_satisfied": true,
+              "status": "GREEN",
+              "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+            }
+          ],
+          "whisper": "The chore schedule is fully detailed, so we're good to go.",
+          "gate_status": "GREEN"
+        },
+        "owner_id": "fredrik.t.torstensson@gmail.com"
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "role": "user",
+            "content": "Hey, just checking in -- how's the audit going so far?"
+          },
+          {
+            "role": "assistant",
+            "content": "The initial audit is complete, and we have a clear path forward. To get the team started, we need to understand the exact chore schedule the app will be managing. What specific tasks need to be done and on which days?"
+          },
+          {
+            "content": "Okay, here's the real breakdown: Alex does dishes Monday/Wednesday/Friday, Sam takes out the trash Tuesday/Thursday, and bathroom cleaning rotates weekly starting every Monday between the two of them.",
+            "role": "user"
+          },
+          {
+            "content": "Thanks for clarifying the weekday schedule. That gives the team a solid foundation for the core logic. To complete the picture, how are the weekend responsibilities divided between them?",
+            "role": "assistant"
+          },
+          {
+            "content": "To be fully complete: weekends are covered too -- Alex handles vacuuming every Saturday, and Sam handles the weekly grocery run every Sunday. So the full week is: Mon/Wed/Fri dishes (Alex), Tue/Thu trash (Sam), Sat vacuuming (Alex), Sun groceries (Sam), and bathroom cleaning rotates weekly starting Monday.",
+            "role": "user"
+          },
+          {
+            "content": "Excellent, that gives us a complete seven-day schedule for both Alex and Sam. The team now has everything they need to build out the initial test cases. Are you ready for us to move forward and get the specialists started?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [
+          {
+            "bucket": "Core Topic",
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "resolution_status": "settled",
+            "type": "fact",
+            "content": "Alex does dishes Monday/Wednesday/Friday",
+            "id": "6c31f8de-cd0f-41bf-8d35-4ca80ff2dd44",
+            "speaker": "user",
+            "status": "current",
+            "turn_index": 2
+          },
+          {
+            "bucket": "Core Topic",
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "resolution_status": "settled",
+            "type": "fact",
+            "content": "Sam takes out the trash Tuesday/Thursday",
+            "id": "af6c4017-ff55-4f1c-9b23-360a4afb3946",
+            "speaker": "user",
+            "status": "current",
+            "turn_index": 2
+          },
+          {
+            "bucket": "Core Topic",
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "resolution_status": "settled",
+            "type": "fact",
+            "content": "bathroom cleaning rotates weekly starting every Monday between the two of them",
+            "id": "a4a7d657-fd02-4e80-a609-5550927d1498",
+            "speaker": "user",
+            "status": "current",
+            "turn_index": 2
+          },
+          {
+            "resolution_status": "settled",
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "bucket": "Core Topic",
+            "type": "fact",
+            "content": "Alex handles vacuuming every Saturday",
+            "id": "dfe5de36-d5ba-4b5f-9ceb-48497678bce3",
+            "speaker": "user",
+            "status": "current",
+            "turn_index": 4
+          },
+          {
+            "resolution_status": "settled",
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "bucket": "Core Topic",
+            "type": "fact",
+            "content": "Sam handles the weekly grocery run every Sunday",
+            "id": "c7d51556-6a80-4e10-9fb0-56a65b3bee3c",
+            "speaker": "user",
+            "status": "current",
+            "turn_index": 4
+          }
+        ],
+        "chat_summary_cursor": 5,
+        "physics_open": true,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "trigger_log": [
+        {
+          "logged_at": "2026-09-13 07:41:54.995000+00:00",
+          "fired": true,
+          "trigger_id": "gatekeeper_assessment",
+          "condition_result": true,
+          "outcome": {
+            "assessments": [
+              {
+                "status": "RED",
+                "is_satisfied": false,
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ],
+            "whisper": "We still need to know the specific chore schedule for the household.",
+            "gate_status": "RED"
+          },
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "logged_at": "2026-09-13 07:41:55.028000+00:00",
+          "fired": false,
+          "trigger_id": "keymaster_confirmation",
+          "condition_result": false,
+          "outcome": null,
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "logged_at": "2026-09-13 07:41:55.091000+00:00",
+          "fired": false,
+          "trigger_id": "strike_team_launch",
+          "condition_result": false,
+          "outcome": null,
+          "scope": "milestone",
+          "pattern": "once_per_milestone"
+        },
+        {
+          "logged_at": "2026-09-13 07:42:15.831000+00:00",
+          "fired": true,
+          "trigger_id": "gatekeeper_assessment",
+          "condition_result": true,
+          "outcome": {
+            "assessments": [
+              {
+                "status": "AMBER",
+                "is_satisfied": false,
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ],
+            "whisper": "We have a good start on the chore schedule, but we still need to know who does what on the weekends.",
+            "gate_status": "RED"
+          },
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "logged_at": "2026-09-13 07:42:15.858000+00:00",
+          "fired": false,
+          "trigger_id": "keymaster_confirmation",
+          "condition_result": false,
+          "outcome": null,
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "logged_at": "2026-09-13 07:42:15.903000+00:00",
+          "fired": false,
+          "trigger_id": "strike_team_launch",
+          "condition_result": false,
+          "outcome": null,
+          "scope": "milestone",
+          "pattern": "once_per_milestone"
+        },
+        {
+          "logged_at": "2026-09-13 07:44:47.063000+00:00",
+          "fired": true,
+          "trigger_id": "gatekeeper_assessment",
+          "condition_result": true,
+          "outcome": {
+            "assessments": [
+              {
+                "is_satisfied": true,
+                "status": "GREEN",
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ],
+            "whisper": "The chore schedule is fully detailed, so we're good to go.",
+            "gate_status": "GREEN"
+          },
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "logged_at": "2026-09-13 07:44:47.118000+00:00",
+          "fired": true,
+          "trigger_id": "keymaster_confirmation",
+          "condition_result": true,
+          "outcome": {
+            "confirmed": false
+          },
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "logged_at": "2026-09-13 07:44:47.150000+00:00",
+          "fired": false,
+          "trigger_id": "strike_team_launch",
+          "condition_result": false,
+          "outcome": null,
+          "scope": "milestone",
+          "pattern": "once_per_milestone"
+        }
+      ]
+    },
+    "snapshot_before": {
+      "label": "after_turn_2",
+      "milestone_doc": {
+        "coverage_result": {
+          "gate_status": "RED",
+          "whisper": "We have a good start on the chore schedule, but we still need to know who does what on the weekends.",
+          "assessments": [
+            {
+              "is_satisfied": false,
+              "status": "AMBER",
+              "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+            }
+          ]
+        },
+        "checklist_prompt": "Find out the household's real, current chore-rotation schedule.",
+        "owner_id": "fredrik.t.torstensson@gmail.com",
+        "required_questions": [
+          "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+        ],
+        "specialists": [],
+        "output": "A written record of who does which chore on which day."
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "role": "user",
+            "content": "Hey, just checking in -- how's the audit going so far?"
+          },
+          {
+            "role": "assistant",
+            "content": "The initial audit is complete, and we have a clear path forward. To get the team started, we need to understand the exact chore schedule the app will be managing. What specific tasks need to be done and on which days?"
+          },
+          {
+            "content": "Okay, here's the real breakdown: Alex does dishes Monday/Wednesday/Friday, Sam takes out the trash Tuesday/Thursday, and bathroom cleaning rotates weekly starting every Monday between the two of them.",
+            "role": "user"
+          },
+          {
+            "content": "Thanks for clarifying the weekday schedule. That gives the team a solid foundation for the core logic. To complete the picture, how are the weekend responsibilities divided between them?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [
+          {
+            "status": "current",
+            "bucket": "Core Topic",
+            "content": "Alex does dishes Monday/Wednesday/Friday",
+            "turn_index": 2,
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "type": "fact",
+            "id": "6c31f8de-cd0f-41bf-8d35-4ca80ff2dd44",
+            "resolution_status": "settled",
+            "speaker": "user"
+          },
+          {
+            "status": "current",
+            "bucket": "Core Topic",
+            "content": "Sam takes out the trash Tuesday/Thursday",
+            "turn_index": 2,
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "type": "fact",
+            "id": "af6c4017-ff55-4f1c-9b23-360a4afb3946",
+            "resolution_status": "settled",
+            "speaker": "user"
+          },
+          {
+            "status": "current",
+            "bucket": "Core Topic",
+            "content": "bathroom cleaning rotates weekly starting every Monday between the two of them",
+            "turn_index": 2,
+            "scope_path": "phase15_fixture_gk_km_1789285303/m_17892853031624",
+            "type": "fact",
+            "id": "a4a7d657-fd02-4e80-a609-5550927d1498",
+            "resolution_status": "settled",
+            "speaker": "user"
+          }
+        ],
+        "chat_summary_cursor": 3,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "trigger_log": [
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:54.995000+00:00",
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We still need to know the specific chore schedule for the household.",
+            "assessments": [
+              {
+                "is_satisfied": false,
+                "status": "RED",
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ]
+          },
+          "scope": "milestone",
+          "condition_result": true,
+          "trigger_id": "gatekeeper_assessment"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:41:55.028000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation"
+        },
+        {
+          "pattern": "once_per_milestone",
+          "logged_at": "2026-09-13 07:41:55.091000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:42:15.831000+00:00",
+          "fired": true,
+          "outcome": {
+            "gate_status": "RED",
+            "whisper": "We have a good start on the chore schedule, but we still need to know who does what on the weekends.",
+            "assessments": [
+              {
+                "is_satisfied": false,
+                "status": "AMBER",
+                "question": "What is the household's exact current chore-rotation schedule -- who does which chore, on which days?"
+              }
+            ]
+          },
+          "scope": "milestone",
+          "condition_result": true,
+          "trigger_id": "gatekeeper_assessment"
+        },
+        {
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 07:42:15.858000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation"
+        },
+        {
+          "pattern": "once_per_milestone",
+          "logged_at": "2026-09-13 07:42:15.903000+00:00",
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,764 @@
+{
+  "app_id": "phase15_fixture_strike_team_v2_1789286486",
+  "milestone_id": "m_17892864867184",
+  "entities": [
+    {
+      "system_id": "app_17892864867181",
+      "entity_type": "APP",
+      "display_name": "Phase 1.5 Fixture App (Strike Team v2)",
+      "parent_id": null,
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0",
+      "global_mission": "Regression-fixture test app for Phase 1.5 -- capturing a real Strike-Team-launches trigger_log fixture.",
+      "app_manual": "Internal test app. Not a real product.",
+      "management_team": [
+        {
+          "id": "a_17892864867182",
+          "role": "project_manager"
+        }
+      ]
+    },
+    {
+      "system_id": "a_17892864867182",
+      "entity_type": "AGENT",
+      "display_name": "Fixture PM",
+      "parent_id": "app_17892864867181",
+      "archetype": "navigator",
+      "persona": "Direct, moves fast once info is in.",
+      "role": "project_manager",
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0"
+    },
+    {
+      "system_id": "p_17892864867183",
+      "entity_type": "PHASE",
+      "display_name": "Fixture Phase",
+      "parent_id": "app_17892864867181",
+      "purpose": "Hold one milestone for fixture generation.",
+      "output": "N/A",
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0"
+    },
+    {
+      "system_id": "m_17892864867184",
+      "entity_type": "MILESTONE",
+      "display_name": "Coffee Shop Concept Research",
+      "parent_id": "p_17892864867183",
+      "purpose": "Research the real, current market for a small neighborhood coffee shop concept.",
+      "output": "A short research brief on the local coffee shop market.",
+      "synthesis_output": "",
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0"
+    },
+    {
+      "system_id": "s_17892864867185",
+      "entity_type": "SLOT",
+      "display_name": "Concept and location",
+      "parent_id": "m_17892864867184",
+      "slot_type": "milestone_input",
+      "data_type": "TEXT",
+      "order": "a0",
+      "data_payload": {
+        "text": "What is the specific coffee shop concept and target neighborhood/city to research?"
+      },
+      "archived": false,
+      "execution_status": "INERT"
+    },
+    {
+      "system_id": "a_17892864867186",
+      "entity_type": "AGENT",
+      "display_name": "Market Researcher",
+      "parent_id": "m_17892864867184",
+      "role": "specialist",
+      "archetype": "architect",
+      "persona": "Detail-oriented market researcher, focused on real local competitive landscape.",
+      "archived": false,
+      "execution_status": "INERT",
+      "order": "a0"
+    }
+  ],
+  "turn_1": {
+    "trigger_message": "The concept is a small specialty coffee shop focused on single-origin pour-over and local pastries, targeting the Fremont neighborhood in Seattle -- a walkable, younger-professional area without a strong specialty coffee presence yet. That's everything you need. Yes, go ahead and launch the research now -- I confirm, let's do it.",
+    "kernel_result": {
+      "social_response": "The research confirmed our initial thoughts about Fremont being a competitive and sophisticated market. It seems a unique, defensible feature is the key to success, not just good coffee and pastries. The team is ready to start exploring what that feature could be.\n\nAre you ready to authorize the specialists to begin developing concepts?",
+      "status": "STABLE",
+      "data_patch": {
+        "id": "sec_01",
+        "type": "TEXT",
+        "headline": "The Fremont Crucible: Competing in a High-Density, High-Expectation Market",
+        "content": "Seattle's Fremont neighborhood is a saturated and sophisticated coffee market, not a proving ground for generic concepts. The area's dominant demographic of affluent, educated professionals aged 25-44 has cultivated a landscape of over ten highly-rated specialty cafes [1, 2, 3, 4]. Competitors have already captured distinct niches, from in-house roasting and Vietnamese coffee to cat lounges, demonstrating that market entry requires a sharp, defensible value proposition [5, 6]. The local customer base is primed to pay for premium, unique experiences, making differentiation a prerequisite for survival. Furthermore, established players like Baskette and Pluto Organic Cafe leverage high-quality food as a key differentiator, often supplied by proven local wholesale bakeries such as Le Fournil and Sea Wolf Bakers [7, 8, 10, 11]. Therefore, any new venture must bypass the high capital expenditure of an in-house bakery by securing a reliable wholesale partner, and its core strategy must be built around a unique, non-replicable feature to justify its existence."
+      },
+      "brief": {
+        "identity_narrative": "This research brief is for a small specialty coffee shop concept, specifically focused on single-origin pour-over coffee and local pastries. The target audience is the younger professional demographic within Seattle's Fremont neighborhood, an area identified as walkable and currently lacking a strong specialty coffee presence. The goal is to understand the market for this particular niche within this specific geographic and demographic context.\n\nThis is explicitly not a generic coffee shop or cafe concept. The emphasis is on the highly specialized offering of single-origin pour-over and local pastries, distinguishing it from broader, more mainstream coffee establishments that might offer a wider range of drinks or food items without the same artisanal focus.",
+        "founding_voice": [
+          "The concept is a small specialty coffee shop focused on single-origin pour-over and local pastries, targeting the Fremont neighborhood in Seattle -- a walkable, younger-professional area without a strong specialty coffee presence yet.",
+          "go ahead and launch the research now -- I confirm, let's do it."
+        ]
+      },
+      "appendix": [
+        {
+          "role": "Market Researcher",
+          "content": "ELISO REPORT\n\nEvidence\nThe Fremont neighborhood has a high concentration of affluent, educated professionals aged 25-44 [1, 2, 3]. This demographic supports a competitive market of at least ten coffee shops, many of which are highly-rated specialty cafes with unique concepts like in-house roasting, Vietnamese coffee, or cat lounges [4, 5, 6]. Several local bakeries, such as Le Fournil and Sea Wolf Bakers, offer established wholesale programs to supply pastries to cafes, with minimum orders ranging from $50 to $150 [7, 8, 9].\n\nLogic\nThe high income and education levels of the dominant demographic suggest a customer base willing to pay for premium, unique, and high-quality experiences. The success of existing niche cafes [4, 5, 6] shows that a generic coffee shop will struggle to stand out. To compete, a new entrant cannot simply serve good coffee; it must offer a distinct value proposition that justifies its existence in a crowded and sophisticated market.\n\nImplication\nThis means the build must focus on a specific, defensible niche rather than attempting to appeal to everyone. The operational plan must also account for sourcing high-quality, unique food items, as this is a key differentiator for competitors like Baskette and Pluto Organic Cafe [10, 11]. Relying on a proven wholesale bakery partner can ensure quality and consistency without the high cost of an in-house baking operation.\n\nSolution\nThe core feature will be a \"Rotating Bakery Residency\" program. Each month, the coffee shop will exclusively feature pastries and baked goods from a different high-end local bakery, like Le Fournil or Byen Bakeri [7, 12]. This creates a constantly changing menu, generates excitement, and builds partnerships within the local food community, turning potential supply chain logistics into a marketing feature.\n\nOutside-the-Box\nThe twist is to create a \"Pastry Passport\" loyalty program. Customers get a stamp for trying an item from each month's featured bakery. Completing the passport by year's end earns them a significant reward, like a private coffee tasting or a curated box of goods from all the year's bakery partners, driving repeat visits and gamifying exploration.",
+          "sources": {
+            "1": {
+              "title": "point2homes.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgsQRZcmPe6HihUi_oc-y3wIratmHlnKN-OUSQoaooExjv8iYB_gd3h6HP1XIkgc8PVd87CO4q77UZmsw402Dyjey6lBqpEqmDFx0cqOGoKTAeKTFE_5pz44izGGILdtm6PXdAaKTk4taWmuEttPUZZYbDCrZLStuOiZgxb47JIXFL8WXq__QrNolQ"
+            },
+            "2": {
+              "title": "point2homes.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgsQRZcmPe6HihUi_oc-y3wIratmHlnKN-OUSQoaooExjv8iYB_gd3h6HP1XIkgc8PVd87CO4q77UZmsw402Dyjey6lBqpEqmDFx0cqOGoKTAeKTFE_5pz44izGGILdtm6PXdAaKTk4taWmuEttPUZZYbDCrZLStuOiZgxb47JIXFL8WXq__QrNolQ"
+            },
+            "3": {
+              "title": "point2homes.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgsQRZcmPe6HihUi_oc-y3wIratmHlnKN-OUSQoaooExjv8iYB_gd3h6HP1XIkgc8PVd87CO4q77UZmsw402Dyjey6lBqpEqmDFx0cqOGoKTAeKTFE_5pz44izGGILdtm6PXdAaKTk4taWmuEttPUZZYbDCrZLStuOiZgxb47JIXFL8WXq__QrNolQ"
+            },
+            "4": {
+              "title": "point2homes.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgsQRZcmPe6HihUi_oc-y3wIratmHlnKN-OUSQoaooExjv8iYB_gd3h6HP1XIkgc8PVd87CO4q77UZmsw402Dyjey6lBqpEqmDFx0cqOGoKTAeKTFE_5pz44izGGILdtm6PXdAaKTk4taWmuEttPUZZYbDCrZLStuOiZgxb47JIXFL8WXq__QrNolQ"
+            },
+            "5": {
+              "title": "point2homes.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgsQRZcmPe6HihUi_oc-y3wIratmHlnKN-OUSQoaooExjv8iYB_gd3h6HP1XIkgc8PVd87CO4q77UZmsw402Dyjey6lBqpEqmDFx0cqOGoKTAeKTFE_5pz44izGGILdtm6PXdAaKTk4taWmuEttPUZZYbDCrZLStuOiZgxb47JIXFL8WXq__QrNolQ"
+            },
+            "6": {
+              "title": "point2homes.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgsQRZcmPe6HihUi_oc-y3wIratmHlnKN-OUSQoaooExjv8iYB_gd3h6HP1XIkgc8PVd87CO4q77UZmsw402Dyjey6lBqpEqmDFx0cqOGoKTAeKTFE_5pz44izGGILdtm6PXdAaKTk4taWmuEttPUZZYbDCrZLStuOiZgxb47JIXFL8WXq__QrNolQ"
+            },
+            "7": {
+              "title": "point2homes.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgsQRZcmPe6HihUi_oc-y3wIratmHlnKN-OUSQoaooExjv8iYB_gd3h6HP1XIkgc8PVd87CO4q77UZmsw402Dyjey6lBqpEqmDFx0cqOGoKTAeKTFE_5pz44izGGILdtm6PXdAaKTk4taWmuEttPUZZYbDCrZLStuOiZgxb47JIXFL8WXq__QrNolQ"
+            },
+            "8": {
+              "title": "seattletransitblog.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFA7CpM50PfWqEb0LjaHH-Y8tK8YOOPmz6khdSq6PXzfs4xEfFaiylmXYa8yxIBbZC3qPmDyGufHJEEA-Zna5AaFqrniyBdhkxTfnG_Tcq1Ri6wUL6fiGELXhZ0zU_35kFcDJ42zi0FviisX1slTWwFrqwaeiYKvdWjqQw2eVIamAJrbTNHTLqaQ-N3"
+            },
+            "9": {
+              "title": "seattletransitblog.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFA7CpM50PfWqEb0LjaHH-Y8tK8YOOPmz6khdSq6PXzfs4xEfFaiylmXYa8yxIBbZC3qPmDyGufHJEEA-Zna5AaFqrniyBdhkxTfnG_Tcq1Ri6wUL6fiGELXhZ0zU_35kFcDJ42zi0FviisX1slTWwFrqwaeiYKvdWjqQw2eVIamAJrbTNHTLqaQ-N3"
+            },
+            "10": {
+              "title": "seattle.gov",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH_O66L9HFB8OgGQdb5XTx7oepAC0LVqU8YE-eHuvG1vljHF9a1FjOO-1v3yr34tT2sm7OUsvDwBlb3qyaEvsGQfNroN-ktIuCUaWCAex9geo6Oc0IYadZU2fm5Wlk6dfZy8rAsgw8-b7U4UoYqhGz8s3gHFQ8NcKGpgOO5XMvhL0fC7kPCMw-ENfIUsVQ6fzZvOY6XgwchuQIUzs6Bnpo="
+            },
+            "11": {
+              "title": "seattle.gov",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF30aPSqBJyM4yZjfF5_dOBpQGKz3mvJiNLjwBtiky9jN9i_vLg1MaH6mDbqf2wp1xa9abwBLTN_m0ouYTyRPgJSEmoM-uIBLjodyf9iJFjkNPeZik6zGYktXq8a6fWQVOOOJmW-H2cHj2hAOfeYCTx_2GJi5Sys09eQyOzTVC4MxWucE5Y95fEYlBd7BOHr-7gv2wfxX3WzdnDv6MfFx6VmKMd"
+            },
+            "12": {
+              "title": "urbanism-guide.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGZ8GWLgrBg6lTIv_rp3BAxS8VSdwx_RvEx12f2srYb5IEW9rkpd7wB41gpPjTtszq5J6lIAss5Kn5WgemXGfaDt8-JTzR9KGsIqxgqkK3Ij1qyxIA_EcprCnV2W0m_J4NE0-0="
+            },
+            "13": {
+              "title": "amli.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFWJ6zbZ50CUZgpRpqC9HhkZmycc62VP-cfpnOnTnkFEjfKxbDPB6YUECi9-6TtWl7ioqunKr8bo3N5nzsiX4hZFbGh4ABmw94nDRNUjFFVHkVq4HPchW59Ub8ZH_J0I--0Lz-BIHIwOmZSUNG_LGVoelURhu_0DawgO81QOTNkj2DiCME0W-dlBVyzMiM9x7dxRNY="
+            },
+            "14": {
+              "title": "tripalink.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGQJbAXEyUsOFaq4BdZSTnhywk_4pIbjMREzCskclRGtF152_zjF1ITctdS3dIkDHfWZ-Qh_zJjIxSq_2dEaAynbEThDMZui5O4eULvldLJD2zOyk0RvNhJLDpabxd_4aaWqwSDL-ggwXQDsdSQkygDrT831qUppMGo-ThYkKGRVp1rK4g="
+            },
+            "15": {
+              "title": "tripalink.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGQJbAXEyUsOFaq4BdZSTnhywk_4pIbjMREzCskclRGtF152_zjF1ITctdS3dIkDHfWZ-Qh_zJjIxSq_2dEaAynbEThDMZui5O4eULvldLJD2zOyk0RvNhJLDpabxd_4aaWqwSDL-ggwXQDsdSQkygDrT831qUppMGo-ThYkKGRVp1rK4g="
+            },
+            "16": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQES83QbV9pRvegNUOeMOLJcgDwbQkTgoQNa5GdFcBIvRMiZRt0HL5CbwiGvC67vzzEJNd1cf_HchLNLzWzGgDSFOiCkaYu4_A-q9x-e3tmF4h964GYqWh5ChU41ShewWksZtgT_O1avKDEU29olm0lJEjDXXJX1"
+            },
+            "17": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQES83QbV9pRvegNUOeMOLJcgDwbQkTgoQNa5GdFcBIvRMiZRt0HL5CbwiGvC67vzzEJNd1cf_HchLNLzWzGgDSFOiCkaYu4_A-q9x-e3tmF4h964GYqWh5ChU41ShewWksZtgT_O1avKDEU29olm0lJEjDXXJX1"
+            },
+            "18": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQES83QbV9pRvegNUOeMOLJcgDwbQkTgoQNa5GdFcBIvRMiZRt0HL5CbwiGvC67vzzEJNd1cf_HchLNLzWzGgDSFOiCkaYu4_A-q9x-e3tmF4h964GYqWh5ChU41ShewWksZtgT_O1avKDEU29olm0lJEjDXXJX1"
+            },
+            "19": {
+              "title": "amli.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFWJ6zbZ50CUZgpRpqC9HhkZmycc62VP-cfpnOnTnkFEjfKxbDPB6YUECi9-6TtWl7ioqunKr8bo3N5nzsiX4hZFbGh4ABmw94nDRNUjFFVHkVq4HPchW59Ub8ZH_J0I--0Lz-BIHIwOmZSUNG_LGVoelURhu_0DawgO81QOTNkj2DiCME0W-dlBVyzMiM9x7dxRNY="
+            },
+            "20": {
+              "title": "fremontcoffeeco.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHmVTFYEpt3eUHoXQKWfPK2VEMRDmI2GgIY1chOzZ2iW6mKYJexRrihShdf6ipPHP0bxQlHwT7ypni7B11zjTcrI-hGqCX5PoL1DJnQotGTeuf4_ywPuu_vy8er"
+            },
+            "21": {
+              "title": "fremontcoffeeco.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHmVTFYEpt3eUHoXQKWfPK2VEMRDmI2GgIY1chOzZ2iW6mKYJexRrihShdf6ipPHP0bxQlHwT7ypni7B11zjTcrI-hGqCX5PoL1DJnQotGTeuf4_ywPuu_vy8er"
+            },
+            "22": {
+              "title": "sidewalksafari.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG9jU4T2mY-4gKXku9o5yQ4DOHGejiU8ukkgYyKFax7nGcJsp0QrA6WizaVtt4O1-4vUl78MkTM9ilaCBt5g9IZ1S-t4l3E79h9hoXDpi7aq8Cd79n7jXrHUG74qF_GKC51CTGlFJf9cBUIZmZx-Z34BW-1isqpw-axXE9bnA=="
+            },
+            "23": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFKp4UxKvPJaXxdpVXHzyQreITy2EFU-x2pgN6zzUqm5EQSzEoBFL80kmK4_G2_zQguJ6dJoMoBLfXrE5W1k1LqgTPstwzOzwptPn7BigJ_xoffywNuV2-NZg-pX2rvjoDwkSGJ44OA0Cp4ZZp_frMCEt0eCG2hqAx66nUKR05KvZg="
+            },
+            "24": {
+              "title": "trip.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE3ZTGo6Onwnl5J_Njr_y7LwtmkLLTO31QPTRf5jOsrKzTLShxpLe1PoXDPUlp8X9Vv4_hapxOiEaSjrC_1tuGWH05muSZ4Fyc06YVLLZtyqHYJJlqmBolFfEtz5hBjr68JVGUsYO4yDqa-MHqagXqLUHrTToEGYgGQkUaw_nGc_Apf4t0n9ycHtMY-X6YnQ-rSCIfweYY="
+            },
+            "25": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFKp4UxKvPJaXxdpVXHzyQreITy2EFU-x2pgN6zzUqm5EQSzEoBFL80kmK4_G2_zQguJ6dJoMoBLfXrE5W1k1LqgTPstwzOzwptPn7BigJ_xoffywNuV2-NZg-pX2rvjoDwkSGJ44OA0Cp4ZZp_frMCEt0eCG2hqAx66nUKR05KvZg="
+            },
+            "26": {
+              "title": "sidewalksafari.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG9jU4T2mY-4gKXku9o5yQ4DOHGejiU8ukkgYyKFax7nGcJsp0QrA6WizaVtt4O1-4vUl78MkTM9ilaCBt5g9IZ1S-t4l3E79h9hoXDpi7aq8Cd79n7jXrHUG74qF_GKC51CTGlFJf9cBUIZmZx-Z34BW-1isqpw-axXE9bnA=="
+            },
+            "27": {
+              "title": "seattlecoffeegear.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFtqUqBmH9sGD510iZNjJD-w5OTD3vmRKimdwkafeY1a6SB6_4LZL6URcrRhr4xesJM11DdHHPvZYMDvjMQsMze6JPekR3wBhPspgne8U_9X96wqv17DGXRCquyeAAdlarlpTmIWeCCslTLTBqMww-k_k9a1uhah77z0i6Si0s="
+            },
+            "28": {
+              "title": "mycoffeeexplorer.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH1GtcITnycDFiQ3MFFEZYiYiHRIh16bMH6xbOTpBqm70U0maekbgWlSqhzYDX1nIljEzvyEOnTnZisD48Pa2VTB3h0fb7647G6wtUs5CrQCRit9RO6vL3tFSYJKDav9Ek0qNJ9YQ=="
+            },
+            "29": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFXJ8Kj1EA4PQBuS7ncF_sfPaOq6ep5mSXlAf21THrzrimAVwIO5SJcTbETtH1GkjiMoRfo_9Fj0iUEuq5f9dLKxoJLvDIrPE2ZRr2mpl2M1r-gnLSpPUBF_GiGKJe2Uq6345Hq0HZ2fGOmNMepY6M4z0Eo7gep0fNwuELQdyW4hmBsdfdZGAI="
+            },
+            "30": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFXJ8Kj1EA4PQBuS7ncF_sfPaOq6ep5mSXlAf21THrzrimAVwIO5SJcTbETtH1GkjiMoRfo_9Fj0iUEuq5f9dLKxoJLvDIrPE2ZRr2mpl2M1r-gnLSpPUBF_GiGKJe2Uq6345Hq0HZ2fGOmNMepY6M4z0Eo7gep0fNwuELQdyW4hmBsdfdZGAI="
+            },
+            "31": {
+              "title": "sidewalksafari.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG9jU4T2mY-4gKXku9o5yQ4DOHGejiU8ukkgYyKFax7nGcJsp0QrA6WizaVtt4O1-4vUl78MkTM9ilaCBt5g9IZ1S-t4l3E79h9hoXDpi7aq8Cd79n7jXrHUG74qF_GKC51CTGlFJf9cBUIZmZx-Z34BW-1isqpw-axXE9bnA=="
+            },
+            "32": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_Xg7Q5sf1OXGYh-ZqrKNoBuMWcH_wV9PT7YkYKYP-5kFSWP7m8S7FnR-K_6d41c7sQHYJ8A7U6q5qjjef-mAekYN06zb448ZGAzTES4IdQXPRiQP7LrcfiY-o2rTEpBzFoxNEX38pRE5fzXfverZtjjsuRapukdE_F1KthoKlCOTFU8YHF7ZoUsAH"
+            },
+            "33": {
+              "title": "sidewalksafari.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG9jU4T2mY-4gKXku9o5yQ4DOHGejiU8ukkgYyKFax7nGcJsp0QrA6WizaVtt4O1-4vUl78MkTM9ilaCBt5g9IZ1S-t4l3E79h9hoXDpi7aq8Cd79n7jXrHUG74qF_GKC51CTGlFJf9cBUIZmZx-Z34BW-1isqpw-axXE9bnA=="
+            },
+            "34": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_Xg7Q5sf1OXGYh-ZqrKNoBuMWcH_wV9PT7YkYKYP-5kFSWP7m8S7FnR-K_6d41c7sQHYJ8A7U6q5qjjef-mAekYN06zb448ZGAzTES4IdQXPRiQP7LrcfiY-o2rTEpBzFoxNEX38pRE5fzXfverZtjjsuRapukdE_F1KthoKlCOTFU8YHF7ZoUsAH"
+            },
+            "35": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_Xg7Q5sf1OXGYh-ZqrKNoBuMWcH_wV9PT7YkYKYP-5kFSWP7m8S7FnR-K_6d41c7sQHYJ8A7U6q5qjjef-mAekYN06zb448ZGAzTES4IdQXPRiQP7LrcfiY-o2rTEpBzFoxNEX38pRE5fzXfverZtjjsuRapukdE_F1KthoKlCOTFU8YHF7ZoUsAH"
+            },
+            "36": {
+              "title": "postcard.inc",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGw2Vq-REseL8qETy0bSfSuIbeZMEFS78EV9hDGTfZXiqOvu_kbvFySqNls8f0wUSiJL8ELXBTKT61dlLfSv5NQ5cpEYjlNBGx1f7y1aNAOZrv9sFpDC5HZK5iyUYGU48ycOubpNger2VTX4A3Yb3etVQNZwWsa3PAe6l4Wj4R4vxc="
+            },
+            "37": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_Xg7Q5sf1OXGYh-ZqrKNoBuMWcH_wV9PT7YkYKYP-5kFSWP7m8S7FnR-K_6d41c7sQHYJ8A7U6q5qjjef-mAekYN06zb448ZGAzTES4IdQXPRiQP7LrcfiY-o2rTEpBzFoxNEX38pRE5fzXfverZtjjsuRapukdE_F1KthoKlCOTFU8YHF7ZoUsAH"
+            },
+            "38": {
+              "title": "tripalink.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGQJbAXEyUsOFaq4BdZSTnhywk_4pIbjMREzCskclRGtF152_zjF1ITctdS3dIkDHfWZ-Qh_zJjIxSq_2dEaAynbEThDMZui5O4eULvldLJD2zOyk0RvNhJLDpabxd_4aaWqwSDL-ggwXQDsdSQkygDrT831qUppMGo-ThYkKGRVp1rK4g="
+            },
+            "39": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHd-F9YKHgzYQdtEbhliJo0wknaQJeD2nEqbFPfhuit8dd7j1dDXzNyN9C1wRTMPFzleJMRk2SxeVM6EnvfL8-YYl7TmotfGJ9n5oNA9dIrC8Bfad2Sfwu8QDatqPYPoPXjolYme4uq98ZvJiqu0PfGtmNrzSFAaX0U4b2OMQGP"
+            },
+            "40": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHd-F9YKHgzYQdtEbhliJo0wknaQJeD2nEqbFPfhuit8dd7j1dDXzNyN9C1wRTMPFzleJMRk2SxeVM6EnvfL8-YYl7TmotfGJ9n5oNA9dIrC8Bfad2Sfwu8QDatqPYPoPXjolYme4uq98ZvJiqu0PfGtmNrzSFAaX0U4b2OMQGP"
+            },
+            "41": {
+              "title": "postcard.inc",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGx5_CgC47BRUqwfzUqr0-0QHbwzkMHirWWrSBV6yT83wFGV_Yp9kioP7UgYony474rGHglMjRGDM_tK0lZ6XfsWIV10DqPIYzBFipDQFNj17QAnYWpVkcVpIuDDZkr3dVdnEB2xADXnVMSrFU0gf6aaGeA8wrzM9GliQ=="
+            },
+            "42": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHd-F9YKHgzYQdtEbhliJo0wknaQJeD2nEqbFPfhuit8dd7j1dDXzNyN9C1wRTMPFzleJMRk2SxeVM6EnvfL8-YYl7TmotfGJ9n5oNA9dIrC8Bfad2Sfwu8QDatqPYPoPXjolYme4uq98ZvJiqu0PfGtmNrzSFAaX0U4b2OMQGP"
+            },
+            "43": {
+              "title": "plutoorganiccafe.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQES_zWlhe9-YJ0H04yRw0QbCq5ARSHGNpG1sUMU3jUadQdjWXDPAuHoHAzFNBxopqxlkNKuNZkrIBHSXlWKNx-MkmZ7HndrHx-sfqubjh0dPfaxaF5NVcO9d69SMPtv"
+            },
+            "44": {
+              "title": "order.online",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFipa9xyDSkUZm4rMWUD5KbN0gneQRaU3Il58HEIf0-keCzf4AfYqD6AesKzJFe9MD0Eu4qVhl_opif_sszsLSngWvyTR0GHNwT4l6VC5jCtyKwB_slhRUqK5N8DIjGC28a_XL40mSi-KQAdUDQ-hGSZio0xQ=="
+            },
+            "45": {
+              "title": "order.online",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFipa9xyDSkUZm4rMWUD5KbN0gneQRaU3Il58HEIf0-keCzf4AfYqD6AesKzJFe9MD0Eu4qVhl_opif_sszsLSngWvyTR0GHNwT4l6VC5jCtyKwB_slhRUqK5N8DIjGC28a_XL40mSi-KQAdUDQ-hGSZio0xQ=="
+            },
+            "46": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGeYdlKR6t0V0uXUFG1LRmt3-E_67nbWW3Dx5czgVW-9xiQ_VPWzM2gQ79zMMgs5N7n3LLksuvVa9qBIOcSi_SbLpLQhSFKSfiHVnLVVJWqRViNQuAW-AVHjfLpi9cKdT77naNs_XHOcXPA2_vpIQzydY3L8kZSo456iPtT2VBx-k="
+            },
+            "47": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG_GW8i7up_eb9gWUKm0Xf8evLszjKS3p7Ymxg04bcSkzGi74O0xePgSqN70hu4elkuhUfNUDnGS2UKq1TwVPExdvswF4nE2uAPb0BJbB0hInt_i13YPZzwqmBIxdNi_d7Ftu6lP_rGWtkw8upQobbi9w-d1l9bLYwQtkMHmg=="
+            },
+            "48": {
+              "title": "plutoorganiccafe.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQES_zWlhe9-YJ0H04yRw0QbCq5ARSHGNpG1sUMU3jUadQdjWXDPAuHoHAzFNBxopqxlkNKuNZkrIBHSXlWKNx-MkmZ7HndrHx-sfqubjh0dPfaxaF5NVcO9d69SMPtv"
+            },
+            "49": {
+              "title": "marmaladefremont.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHdKj8dwcGyPsztsnwXqertuj3u3fbvC2OLrMUuGCBJeDVL6S3Uc-ZGbl1JHszpmphMrC9CwNsJM_6PQmitKVVkdacLRHH5NmvwKLPgRo0eylaiqpoBoto="
+            },
+            "50": {
+              "title": "wanderboat.ai",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH2sZ3yhjN94ieVuE3K3WidIUboxvPZc9ZIq96XTGcSENdX8JAs6EzUsFezyguwYroXXOMDM9eFfFICQWmnUHqc4pFynnyHQfW5JcSDPUs8IQdkx2NT_hUBNDzoGHgWnOKeiygs8paw83L-WW-DzlH6hOqBaVHTjHW7jg1gdYN7p9WcGTy0Xzchql7g3v67Vt6uDQ=="
+            },
+            "51": {
+              "title": "wanderboat.ai",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH2sZ3yhjN94ieVuE3K3WidIUboxvPZc9ZIq96XTGcSENdX8JAs6EzUsFezyguwYroXXOMDM9eFfFICQWmnUHqc4pFynnyHQfW5JcSDPUs8IQdkx2NT_hUBNDzoGHgWnOKeiygs8paw83L-WW-DzlH6hOqBaVHTjHW7jg1gdYN7p9WcGTy0Xzchql7g3v67Vt6uDQ=="
+            },
+            "52": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHe1egXErnY3rZ5_z0MfG5RT3g97T4akFFiZ4JTvj1VDfblwSO4EIQGT61IUASJ-xOn0N-h2lwlhDsGL9pxu8Tpzc2LVy5dvRVeqH5Mn3J8VjuNGLGsHzKr1aRLmMg8V925eblrtjShW_nusQ43yplzr0QCfg=="
+            },
+            "53": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGeYdlKR6t0V0uXUFG1LRmt3-E_67nbWW3Dx5czgVW-9xiQ_VPWzM2gQ79zMMgs5N7n3LLksuvVa9qBIOcSi_SbLpLQhSFKSfiHVnLVVJWqRViNQuAW-AVHjfLpi9cKdT77naNs_XHOcXPA2_vpIQzydY3L8kZSo456iPtT2VBx-k="
+            },
+            "54": {
+              "title": "wanderlog.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFvfgQZ-CUHwB4cxiKOGRmKHjCIq-URtxOtEQNXw8jTwWzCZsZ4k3jdcAI1OPV4ydbqq30eXaqDwSGy8hJ7f2cHfQgPsRHnJKx3KXNNDIwbgb5qGTpzq4kjHUdHVuBWSALcjFcX2XpJjYfuldXYXsp3"
+            },
+            "55": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHe1egXErnY3rZ5_z0MfG5RT3g97T4akFFiZ4JTvj1VDfblwSO4EIQGT61IUASJ-xOn0N-h2lwlhDsGL9pxu8Tpzc2LVy5dvRVeqH5Mn3J8VjuNGLGsHzKr1aRLmMg8V925eblrtjShW_nusQ43yplzr0QCfg=="
+            },
+            "56": {
+              "title": "wanderboat.ai",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH2sZ3yhjN94ieVuE3K3WidIUboxvPZc9ZIq96XTGcSENdX8JAs6EzUsFezyguwYroXXOMDM9eFfFICQWmnUHqc4pFynnyHQfW5JcSDPUs8IQdkx2NT_hUBNDzoGHgWnOKeiygs8paw83L-WW-DzlH6hOqBaVHTjHW7jg1gdYN7p9WcGTy0Xzchql7g3v67Vt6uDQ=="
+            },
+            "57": {
+              "title": "mybaskette.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFC_Jo9DaGAhStAqjGZQL9d-aBMSK-FnWD8iAZh2fXa68mkov8T9bc9kNISrgXd7td96-akXLgvodIWe0lCUPNmEKAkeKGDqh_z0TCVU69ea4Q="
+            },
+            "58": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH66reIrC5pP8CGfk7oCvqxEsvKrOenuL9V7WeMl-yxotZQgQDmAhMCVdP0bo1Spiclf6p9GvfUKGFlCxH68-N_iEy3bGgtuGauht7azqOK6TgKJNcXnRXmtF2x_OW7eY0x8GZMn6nPo6N3-0SjJjjKFh7G"
+            },
+            "59": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH66reIrC5pP8CGfk7oCvqxEsvKrOenuL9V7WeMl-yxotZQgQDmAhMCVdP0bo1Spiclf6p9GvfUKGFlCxH68-N_iEy3bGgtuGauht7azqOK6TgKJNcXnRXmtF2x_OW7eY0x8GZMn6nPo6N3-0SjJjjKFh7G"
+            },
+            "60": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGeYdlKR6t0V0uXUFG1LRmt3-E_67nbWW3Dx5czgVW-9xiQ_VPWzM2gQ79zMMgs5N7n3LLksuvVa9qBIOcSi_SbLpLQhSFKSfiHVnLVVJWqRViNQuAW-AVHjfLpi9cKdT77naNs_XHOcXPA2_vpIQzydY3L8kZSo456iPtT2VBx-k="
+            },
+            "61": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH66reIrC5pP8CGfk7oCvqxEsvKrOenuL9V7WeMl-yxotZQgQDmAhMCVdP0bo1Spiclf6p9GvfUKGFlCxH68-N_iEy3bGgtuGauht7azqOK6TgKJNcXnRXmtF2x_OW7eY0x8GZMn6nPo6N3-0SjJjjKFh7G"
+            },
+            "62": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH66reIrC5pP8CGfk7oCvqxEsvKrOenuL9V7WeMl-yxotZQgQDmAhMCVdP0bo1Spiclf6p9GvfUKGFlCxH68-N_iEy3bGgtuGauht7azqOK6TgKJNcXnRXmtF2x_OW7eY0x8GZMn6nPo6N3-0SjJjjKFh7G"
+            },
+            "63": {
+              "title": "theneighborscat.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFTjmmJCWMHq8-XjTvaYEQXdan9ZRqV2dLpFLy9nzOmS9OQihTaFYFhfua_we52tKFFDWQZqIjNEzpqp686kfw8KJy9inacyZFNNQQRBGxbCK4gE7_6J4ooHxPaFpiy-pSPxuUJOHh3VCHBI4i07uOR"
+            },
+            "64": {
+              "title": "theneighborscat.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFTjmmJCWMHq8-XjTvaYEQXdan9ZRqV2dLpFLy9nzOmS9OQihTaFYFhfua_we52tKFFDWQZqIjNEzpqp686kfw8KJy9inacyZFNNQQRBGxbCK4gE7_6J4ooHxPaFpiy-pSPxuUJOHh3VCHBI4i07uOR"
+            },
+            "65": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH7lXxNgN4L0n1VLXsB4o-bcExPHx8Q4xi-FBzbFm36q9E-0PNSNfxB734HU-AEpgBIGtmjgtiCUnM_Xivz6VW9ROOsi3X1coVQsAOwthcJ_kXxdCKKefDX7cfO4y3K93xsdKwx2m6Rrcb-Ml2tsB2qpyeM6mdrKUvlEHmHnNHjMEU="
+            },
+            "66": {
+              "title": "theneighborscat.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFTjmmJCWMHq8-XjTvaYEQXdan9ZRqV2dLpFLy9nzOmS9OQihTaFYFhfua_we52tKFFDWQZqIjNEzpqp686kfw8KJy9inacyZFNNQQRBGxbCK4gE7_6J4ooHxPaFpiy-pSPxuUJOHh3VCHBI4i07uOR"
+            },
+            "67": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH7lXxNgN4L0n1VLXsB4o-bcExPHx8Q4xi-FBzbFm36q9E-0PNSNfxB734HU-AEpgBIGtmjgtiCUnM_Xivz6VW9ROOsi3X1coVQsAOwthcJ_kXxdCKKefDX7cfO4y3K93xsdKwx2m6Rrcb-Ml2tsB2qpyeM6mdrKUvlEHmHnNHjMEU="
+            },
+            "68": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGeYdlKR6t0V0uXUFG1LRmt3-E_67nbWW3Dx5czgVW-9xiQ_VPWzM2gQ79zMMgs5N7n3LLksuvVa9qBIOcSi_SbLpLQhSFKSfiHVnLVVJWqRViNQuAW-AVHjfLpi9cKdT77naNs_XHOcXPA2_vpIQzydY3L8kZSo456iPtT2VBx-k="
+            },
+            "69": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH7lXxNgN4L0n1VLXsB4o-bcExPHx8Q4xi-FBzbFm36q9E-0PNSNfxB734HU-AEpgBIGtmjgtiCUnM_Xivz6VW9ROOsi3X1coVQsAOwthcJ_kXxdCKKefDX7cfO4y3K93xsdKwx2m6Rrcb-Ml2tsB2qpyeM6mdrKUvlEHmHnNHjMEU="
+            },
+            "70": {
+              "title": "theneighborscat.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFTjmmJCWMHq8-XjTvaYEQXdan9ZRqV2dLpFLy9nzOmS9OQihTaFYFhfua_we52tKFFDWQZqIjNEzpqp686kfw8KJy9inacyZFNNQQRBGxbCK4gE7_6J4ooHxPaFpiy-pSPxuUJOHh3VCHBI4i07uOR"
+            },
+            "71": {
+              "title": "zabihah.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGuIoVftJftMa02zRGKSfWh0Gub6SkI2y-Hx1QvTB-XfoS6PStZ4oBm_a1ig7e10booUncpPqoltXKKlQWw2Z4NLdzoaPZymPDVLSKmI6dO3LD4QA84GvnNfykwY1OQOlAuSB9GCnlBRhw7phg-S-4yGXODJnWBVMfavjjKWdOzBzw7dkPcgJ6o2MfSmPl4TsqprJcMcXLGRw=="
+            },
+            "72": {
+              "title": "cafeturko.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGovUAE0BAWaYUSPKnYKuD4hkiJZO4jM3yWjlHgWbCQ5kUF_6zztpACfHleXW26AkxAQXwWmFL-4T1Q_36KuWnt7rSWbsEiZHptw2Acd0Uftg=="
+            },
+            "73": {
+              "title": "happycow.net",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQExgl1IqgLRfuXdhMvKcJ3VcLxrVX3fyT3mbleQ4wklXeJTtBozhbOXKX3OKpiwOo1NrTwlEfBTkEETZrSq9hqwLahh9Nq4PKQyU9ocrlN1iVnkT7aAwssVZ116dWnK3uEZapceTTxNmG7kqnbSNDeRf-Lz"
+            },
+            "74": {
+              "title": "cafeturko.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGovUAE0BAWaYUSPKnYKuD4hkiJZO4jM3yWjlHgWbCQ5kUF_6zztpACfHleXW26AkxAQXwWmFL-4T1Q_36KuWnt7rSWbsEiZHptw2Acd0Uftg=="
+            },
+            "75": {
+              "title": "joe.coffee",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGeYdlKR6t0V0uXUFG1LRmt3-E_67nbWW3Dx5czgVW-9xiQ_VPWzM2gQ79zMMgs5N7n3LLksuvVa9qBIOcSi_SbLpLQhSFKSfiHVnLVVJWqRViNQuAW-AVHjfLpi9cKdT77naNs_XHOcXPA2_vpIQzydY3L8kZSo456iPtT2VBx-k="
+            },
+            "76": {
+              "title": "zabihah.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGuIoVftJftMa02zRGKSfWh0Gub6SkI2y-Hx1QvTB-XfoS6PStZ4oBm_a1ig7e10booUncpPqoltXKKlQWw2Z4NLdzoaPZymPDVLSKmI6dO3LD4QA84GvnNfykwY1OQOlAuSB9GCnlBRhw7phg-S-4yGXODJnWBVMfavjjKWdOzBzw7dkPcgJ6o2MfSmPl4TsqprJcMcXLGRw=="
+            },
+            "77": {
+              "title": "zabihah.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGuIoVftJftMa02zRGKSfWh0Gub6SkI2y-Hx1QvTB-XfoS6PStZ4oBm_a1ig7e10booUncpPqoltXKKlQWw2Z4NLdzoaPZymPDVLSKmI6dO3LD4QA84GvnNfykwY1OQOlAuSB9GCnlBRhw7phg-S-4yGXODJnWBVMfavjjKWdOzBzw7dkPcgJ6o2MfSmPl4TsqprJcMcXLGRw=="
+            },
+            "78": {
+              "title": "le-fournil.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHQYzmBVAQk9lQiPhP5W_eMCaFe7de6aMpqrGvJQdYU6UFnJOnE-5o0il9PO8fyZ1O-ax13YGou0FniMFF9FvE2cBPArDExqbqPOswl8k1Np9J04Y-GhH7jSt1WlRB8YGE="
+            },
+            "79": {
+              "title": "le-fournil.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHQYzmBVAQk9lQiPhP5W_eMCaFe7de6aMpqrGvJQdYU6UFnJOnE-5o0il9PO8fyZ1O-ax13YGou0FniMFF9FvE2cBPArDExqbqPOswl8k1Np9J04Y-GhH7jSt1WlRB8YGE="
+            },
+            "80": {
+              "title": "le-fournil.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFvfuz3AJ9BQeZoq-tjJ_lK4qHaqE25hGmdtkRV1PV24BIRlGTE4uYfZDoHe4NbkgaoHJJcHpSzmp0a1w9i_AIPKJ7A6SJPS4FC7BMGL1cjDCLkS-sIgKi09sGwCmenyw=="
+            },
+            "81": {
+              "title": "le-fournil.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFvfuz3AJ9BQeZoq-tjJ_lK4qHaqE25hGmdtkRV1PV24BIRlGTE4uYfZDoHe4NbkgaoHJJcHpSzmp0a1w9i_AIPKJ7A6SJPS4FC7BMGL1cjDCLkS-sIgKi09sGwCmenyw=="
+            },
+            "82": {
+              "title": "le-fournil.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFvfuz3AJ9BQeZoq-tjJ_lK4qHaqE25hGmdtkRV1PV24BIRlGTE4uYfZDoHe4NbkgaoHJJcHpSzmp0a1w9i_AIPKJ7A6SJPS4FC7BMGL1cjDCLkS-sIgKi09sGwCmenyw=="
+            },
+            "83": {
+              "title": "le-fournil.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFvfuz3AJ9BQeZoq-tjJ_lK4qHaqE25hGmdtkRV1PV24BIRlGTE4uYfZDoHe4NbkgaoHJJcHpSzmp0a1w9i_AIPKJ7A6SJPS4FC7BMGL1cjDCLkS-sIgKi09sGwCmenyw=="
+            },
+            "84": {
+              "title": "feastio.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGVAEF_CMR1nVSJj5o6wsMWSkooVeLCPE48uQgfqQ-Si_0bwbyn5qnQrsZ_Zxl9SBw0hhpyHL1j1JxHv9fAVefVhmnYVrQdHbdE-AexzAHidzmIrFwKigDwLcvqGkjR6cf9AaUeRg=="
+            },
+            "85": {
+              "title": "seawolfbakers.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHO-p6Tb3QNJJfJrCNAewOsKrgU1W4roa654PDj4oY3nt2ndO6N5e91vvUnDf4DGtk_VyqZyPGUMThIVZ7gK82uhIG3LA9CFg8AHgUUMaDt9mM4L3NgdKlfrPrIsoo="
+            },
+            "86": {
+              "title": "seawolfbakers.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHi17tNBxwT7ecf_Jr2FuiCd8RxQkjgJgNpnFnDug623UnrdxdyRGVLwSjlV_Ao7fjd2RJRxTinZ4U0xAyoDBpoE4ip4WhUnLwgOXi_70NyxuQ10tTa-6DJi-Hf0iFNTfno"
+            },
+            "87": {
+              "title": "seawolfbakers.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHi17tNBxwT7ecf_Jr2FuiCd8RxQkjgJgNpnFnDug623UnrdxdyRGVLwSjlV_Ao7fjd2RJRxTinZ4U0xAyoDBpoE4ip4WhUnLwgOXi_70NyxuQ10tTa-6DJi-Hf0iFNTfno"
+            },
+            "88": {
+              "title": "seawolfbakers.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHi17tNBxwT7ecf_Jr2FuiCd8RxQkjgJgNpnFnDug623UnrdxdyRGVLwSjlV_Ao7fjd2RJRxTinZ4U0xAyoDBpoE4ip4WhUnLwgOXi_70NyxuQ10tTa-6DJi-Hf0iFNTfno"
+            },
+            "89": {
+              "title": "seawolfbakers.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHO-p6Tb3QNJJfJrCNAewOsKrgU1W4roa654PDj4oY3nt2ndO6N5e91vvUnDf4DGtk_VyqZyPGUMThIVZ7gK82uhIG3LA9CFg8AHgUUMaDt9mM4L3NgdKlfrPrIsoo="
+            },
+            "90": {
+              "title": "grandcentralbakery.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHrJOiSlCGYMdDL1-XZIAwyaih8TA5y_qZzb-Fd3XrFKtA7ZO_yRELtmhgCNufIFmShFDlamG1kQ8sgldahGSMKzbn0M2YySONtLLOF6ZEkpqZnM7yi1E4ivGOiDJjS"
+            },
+            "91": {
+              "title": "squareup.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE9I0fDdXbHhWiPKGJW92yzx23WQbfolW04we9d2t16dcU9ciLVyrT8uXeZtanc0jkwOreOuDgy2loopw29aytdHPDL6EwdgfzCBa3WDosqsrp-imlnT-BmeRIq73ZMOqkvXAmYxBvwxcVZi1WV8xosKetul9Y3dAsRuo2xqGrudEB5JV3mng=="
+            },
+            "92": {
+              "title": "wikipedia.org",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGkQDNkpyApKikw8XuhknY4n69QbCu-KpzYky4vUBXdnX5hGAAMFNbFygbIFxURAha2bQsVN0CDDYx7mO8tETLPEVb4bp6GJhj7ShDoRD-oSu5ms-J9O5riXatvf3bi1ucPfH9Kp2olGfk4Jgc="
+            },
+            "93": {
+              "title": "grandcentralbakery.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFeMuud41ieYNrMf4cudKqFx5NcNUjizUgDQal6iRa5elekCuCwq8Emh5S27BUVW-ZPp4wcloh_rLCsEal_OAdEctpl6sD8HNsICfoHhxo9tNPmsmbPY4LEc05l9vPi2tPBzEAFgM0rLw3_"
+            },
+            "94": {
+              "title": "toptiereats.app",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHPmsOxYyYGhjVaLKPorzDA9xgYHJral4J0nCA2eyI-EFKfvLMNb4lvx6zgQPHpQoT8iBoDfsBeGIEtBy4y4LbHXp7_jAnlzao4WwVafT6ZcdP-VqSKvbQG17n6SMglr-eR7jQ="
+            },
+            "95": {
+              "title": "byenbakeri.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEf8p0hjFMmC9eFRtcVLLA19g_PpTuNZJ4RAyB_OG8Ado2DHP28AS9kEwJ4B0BsdxMEWTIzSW3g1T2L2PMcSA261bMvn-awF_bgPr53GqIoqwBfzPqu1g=="
+            },
+            "96": {
+              "title": "orderhh.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE1E0p44COdH4_bl3UoiKTh_d2oSYC6j9fv8Mn31wx4Zxzi1iNshTyB0UIdUbL4QHNkAWx6JCGYqktT6Ib3xyqWMKcyclz3ie7AktPvf10McyHZo_mY0w=="
+            },
+            "97": {
+              "title": "orderhh.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGNHyNI73roHd3jJdK1UGB9B0kVgCHqqF_OGNhTaJCiU9U0qZNmSgvUy8-MTrmZKvmWzYDcCnYI7GYY1nr7e_6VVUIl0CeZWEUyndtxe1c_QEeT2OP-c0Mn"
+            },
+            "98": {
+              "title": "orderhh.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGNHyNI73roHd3jJdK1UGB9B0kVgCHqqF_OGNhTaJCiU9U0qZNmSgvUy8-MTrmZKvmWzYDcCnYI7GYY1nr7e_6VVUIl0CeZWEUyndtxe1c_QEeT2OP-c0Mn"
+            },
+            "99": {
+              "title": "orderhh.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGNHyNI73roHd3jJdK1UGB9B0kVgCHqqF_OGNhTaJCiU9U0qZNmSgvUy8-MTrmZKvmWzYDcCnYI7GYY1nr7e_6VVUIl0CeZWEUyndtxe1c_QEeT2OP-c0Mn"
+            },
+            "100": {
+              "title": "orderhh.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGNHyNI73roHd3jJdK1UGB9B0kVgCHqqF_OGNhTaJCiU9U0qZNmSgvUy8-MTrmZKvmWzYDcCnYI7GYY1nr7e_6VVUIl0CeZWEUyndtxe1c_QEeT2OP-c0Mn"
+            },
+            "101": {
+              "title": "orderhh.com",
+              "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFX8NX7iu8cGeeM6kRFzW2Q3p8AGugFA22YTGXZ7IPNJsrsVK1wWvHyY1ZzPSmvsXQfjsCX_oHO76UyPf0IHQCoSvvaYKMw7XSdrTMIrFGmeckzR6KcB4rO"
+            }
+          }
+        }
+      ],
+      "chat_summary": [
+        {
+          "content": "The concept is a small specialty coffee shop focused on single-origin pour-over and local pastries, targeting the Fremont neighborhood in Seattle -- a walkable, younger-professional area without a strong specialty coffee presence yet.",
+          "type": "fact",
+          "speaker": "user",
+          "turn_index": 0,
+          "bucket": "Core Topic",
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_strike_team_v2_1789286486/m_17892864867184",
+          "id": "afe710ae-9dc9-4636-b440-30bbb2d5a489",
+          "status": "current"
+        },
+        {
+          "content": "go ahead and launch the research now -- I confirm, let's do it.",
+          "type": "decision",
+          "speaker": "user",
+          "turn_index": 0,
+          "bucket": "Miscellaneous",
+          "resolution_status": "settled",
+          "scope_path": "phase15_fixture_strike_team_v2_1789286486/m_17892864867184",
+          "id": "fc6ed826-2bb4-41f6-82cb-c692b3d9012c",
+          "status": "current"
+        }
+      ],
+      "chat_summary_cursor": 1,
+      "tool_call": null,
+      "gate_status": "GREEN",
+      "whisper": "The gate is ready, it's time to move forward.",
+      "assessments": [
+        {
+          "question": "What is the specific coffee shop concept and target neighborhood/city to research?",
+          "status": "GREEN",
+          "is_satisfied": true
+        }
+      ],
+      "trigger_log": [
+        {
+          "trigger_id": "gatekeeper_assessment",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": true,
+          "fired": true,
+          "outcome": {
+            "gate_status": "GREEN",
+            "whisper": "The gate is ready, it's time to move forward.",
+            "assessments": [
+              {
+                "question": "What is the specific coffee shop concept and target neighborhood/city to research?",
+                "status": "GREEN",
+                "is_satisfied": true
+              }
+            ]
+          }
+        },
+        {
+          "trigger_id": "keymaster_confirmation",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": true,
+          "fired": true,
+          "outcome": {
+            "confirmed": true
+          }
+        },
+        {
+          "trigger_id": "strike_team_launch",
+          "scope": "milestone",
+          "pattern": "once_per_milestone",
+          "condition_result": true,
+          "fired": true,
+          "outcome": {
+            "launched": true
+          }
+        }
+      ],
+      "chat_whisper": null
+    },
+    "snapshot_before": {
+      "milestone_doc": null,
+      "project_manifest": {
+        "chat_history": [],
+        "chat_summary": [],
+        "chat_summary_cursor": 0,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {},
+        "brief": null
+      },
+      "trigger_log": []
+    },
+    "snapshot_after": {
+      "milestone_doc": {
+        "specialists": [
+          {
+            "role_name": "Market Researcher",
+            "identity": {
+              "exo_brain": null,
+              "system_prompt": "Detail-oriented market researcher, focused on real local competitive landscape.",
+              "l0_mother": "ROLE: Strategic Architect.\nLANGUAGE STANDARD: Plain English (WCAG 2.1). No bolding. No metaphors.\n\nMISSION: Write an ELISO REPORT (Evidence, Logic, Implication, Solution, Outside-the-Box) based on the research provided. This extends the standard ELI protocol with two additional tags -- Solution and Outside-the-Box -- required for this role specifically.\n\nLAWS:\n1. EVIDENCE: You MUST cite sources using [1], [2] format based on the research packet.\n2. LOGIC: Explain how the evidence supports or challenges the founder's brief.\n3. IMPLICATION: State what this means for the build.\n4. SOLUTION: State the concrete feature or App Brick to be built as a result.\n5. OUTSIDE-THE-BOX: Offer the unconventional 'Twist' -- a non-obvious angle that gives a competitive edge.\n6. NO HALLUCINATION: If the data is not in the packet, say \"Evidence not found.\"\n7. Max 4 sentences per section. No bolding."
+            }
+          }
+        ],
+        "checklist_prompt": "Research the real, current market for a small neighborhood coffee shop concept.",
+        "required_questions": [
+          "What is the specific coffee shop concept and target neighborhood/city to research?"
+        ],
+        "coverage_result": {
+          "whisper": "The gate is ready, it's time to move forward.",
+          "gate_status": "GREEN",
+          "assessments": [
+            {
+              "is_satisfied": true,
+              "question": "What is the specific coffee shop concept and target neighborhood/city to research?",
+              "status": "GREEN"
+            }
+          ]
+        },
+        "owner_id": "fredrik.t.torstensson@gmail.com",
+        "output": "A short research brief on the local coffee shop market."
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "content": "The concept is a small specialty coffee shop focused on single-origin pour-over and local pastries, targeting the Fremont neighborhood in Seattle -- a walkable, younger-professional area without a strong specialty coffee presence yet. That's everything you need. Yes, go ahead and launch the research now -- I confirm, let's do it.",
+            "role": "user"
+          },
+          {
+            "content": "The research confirmed our initial thoughts about Fremont being a competitive and sophisticated market. It seems a unique, defensible feature is the key to success, not just good coffee and pastries. The team is ready to start exploring what that feature could be.\n\nAre you ready to authorize the specialists to begin developing concepts?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [
+          {
+            "speaker": "user",
+            "scope_path": "phase15_fixture_strike_team_v2_1789286486/m_17892864867184",
+            "type": "fact",
+            "bucket": "Core Topic",
+            "turn_index": 0,
+            "content": "The concept is a small specialty coffee shop focused on single-origin pour-over and local pastries, targeting the Fremont neighborhood in Seattle -- a walkable, younger-professional area without a strong specialty coffee presence yet.",
+            "id": "afe710ae-9dc9-4636-b440-30bbb2d5a489",
+            "resolution_status": "settled",
+            "status": "current"
+          },
+          {
+            "speaker": "user",
+            "scope_path": "phase15_fixture_strike_team_v2_1789286486/m_17892864867184",
+            "type": "decision",
+            "bucket": "Miscellaneous",
+            "turn_index": 0,
+            "content": "go ahead and launch the research now -- I confirm, let's do it.",
+            "id": "fc6ed826-2bb4-41f6-82cb-c692b3d9012c",
+            "resolution_status": "settled",
+            "status": "current"
+          }
+        ],
+        "chat_summary_cursor": 1,
+        "physics_open": true,
+        "ledger": {
+          "headline": {
+            "status": "STABLE",
+            "history": [
+              {
+                "summary_prose": "The Fremont Crucible: Competing in a High-Density, High-Expectation Market"
+              }
+            ]
+          },
+          "id": {
+            "status": "STABLE",
+            "history": [
+              {
+                "summary_prose": "sec_01"
+              }
+            ]
+          },
+          "type": {
+            "status": "STABLE",
+            "history": [
+              {
+                "summary_prose": "TEXT"
+              }
+            ]
+          },
+          "content": {
+            "status": "STABLE",
+            "history": [
+              {
+                "summary_prose": "Seattle's Fremont neighborhood is a saturated and sophisticated coffee market, not a proving ground for generic concepts. The area's dominant demographic of affluent, educated professionals aged 25-44 has cultivated a landscape of over ten highly-rated specialty cafes [1, 2, 3, 4]. Competitors have already captured distinct niches, from in-house roasting and Vietnamese coffee to cat lounges, demonstrating that market entry requires a sharp, defensible value proposition [5, 6]. The local customer base is primed to pay for premium, unique experiences, making differentiation a prerequisite for survival. Furthermore, established players like Baskette and Pluto Organic Cafe leverage high-quality food as a key differentiator, often supplied by proven local wholesale bakeries such as Le Fournil and Sea Wolf Bakers [7, 8, 10, 11]. Therefore, any new venture must bypass the high capital expenditure of an in-house bakery by securing a reliable wholesale partner, and its core strategy must be built around a unique, non-replicable feature to justify its existence."
+              }
+            ]
+          }
+        },
+        "knowledge_bricks": {
+          "headline": "The Fremont Crucible: Competing in a High-Density, High-Expectation Market",
+          "id": "sec_01",
+          "type": "TEXT",
+          "content": "Seattle's Fremont neighborhood is a saturated and sophisticated coffee market, not a proving ground for generic concepts. The area's dominant demographic of affluent, educated professionals aged 25-44 has cultivated a landscape of over ten highly-rated specialty cafes [1, 2, 3, 4]. Competitors have already captured distinct niches, from in-house roasting and Vietnamese coffee to cat lounges, demonstrating that market entry requires a sharp, defensible value proposition [5, 6]. The local customer base is primed to pay for premium, unique experiences, making differentiation a prerequisite for survival. Furthermore, established players like Baskette and Pluto Organic Cafe leverage high-quality food as a key differentiator, often supplied by proven local wholesale bakeries such as Le Fournil and Sea Wolf Bakers [7, 8, 10, 11]. Therefore, any new venture must bypass the high capital expenditure of an in-house bakery by securing a reliable wholesale partner, and its core strategy must be built around a unique, non-replicable feature to justify its existence."
+        },
+        "brief": {
+          "identity_narrative": "This research brief is for a small specialty coffee shop concept, specifically focused on single-origin pour-over coffee and local pastries. The target audience is the younger professional demographic within Seattle's Fremont neighborhood, an area identified as walkable and currently lacking a strong specialty coffee presence. The goal is to understand the market for this particular niche within this specific geographic and demographic context.\n\nThis is explicitly not a generic coffee shop or cafe concept. The emphasis is on the highly specialized offering of single-origin pour-over and local pastries, distinguishing it from broader, more mainstream coffee establishments that might offer a wider range of drinks or food items without the same artisanal focus.",
+          "founding_voice": [
+            "The concept is a small specialty coffee shop focused on single-origin pour-over and local pastries, targeting the Fremont neighborhood in Seattle -- a walkable, younger-professional area without a strong specialty coffee presence yet.",
+            "go ahead and launch the research now -- I confirm, let's do it."
+          ]
+        }
+      },
+      "trigger_log": [
+        {
+          "fired": true,
+          "scope": "milestone",
+          "outcome": {
+            "whisper": "The gate is ready, it's time to move forward.",
+            "gate_status": "GREEN",
+            "assessments": [
+              {
+                "is_satisfied": true,
+                "question": "What is the specific coffee shop concept and target neighborhood/city to research?",
+                "status": "GREEN"
+              }
+            ]
+          },
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 08:02:53.560000+00:00",
+          "condition_result": true,
+          "trigger_id": "gatekeeper_assessment"
+        },
+        {
+          "fired": true,
+          "scope": "milestone",
+          "outcome": {
+            "confirmed": true
+          },
+          "pattern": "every_turn_until_bound_event",
+          "logged_at": "2026-09-13 08:02:53.763000+00:00",
+          "condition_result": true,
+          "trigger_id": "keymaster_confirmation"
+        },
+        {
+          "fired": true,
+          "scope": "milestone",
+          "outcome": {
+            "launched": true
+          },
+          "pattern": "once_per_milestone",
+          "logged_at": "2026-09-13 08:02:53.794000+00:00",
+          "condition_result": true,
+          "trigger_id": "strike_team_launch"
+        }
+      ]
+    }
+  }
+}
