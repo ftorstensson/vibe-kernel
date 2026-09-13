@@ -4,8 +4,21 @@ captured by Backend from real production/test-app data, see
 tests/fixtures/phase_1_5/) through the REAL core/orchestrator.py +
 core/triggers.py sequencing code, mocking only the genuine non-deterministic
 I/O boundaries (assess_coverage, confirm_launch_intent, build_chat_summary,
-derive_brief, StrikeEngine.run_industrial_strike, SynthesisEngine.forge_truth)
-with each turn's own real historical output.
+derive_brief, StrikeEngine.run_industrial_strike, SynthesisEngine.forge_truth,
+SocialEngine.run_turn) with each turn's own real historical output.
+
+CORRECTION (found after this file's first merge, PR #29): the initial
+version of this harness did NOT mock SocialEngine.run_turn -- process_turn()
+calls it unconditionally at the end of BOTH its branches (whether Strike
+Team launched or not), so every one of the 8 scenario replays was making a
+real, live, paid model call this docstring's own description never
+accounted for. Confirmed by grep (core/orchestrator.py lines calling
+SocialEngine.run_turn) before fixing, not assumed. Fixed by adding it to
+the mock boundary, stubbed to return that turn's own real historical
+social_response -- same "replay the exact recorded value" pattern already
+used for gate_status/whisper/confirmed, so the fix doesn't change what's
+being verified, only removes an unintended real call this test was never
+supposed to make.
 
 This deliberately does NOT reimplement or hand-simulate the sequencing logic
 -- it calls MasterOrchestrator.process_turn() for real, so what's actually
@@ -139,12 +152,16 @@ async def replay_scenario(name, app_id, milestone_id, entities, trigger_message,
     async def fake_forge_truth(*args, **kwargs):
         return {"bricks": dict(kernel_result.get("data_patch") or {}), "appendix": list(kernel_result.get("appendix") or [])}
 
+    async def fake_run_turn(*args, **kwargs):
+        return kernel_result.get("social_response") or "[stubbed -- sequencing test, not content test]"
+
     with patch.object(triggers_mod, "assess_coverage", side_effect=fake_assess_coverage) as m_coverage, \
          patch.object(triggers_mod, "confirm_launch_intent", side_effect=fake_confirm_launch_intent) as m_confirm, \
          patch.object(orchestrator_mod, "build_chat_summary", side_effect=fake_build_chat_summary), \
          patch.object(triggers_mod, "derive_brief", side_effect=fake_derive_brief), \
          patch.object(triggers_mod.StrikeEngine, "run_industrial_strike", side_effect=fake_run_industrial_strike), \
-         patch.object(triggers_mod.SynthesisEngine, "forge_truth", side_effect=fake_forge_truth):
+         patch.object(triggers_mod.SynthesisEngine, "forge_truth", side_effect=fake_forge_truth), \
+         patch.object(orchestrator_mod.SocialEngine, "run_turn", side_effect=fake_run_turn) as m_run_turn:
         result = await MasterOrchestrator.process_turn(envelope, trigger_message, is_global=False)
 
     return {
@@ -153,8 +170,18 @@ async def replay_scenario(name, app_id, milestone_id, entities, trigger_message,
         "expected_log": expected_log,
         "mocked_coverage_calls": m_coverage.call_count,
         "mocked_confirm_calls": m_confirm.call_count,
+        "mocked_run_turn_calls": m_run_turn.call_count,
         "envelope_after": envelope,
     }
+
+
+def run_turn_call_checks(r):
+    """process_turn() calls SocialEngine.run_turn exactly once at the end of
+    every real turn (both branches -- Strike Team launched or not). Checking
+    call_count == 1 confirms the mock is actually being exercised (not
+    silently unused because a patch target was wrong), which is exactly the
+    class of mistake that let the original unmocked-run_turn bug ship."""
+    return [(f"{r['name']}: SocialEngine.run_turn called exactly once (mocked)", r["mocked_run_turn_calls"] == 1, r["mocked_run_turn_calls"])]
 
 
 def compare_trigger_logs(name, result_log, expected_log):
@@ -190,6 +217,7 @@ async def main():
             t["trigger_message"], t["snapshot_before"], t["kernel_result"],
         )
         all_checks += compare_trigger_logs(r["name"], r["result_log"], r["expected_log"])
+        all_checks += run_turn_call_checks(r)
 
     with open(os.path.join(FIXTURE_DIR, "gatekeeper_skip_branches_real_turns.json")) as f:
         skip = json.load(f)
@@ -201,6 +229,7 @@ async def main():
             b["trigger_message"], b["snapshot_before"], b["kernel_result"],
         )
         all_checks += compare_trigger_logs(r["name"], r["result_log"], r["expected_log"])
+        all_checks += run_turn_call_checks(r)
 
     with open(os.path.join(FIXTURE_DIR, "strike_team_launch_real_turn.json")) as f:
         st = json.load(f)
@@ -211,6 +240,7 @@ async def main():
         t["trigger_message"], t["snapshot_before"], t["kernel_result"],
     )
     all_checks += compare_trigger_logs(r["name"], r["result_log"], r["expected_log"])
+    all_checks += run_turn_call_checks(r)
     # Bonus check beyond trigger_log itself: the real side effect a launch
     # must produce -- envelope.knowledge_bricks actually updated with the
     # (stubbed) bricks, matching how a real launch's data_patch reaches

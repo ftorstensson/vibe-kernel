@@ -10,14 +10,18 @@ from schema.kernel_schema import (
     CompileIdentityRequest, CompileIdentityResponse,
     SummarizeForMapRequest, SummarizeForMapResponse,
     AgentPreviewRequest,
+    LaunchStrikeTeamRequest, LaunchStrikeTeamResponse,
+    AgentTurnRequest, AgentTurnResponse,
+    GlobalAgentTurnRequest, GlobalAgentTurnResponse,
 )
 from core.orchestrator import MasterOrchestrator
 from core.requirements import derive_requirements
 from core.coverage import assess_coverage, resolve_required_questions
-from core.reconcile import build_chat_summary
+from core.reconcile import build_chat_summary, filter_facts_by_scope
 from core.ignition import confirm_launch_intent
 from core.composition import compose_function_identity, compose_agent_identity
 from core.map_summary import summarize_for_map
+from core.strike_launch import execute_strike_team_launch
 from pods.social.engine import SocialEngine
 import uvicorn
 import os
@@ -331,8 +335,14 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
             "derived_requirements": req.derived_requirements,
         }
         required_questions = resolve_required_questions(milestone_config)
+        # Phase 1.5: closes the real scope-filtering gap this endpoint had
+        # relative to core/triggers.py's own _gatekeeper_action() -- see
+        # AssessCoverageRequest's own docstring for the full reasoning.
+        # req.active_scope_path defaults to None, which filter_facts_by_scope()
+        # already treats as a no-op, so existing callers see no change.
+        scoped_chat_summary = filter_facts_by_scope(req.chat_summary, req.active_scope_path)
         result = assess_coverage(
-            required_questions, req.chat_summary, identity["l1"], identity["l3"], req.skill,
+            required_questions, scoped_chat_summary, identity["l1"], identity["l3"], req.skill,
             output_shape=req.output_shape,
         )
         return result
@@ -365,6 +375,76 @@ async def invoke_chat_summary(req: ChatSummaryRequest):
             output_shape=req.output_shape,
         )
         return result
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Phase 1.5 migration pass, new endpoint -- see LaunchStrikeTeamRequest's own
+# docstring (schema/kernel_schema.py) for the full reasoning: exposes
+# core/triggers.py's _strike_team_action() launch sequence standalone
+# (via core/strike_launch.py's execute_strike_team_launch(), a deliberate
+# duplicate, not a refactor -- core/triggers.py stays untouched, still
+# serving real /kernel/invoke traffic unchanged). Additive only: nothing
+# calls this endpoint yet.
+@app.post("/kernel/functions/launch_strike_team", response_model=LaunchStrikeTeamResponse)
+async def invoke_launch_strike_team(req: LaunchStrikeTeamRequest):
+    try:
+        result = await execute_strike_team_launch(req.app_id, req.purpose, req.chat_summary, req.milestone_config)
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Phase 1.5 migration pass, new endpoint -- SocialEngine.run_turn() exposed
+# standalone, see AgentTurnRequest's own docstring for the full reasoning
+# (Backend's own new sequencing resolves gatekeeper_whisper/chat_whisper/
+# kaiser_mandate itself now, passes them in as real Signal values). Additive
+# only: core/orchestrator.py's own process_turn() still calls run_turn
+# internally, unchanged -- this is a second, parallel way to reach the same
+# function, not a replacement for the first one yet.
+@app.post("/kernel/agents/run_turn", response_model=AgentTurnResponse)
+async def invoke_agent_run_turn(req: AgentTurnRequest):
+    try:
+        envelope = AgentEnvelope(
+            app_id=req.app_id, project_id=req.project_id, milestone_id=req.milestone_id,
+            milestone_config=req.milestone_config, persona_config=req.persona_config,
+            knowledge_bricks=req.knowledge_bricks, history=req.history, physics_open=req.physics_open,
+            schema_map=req.schema_map, chat_whisper=req.chat_whisper, gatekeeper_whisper=req.gatekeeper_whisper,
+            kaiser_mandate=req.kaiser_mandate or "", partner_protocols=req.partner_protocols, tool_law=req.tool_law,
+            compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, phase_purpose=req.phase_purpose,
+        )
+        response = await SocialEngine.run_turn(envelope)
+        return {"social_response": response}
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Phase 1.5 migration pass, new endpoint -- SocialEngine.run_global_turn()
+# exposed standalone. Separate endpoint from run_turn above, not the same
+# one with an is_global flag -- see GlobalAgentTurnRequest's own docstring
+# for why (tool_call is a genuine capability difference, confirmed against
+# the real run_global_turn code, not a stylistic choice).
+@app.post("/kernel/agents/run_global_turn", response_model=GlobalAgentTurnResponse)
+async def invoke_agent_run_global_turn(req: GlobalAgentTurnRequest):
+    try:
+        envelope = AgentEnvelope(
+            app_id=req.app_id, project_id=req.project_id, milestone_id=req.milestone_id,
+            milestone_config=req.milestone_config, persona_config=req.persona_config,
+            knowledge_bricks=req.knowledge_bricks, history=req.history,
+            schema_map=req.schema_map, chat_whisper=req.chat_whisper, tool_law=req.tool_law,
+            compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, project_map=req.project_map,
+        )
+        result = await SocialEngine.run_global_turn(envelope)
+        return {"social_response": result.get("social_response"), "tool_call": result.get("tool_call")}
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
