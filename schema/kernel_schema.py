@@ -303,8 +303,9 @@ class SovereignResponse(BaseModel):
     # chat_whisper: Chat Manager's own signal -- the single most pressing
     # thing it couldn't confidently classify as new/update/conflict,
     # already computed every real turn (both task-scoped and Global) and
-    # already folded into the PM's own L1 (see pods/social/engine.py's
-    # CHAT WHISPER injection) -- same "already computed, previously
+    # already handed to the PM as Signal (see pods/social/engine.py's
+    # CHAT WHISPER line, passed via PromptBuilder.assemble's signal=
+    # slot, not L1) -- same "already computed, previously
     # discarded from the response" story as gate_status/whisper/
     # assessments before that fix. Read straight off envelope.chat_whisper
     # after the turn, not recomputed. None whenever Chat Manager genuinely
