@@ -108,7 +108,7 @@ def _active_partner_protocols(envelope: AgentEnvelope):
     turn; this is the fine-grained narrowing that happens after, once a
     real whisper either did or didn't fire). Uses the exact same truthy
     check run_turn already applies to gatekeeper_whisper/chat_whisper
-    before injecting them into pm_mandate_lines, so a Partner Protocol can
+    before injecting them into pm_signal_lines, so a Partner Protocol can
     never appear without its whisper also appearing, and vice versa -- the
     two channels stay in lockstep by construction, not by convention. See
     compose_partner_protocols_lens()'s own docstring (core/composition.py)
@@ -204,6 +204,16 @@ class SocialEngine:
         # gatekeeper_whisper below, not unconditional.
         if envelope.kaiser_mandate:
             pm_mandate_lines.append(f"KAISER MANDATE: {envelope.kaiser_mandate}")
+        pm_mandate_lines.append(f"TOOL LAW: {envelope.tool_law or DEFAULT_TOOL_LAW}")
+        pm_mandate = "\n".join(pm_mandate_lines)
+
+        # L5 (Signal): upstream functions' own per-turn output. These used
+        # to be appended into pm_mandate_lines (L1) above -- the one live
+        # violation of the rule that an upstream output may only ever enter
+        # a downstream call as Signal or Memory, never as Mandate/Persona/
+        # Context/Task. They now go to PromptBuilder.assemble's own
+        # signal= slot, rendered as a separate block after TRUTH.
+        pm_signal_lines = []
         # Computed once per turn in orchestrator.py (core/coverage.py), not
         # here -- avoids running Gatekeeper twice per turn now that
         # orchestrator.py also needs it for gate-driven ignition. Carries
@@ -212,19 +222,18 @@ class SocialEngine:
         # provide) in one real signal, not two. Renamed from coverage_whisper
         # -- "Coverage" was the old function name.
         if envelope.gatekeeper_whisper:
-            pm_mandate_lines.append(f"GATEKEEPER WHISPER: {envelope.gatekeeper_whisper}")
+            pm_signal_lines.append(f"GATEKEEPER WHISPER: {envelope.gatekeeper_whisper}")
         # Chat Manager's own signal, same scratch-field pattern -- when it
         # couldn't confidently classify something as new/update/conflict,
         # this is the single most pressing thing to ask the Director to
         # clarify, not a guess or a silent drop (core/reconcile.py's
         # build_chat_summary()/_pick_chat_whisper()).
         if envelope.chat_whisper:
-            pm_mandate_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
-        pm_mandate_lines.append(f"TOOL LAW: {envelope.tool_law or DEFAULT_TOOL_LAW}")
-        pm_mandate = "\n".join(pm_mandate_lines)
+            pm_signal_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
+        pm_signal = "\n".join(pm_signal_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 
-        work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth)
+        work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth, signal=pm_signal)
         response = pm_model.generate_content([work_order], generation_config=pm_config)
 
         return get_clean_text(response)
@@ -247,7 +256,8 @@ class SocialEngine:
         wiring added the L3 side (_active_partner_protocols below) to both
         run_turn and run_global_turn -- the two channels are related but
         separate; L3's Partner Protocol explains what a whisper means, this
-        L1 line is the whisper itself, and only run_turn had it.
+        Signal line (PromptBuilder.assemble's signal= slot, formerly an L1
+        line) is the whisper itself, and only run_turn had it.
 
         PROJECT MAP is new here and here only -- see
         compose_project_map_lens()'s own docstring for why it's appended
@@ -302,13 +312,19 @@ class SocialEngine:
         # L1: same cutover as run_turn -- see _compiled_l1_lines()'s own
         # docstring.
         pm_mandate_lines = _compiled_l1_lines(envelope)
-        if envelope.chat_whisper:
-            pm_mandate_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
         pm_mandate_lines.append(f"TOOL LAW: {DISPATCH_TOOL_LAW if tools else (envelope.tool_law or DEFAULT_TOOL_LAW)}")
         pm_mandate = "\n".join(pm_mandate_lines)
+        # L5 (Signal), same move as run_turn: Chat Manager's whisper is an
+        # upstream function's own output, so it enters this call via the
+        # signal= slot, not L1. No GATEKEEPER WHISPER here -- gatekeeper_
+        # whisper is never computed on this path (no gate), see above.
+        pm_signal_lines = []
+        if envelope.chat_whisper:
+            pm_signal_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
+        pm_signal = "\n".join(pm_signal_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 
-        work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth)
+        work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth, signal=pm_signal)
         response = pm_model.generate_content([work_order], generation_config=pm_config, tools=tools)
 
         # Defensive against a hypothetical multiple-tool-calls response --
