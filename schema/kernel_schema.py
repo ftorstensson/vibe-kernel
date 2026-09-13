@@ -13,7 +13,20 @@ class SovereignRequest(BaseModel):
 
     milestone_config/persona_config/knowledge_bricks/history/physics_open
     are what AgentEnvelope already was -- populated by the caller now,
-    not fetched. persona_config must already be merged the way
+    not fetched. knowledge_bricks is Dict[str, Any], not Dict[str, str] --
+    real, live bug found and fixed the same night Phase 1.5's Strike Team
+    launch tooling first actually exercised it: SynthesisEngine.forge_truth()
+    doesn't always produce a flat brick_id->prose-string map (without a real
+    research_architecture to constrain its own schema, the model can
+    improvise a nested structure under a key like "sections" -- a list of
+    {id, headline, type, content} objects -- instead of a plain string).
+    A real Strike Team launch produced exactly this shape tonight; the
+    strict Dict[str, str] typing here would have 422'd the very next real
+    turn Backend sent back through /kernel/invoke for that project. Same
+    fix applied everywhere this field appears (SovereignResponse.data_patch,
+    AgentEnvelope.knowledge_bricks, AgentTurnRequest/GlobalAgentTurnRequest)
+    -- one real bug, four identical typed copies, not four separate ones.
+    persona_config must already be merged the way
     core/bootloader.py's old BOOTSTRAP 1B merged it: the raw persona doc's
     own fields (system_prompt, exo_brain, ...) plus archetype (the agent's
     own bound archetype, record-wrapped as {mandate: str} -- "One Name,
@@ -226,7 +239,7 @@ class SovereignRequest(BaseModel):
     user_message: str
     milestone_config: Dict[str, Any]
     persona_config: Dict[str, Any]
-    knowledge_bricks: Dict[str, str] = Field(default_factory=dict)
+    knowledge_bricks: Dict[str, Any] = Field(default_factory=dict)
     history: List[Dict[str, str]] = Field(default_factory=list)
     physics_open: bool = False
     schema_map: Dict[str, Any]
@@ -277,7 +290,23 @@ class SovereignResponse(BaseModel):
     not two)."""
     social_response: str
     status: str  # PROBING | AUTHORIZED | STABLE | GLOBAL | TOOL_CALL
-    data_patch: Optional[Dict[str, str]] = None
+    # Dict[str, Any], not Dict[str, str] -- real, pre-existing bug, found as
+    # a side effect of Phase 1.5's launch_strike_team endpoint hitting the
+    # identical mistake under stricter validation (see
+    # LaunchStrikeTeamResponse's own docstring for the full trace). This
+    # field is Strike Team's real bricks output (context["bricks"] in
+    # core/triggers.py's _strike_team_action()) -- SynthesisEngine.forge_truth()
+    # doesn't always produce a flat brick_id->prose-string map; without a
+    # real research_architecture to constrain its own schema, the model can
+    # improvise a nested structure under a key like "sections" (a list of
+    # {id, headline, type, content} objects) instead of a plain string.
+    # This endpoint's strict typing would reject that with a 500 -- a real,
+    # live production risk that's simply never fired yet because no real
+    # milestone had ever launched Strike Team without a real
+    # research_architecture before Phase 1.5's fixture-capture work forced
+    # the issue. Fixed here to match what the real data can actually be,
+    # not what was previously assumed.
+    data_patch: Optional[Dict[str, Any]] = None
     # Restores the real v32.0-era API contract (confirmed still expected by
     # the-co-founder's app/agency/architect.py and rendered by
     # vibe-design-lab's ExecutivePaperNode) rather than inventing a new shape.
@@ -670,7 +699,23 @@ class AssessCoverageRequest(BaseModel):
     derived_requirements accepts any of the shapes resolve_required_questions()
     already tolerates (raw ignition_inputs list, the full
     {rationale, ignition_inputs} object, or flat strings) -- None/absent
-    when the milestone has never had Requirements run for it."""
+    when the milestone has never had Requirements run for it.
+
+    active_scope_path (Phase 1.5 migration pass): closes a real gap found
+    while designing Backend's own standalone-orchestration replacement for
+    core/triggers.py's _gatekeeper_action() -- that internal action runs
+    core/reconcile.py's filter_facts_by_scope() on chat_summary before ever
+    calling assess_coverage() (Gatekeeper's own hierarchical scope filter,
+    see markdown-6.md section 5's Memory resolution), but THIS standalone
+    endpoint never did, since it predates that scope_path work entirely.
+    Migrating callers onto this endpoint without adding the filter here
+    would silently regress scope-filtering versus what /kernel/invoke's
+    live-turn path already does today. Optional/fail-open, same pattern as
+    everywhere else: None (the default -- a caller with no milestone scope,
+    or one that hasn't adopted scope_path tagging yet) means
+    filter_facts_by_scope() treats it as "no active scope, don't filter,"
+    a genuine no-op, not a crash or a silent behavior change for existing
+    callers of this endpoint."""
     app_id: str
     required_questions: List[str] = Field(default_factory=list)
     derived_requirements: Optional[Any] = None
@@ -686,6 +731,7 @@ class AssessCoverageRequest(BaseModel):
     # output_shape= parameter. Optional/fail-open: None falls back to
     # core/coverage.py's own COVERAGE_SCHEMA constant.
     output_shape: Optional[Dict[str, Any]] = None
+    active_scope_path: Optional[str] = None
 
 class AssessCoverageResponse(BaseModel):
     assessments: List[Dict[str, Any]]
@@ -771,7 +817,7 @@ class AgentEnvelope(BaseModel):
     active_milestone_already_fired: Optional[bool] = None
     milestone_config: Dict[str, Any]
     persona_config: Dict[str, Any]
-    knowledge_bricks: Dict[str, str] = Field(default_factory=dict)
+    knowledge_bricks: Dict[str, Any] = Field(default_factory=dict)
     history: List[Dict[str, str]] = Field(default_factory=list)
     schema_map: Dict[str, Any] = Field(default_factory=dict)
     physics_open: bool = False
@@ -844,3 +890,144 @@ class AgentEnvelope(BaseModel):
     # core/triggers.py's _keymaster_action(). None falls back to
     # core/ignition.py's own LAUNCH_CONFIRM_SCHEMA constant.
     keymaster_output_shape: Optional[Dict[str, Any]] = None
+
+class LaunchStrikeTeamRequest(BaseModel):
+    """Phase 1.5 migration pass, new endpoint: the Strike Team launch half of
+    core/triggers.py's STRIKE_TEAM_LAUNCH trigger (_strike_team_action),
+    exposed standalone so Backend's own new sequencing logic can call it
+    directly instead of going through /kernel/invoke's internal chain. This
+    endpoint's own implementation (core/strike_launch.py's
+    execute_strike_team_launch()) deliberately DUPLICATES _strike_team_action's
+    real sequence (derive_brief -> StrikeEngine.run_industrial_strike ->
+    SynthesisEngine.forge_truth -> weld_links) rather than refactoring
+    core/triggers.py to share it -- that file is explicitly off-limits for
+    this pass (the old /kernel/invoke path must keep working unchanged,
+    serving real traffic, while this new endpoint exists alongside it
+    unused by anything real yet). Deduplicating the two copies is real,
+    deferred work for once core/triggers.py's own internal chain is actually
+    retired, not assumed to fall out of this pass for free.
+
+    purpose/chat_summary/milestone_config are the same raw ingredients
+    _strike_team_action already reads off envelope.milestone_config.get(
+    "output", "")/context["chat_summary"]/envelope.milestone_config itself
+    -- milestone_config passed wholesale (not flattened into individual
+    specialists/research_architecture fields), matching how /kernel/invoke's
+    own request already carries it. This endpoint does NOT persist
+    knowledge_bricks -- stateless executor, same as every other Functions
+    Library endpoint; the caller updates its own ledger from the response."""
+    app_id: str
+    purpose: str = ""
+    chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
+    milestone_config: Dict[str, Any] = Field(default_factory=dict)
+
+class LaunchStrikeTeamResponse(BaseModel):
+    """bricks/brief/appendix match _strike_team_action's own three real
+    outputs exactly (context["bricks"]/context["brief"]/context["appendix"]
+    there). kaiser_mandate is the fixed "RESEARCH COMPLETE. Discuss the new
+    findings." string _strike_team_action sets directly on envelope --
+    returned here instead so Backend has one Kernel-owned source for the
+    exact wording rather than a second, hardcoded copy that could drift.
+
+    bricks: Dict[str, Any], not Dict[str, str] -- confirmed for real (a
+    live integration test against a milestone with no research_architecture
+    defined) that SynthesisEngine.forge_truth() doesn't always produce a
+    flat brick_id->prose-string map. Without a real research_architecture
+    to constrain _build_synthesis_schema(), the model improvises and can
+    return a nested structure under a key like "sections" (a list of
+    {id, headline, type, content} objects) instead of a plain string value.
+    core/triggers.py's own _strike_team_action() never noticed this because
+    it just does envelope.knowledge_bricks.update(bricks) with no type
+    validation at all -- this endpoint's typed response is what surfaced it.
+    Real, separate finding worth Fred/PM14 knowing: SovereignResponse's own
+    data_patch field (schema/kernel_schema.py) has this exact same
+    Dict[str, str] typing on the live /kernel/invoke response today -- same
+    latent crash risk exists there, just never triggered since no real
+    milestone has ever launched Strike Team without research_architecture
+    before tonight's fixture work. Not fixed here -- /kernel/invoke's
+    response shape is out of scope for this pass, flagging rather than
+    silently patching it."""
+    bricks: Dict[str, Any]
+    brief: Dict[str, Any]
+    appendix: List[Dict[str, Any]]
+    kaiser_mandate: str
+
+class AgentTurnRequest(BaseModel):
+    """Phase 1.5 migration pass, new endpoint: SocialEngine.run_turn() exposed
+    standalone, for Backend's own new sequencing logic to call once it has
+    resolved this turn's real Signals (gatekeeper_whisper/chat_whisper/
+    kaiser_mandate) itself, instead of Kernel computing them internally via
+    /kernel/invoke's core/triggers.py chain.
+
+    Same shape as SovereignRequest/AgentEnvelope minus gatekeeper_mandate/
+    skill/output_shape and keymaster_mandate/skill/output_shape -- this
+    endpoint never calls assess_coverage()/confirm_launch_intent() itself,
+    so those raw ingredients have nothing to compose here. gatekeeper_whisper/
+    chat_whisper/kaiser_mandate arrive as Backend-resolved VALUES (this
+    turn's real Signal), not ingredients Kernel composes from -- same
+    fields run_turn already reads off envelope, just supplied by the
+    caller now instead of by core/orchestrator.py.
+
+    No separate user_message field: envelope.history's own last entry IS
+    this turn's message (run_turn only ever reads history[-5:], never a
+    distinguished "current" message) -- the caller appends it before
+    calling ANY endpoint this turn, same as process_turn() does today
+    before Chat Manager/Gatekeeper/Keymaster ever run."""
+    app_id: str
+    project_id: str
+    milestone_id: Optional[str] = None
+    milestone_config: Dict[str, Any] = Field(default_factory=dict)
+    persona_config: Dict[str, Any]
+    knowledge_bricks: Dict[str, Any] = Field(default_factory=dict)
+    history: List[Dict[str, str]] = Field(default_factory=list)
+    physics_open: bool = False
+    schema_map: Dict[str, Any] = Field(default_factory=dict)
+    chat_whisper: Optional[str] = None
+    gatekeeper_whisper: Optional[str] = None
+    # Optional[str], not str = "" -- confirmed for real (live integration
+    # test): AgentEnvelope's own kaiser_mandate field is str = "" because
+    # it was always Kernel-internal turn-local scratch state, never part of
+    # an incoming request before this endpoint existed -- copying that
+    # exact type here was wrong, since Backend's natural way to send
+    # "nothing this turn" (true on the overwhelming majority of turns) is
+    # None, not "". A plain str field rejects None outright (a 422), not a
+    # silent coercion -- real bug, not a style nit. None is treated as ""
+    # when building the envelope below.
+    kaiser_mandate: Optional[str] = None
+    partner_protocols: List[Dict[str, str]] = Field(default_factory=list)
+    tool_law: Optional[str] = None
+    compiled_l1: Optional[str] = None
+    compiled_l3: Optional[str] = None
+    phase_purpose: Optional[str] = None
+
+class AgentTurnResponse(BaseModel):
+    social_response: Optional[str] = None
+
+class GlobalAgentTurnRequest(BaseModel):
+    """Same reasoning as AgentTurnRequest, for SocialEngine.run_global_turn()
+    instead -- a genuinely separate endpoint, not the same one with an
+    is_global flag, since tool_call is a real capability difference (only
+    this path can ever produce one), not a sometimes-null response field.
+
+    No physics_open/gatekeeper_whisper/kaiser_mandate fields -- confirmed
+    against the real run_global_turn code, none of these are read on this
+    path (no [STATUS:...] line, no GATEKEEPER WHISPER -- gatekeeper_whisper
+    is never computed for the Global turn itself). project_map is real here
+    and only here (compose_project_map_lens(), and gates whether
+    start_milestone_work is even offered as a tool)."""
+    app_id: str
+    project_id: str
+    milestone_id: Optional[str] = None
+    milestone_config: Dict[str, Any] = Field(default_factory=dict)
+    persona_config: Dict[str, Any]
+    knowledge_bricks: Dict[str, Any] = Field(default_factory=dict)
+    history: List[Dict[str, str]] = Field(default_factory=list)
+    schema_map: Dict[str, Any] = Field(default_factory=dict)
+    chat_whisper: Optional[str] = None
+    tool_law: Optional[str] = None
+    compiled_l1: Optional[str] = None
+    compiled_l3: Optional[str] = None
+    project_map: List[Dict[str, Any]] = Field(default_factory=list)
+
+class GlobalAgentTurnResponse(BaseModel):
+    social_response: Optional[str] = None
+    tool_call: Optional[Dict[str, Any]] = None
