@@ -1,0 +1,358 @@
+{
+  "branch_5_no_required_questions": {
+    "app_id": "phase15_fixture_no_required_questions_1789286024",
+    "milestone_id": "m_17892860246124",
+    "entities": [
+      {
+        "system_id": "app_17892860246121",
+        "entity_type": "APP",
+        "display_name": "Phase 1.5 Fixture App",
+        "parent_id": null,
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0",
+        "global_mission": "Regression-fixture test app for Phase 1.5's Gatekeeper/Keymaster sequencing migration.",
+        "app_manual": "Internal test app. Not a real product.",
+        "management_team": [
+          {
+            "id": "a_17892860246122",
+            "role": "project_manager"
+          }
+        ]
+      },
+      {
+        "system_id": "a_17892860246122",
+        "entity_type": "AGENT",
+        "display_name": "Fixture PM",
+        "parent_id": "app_17892860246121",
+        "archetype": "navigator",
+        "persona": "Direct, asks for concrete specifics.",
+        "role": "project_manager",
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0"
+      },
+      {
+        "system_id": "p_17892860246123",
+        "entity_type": "PHASE",
+        "display_name": "Fixture Phase",
+        "parent_id": "app_17892860246121",
+        "purpose": "Hold one milestone for fixture generation.",
+        "output": "N/A",
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0"
+      },
+      {
+        "system_id": "m_17892860246124",
+        "entity_type": "MILESTONE",
+        "display_name": "Fixture Milestone",
+        "parent_id": "p_17892860246123",
+        "purpose": "A milestone used purely to generate a real trigger_log fixture.",
+        "output": "N/A",
+        "synthesis_output": "",
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0"
+      }
+    ],
+    "trigger_message": "Just saying hello -- nothing specific to report.",
+    "kernel_result": {
+      "social_response": "Thanks for checking in. The team is ready to start building out the test fixture, but we need a clear objective to aim for. We need to define what a successful test looks like before we can build it.\n\nWhat is the single most important outcome we need to see from this test to prove the new sequence is working correctly?",
+      "status": "PROBING",
+      "data_patch": null,
+      "brief": null,
+      "appendix": null,
+      "chat_summary": null,
+      "chat_summary_cursor": null,
+      "tool_call": null,
+      "gate_status": null,
+      "whisper": null,
+      "assessments": null,
+      "trigger_log": [
+        {
+          "trigger_id": "keymaster_confirmation",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        },
+        {
+          "trigger_id": "strike_team_launch",
+          "scope": "milestone",
+          "pattern": "once_per_milestone",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        }
+      ],
+      "chat_whisper": null
+    },
+    "snapshot_before": {
+      "milestone_doc": null,
+      "project_manifest": {
+        "chat_history": [],
+        "chat_summary": [],
+        "chat_summary_cursor": 0,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "trigger_log": []
+    },
+    "snapshot_after": {
+      "milestone_doc": {
+        "output": "N/A",
+        "specialists": [],
+        "owner_id": "fredrik.t.torstensson@gmail.com",
+        "required_questions": [],
+        "checklist_prompt": "A milestone used purely to generate a real trigger_log fixture."
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "content": "Just saying hello -- nothing specific to report.",
+            "role": "user"
+          },
+          {
+            "content": "Thanks for checking in. The team is ready to start building out the test fixture, but we need a clear objective to aim for. We need to define what a successful test looks like before we can build it.\n\nWhat is the single most important outcome we need to see from this test to prove the new sequence is working correctly?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [],
+        "chat_summary_cursor": 0,
+        "physics_open": false,
+        "ledger": {},
+        "knowledge_bricks": {}
+      },
+      "trigger_log": [
+        {
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "logged_at": "2026-09-13 07:53:52.646000+00:00",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "logged_at": "2026-09-13 07:53:52.679000+00:00",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch",
+          "pattern": "once_per_milestone"
+        }
+      ]
+    }
+  },
+  "branch_6_already_fired": {
+    "app_id": "phase15_fixture_already_fired_1789286033",
+    "milestone_id": "m_17892860333978",
+    "entities": [
+      {
+        "system_id": "app_17892860333975",
+        "entity_type": "APP",
+        "display_name": "Phase 1.5 Fixture App",
+        "parent_id": null,
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0",
+        "global_mission": "Regression-fixture test app for Phase 1.5's Gatekeeper/Keymaster sequencing migration.",
+        "app_manual": "Internal test app. Not a real product.",
+        "management_team": [
+          {
+            "id": "a_17892860333976",
+            "role": "project_manager"
+          }
+        ]
+      },
+      {
+        "system_id": "a_17892860333976",
+        "entity_type": "AGENT",
+        "display_name": "Fixture PM",
+        "parent_id": "app_17892860333975",
+        "archetype": "navigator",
+        "persona": "Direct, asks for concrete specifics.",
+        "role": "project_manager",
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0"
+      },
+      {
+        "system_id": "p_17892860333977",
+        "entity_type": "PHASE",
+        "display_name": "Fixture Phase",
+        "parent_id": "app_17892860333975",
+        "purpose": "Hold one milestone for fixture generation.",
+        "output": "N/A",
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0"
+      },
+      {
+        "system_id": "m_17892860333978",
+        "entity_type": "MILESTONE",
+        "display_name": "Fixture Milestone",
+        "parent_id": "p_17892860333977",
+        "purpose": "A milestone used purely to generate a real trigger_log fixture.",
+        "output": "N/A",
+        "synthesis_output": "",
+        "archived": false,
+        "execution_status": "INERT",
+        "order": "a0"
+      },
+      {
+        "system_id": "s_17892860333979",
+        "entity_type": "SLOT",
+        "display_name": "Fixture required question",
+        "parent_id": "m_17892860333978",
+        "slot_type": "milestone_input",
+        "data_type": "TEXT",
+        "order": "a0",
+        "data_payload": {
+          "text": "What is the real, current status of this fixture milestone?"
+        },
+        "archived": false,
+        "execution_status": "INERT"
+      }
+    ],
+    "trigger_message": "Just checking in on this milestone.",
+    "kernel_result": {
+      "social_response": "Things are moving along as planned, and the team is ready for your direction. We've established this is a test run for our internal systems, not a public launch. To get started, what is the single most important outcome we need to achieve with this test?",
+      "status": "AUTHORIZED",
+      "data_patch": null,
+      "brief": null,
+      "appendix": null,
+      "chat_summary": [],
+      "chat_summary_cursor": 1,
+      "tool_call": null,
+      "gate_status": null,
+      "whisper": null,
+      "assessments": null,
+      "trigger_log": [
+        {
+          "trigger_id": "gatekeeper_assessment",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null,
+          "skip_reason": "already_fired"
+        },
+        {
+          "trigger_id": "keymaster_confirmation",
+          "scope": "milestone",
+          "pattern": "every_turn_until_bound_event",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        },
+        {
+          "trigger_id": "strike_team_launch",
+          "scope": "milestone",
+          "pattern": "once_per_milestone",
+          "condition_result": false,
+          "fired": false,
+          "outcome": null
+        }
+      ],
+      "chat_whisper": null
+    },
+    "snapshot_before": {
+      "milestone_doc": null,
+      "project_manifest": {
+        "chat_history": [],
+        "chat_summary": [],
+        "chat_summary_cursor": 0,
+        "physics_open": false,
+        "ledger": {
+          "seed_brick_phase15": {
+            "status": "STABLE",
+            "history": [
+              {
+                "summary_prose": "SYNTHETIC SEED for Phase 1.5's already_fired fixture -- not a real Strike Team launch."
+              }
+            ]
+          }
+        },
+        "knowledge_bricks": {
+          "seed_brick_phase15": "SYNTHETIC SEED for Phase 1.5's already_fired fixture -- not a real Strike Team launch."
+        }
+      },
+      "trigger_log": [],
+      "NOTE": "ledger/knowledge_bricks here were injected directly by this fixture script before the real turn ran, to force strike_team_already_fired=True -- no real Strike Team launch ever happened for this milestone. Gatekeeper's/Keymaster's/Strike Team's own real actions are still never called in this scenario (all three stay condition_result=False), so no real model call is faked or skipped by this seed -- it only supplies the real starting-context input already_fired's condition reads."
+    },
+    "snapshot_after": {
+      "milestone_doc": {
+        "output": "N/A",
+        "specialists": [],
+        "owner_id": "fredrik.t.torstensson@gmail.com",
+        "required_questions": [
+          "What is the real, current status of this fixture milestone?"
+        ],
+        "checklist_prompt": "A milestone used purely to generate a real trigger_log fixture."
+      },
+      "project_manifest": {
+        "chat_history": [
+          {
+            "content": "Just checking in on this milestone.",
+            "role": "user"
+          },
+          {
+            "content": "Things are moving along as planned, and the team is ready for your direction. We've established this is a test run for our internal systems, not a public launch. To get started, what is the single most important outcome we need to achieve with this test?",
+            "role": "assistant"
+          }
+        ],
+        "chat_summary": [],
+        "chat_summary_cursor": 1,
+        "physics_open": true,
+        "ledger": {
+          "seed_brick_phase15": {
+            "status": "STABLE",
+            "history": [
+              {
+                "summary_prose": "SYNTHETIC SEED for Phase 1.5's already_fired fixture -- not a real Strike Team launch."
+              }
+            ]
+          }
+        },
+        "knowledge_bricks": {
+          "seed_brick_phase15": "SYNTHETIC SEED for Phase 1.5's already_fired fixture -- not a real Strike Team launch."
+        }
+      },
+      "trigger_log": [
+        {
+          "fired": false,
+          "outcome": null,
+          "condition_result": false,
+          "logged_at": "2026-09-13 07:53:58.375000+00:00",
+          "scope": "milestone",
+          "trigger_id": "gatekeeper_assessment",
+          "skip_reason": "already_fired",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "logged_at": "2026-09-13 07:53:58.409000+00:00",
+          "condition_result": false,
+          "trigger_id": "keymaster_confirmation",
+          "pattern": "every_turn_until_bound_event"
+        },
+        {
+          "fired": false,
+          "outcome": null,
+          "scope": "milestone",
+          "logged_at": "2026-09-13 07:53:58.447000+00:00",
+          "condition_result": false,
+          "trigger_id": "strike_team_launch",
+          "pattern": "once_per_milestone"
+        }
+      ]
+    }
+  }
+}
