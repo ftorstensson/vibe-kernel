@@ -45,10 +45,12 @@ async def invoke(req: SovereignRequest):
             schema_map=req.schema_map,
             gatekeeper_mandate=req.gatekeeper_mandate,
             gatekeeper_skill=req.gatekeeper_skill,
+            gatekeeper_output_shape=req.gatekeeper_output_shape,
             chat_summary=req.chat_summary,
             chat_summary_cursor=req.chat_summary_cursor,
             chat_manager_mandate=req.chat_manager_mandate,
             chat_manager_skill=req.chat_manager_skill,
+            chat_manager_output_shape=req.chat_manager_output_shape,
             partner_protocols=req.partner_protocols,
             tool_law=req.tool_law,
             # Real bug fix, found while wiring tool_call below: this field
@@ -67,6 +69,7 @@ async def invoke(req: SovereignRequest):
             phase_purpose=req.phase_purpose,
             keymaster_mandate=req.keymaster_mandate,
             keymaster_skill=req.keymaster_skill,
+            keymaster_output_shape=req.keymaster_output_shape,
         )
 
         result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)
@@ -108,7 +111,10 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
             (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
             req.app_manual, req.global_mission,
         )
-        result = derive_requirements(req.purpose, req.target_structure, identity["l1"], identity["l3"], req.skill)
+        result = derive_requirements(
+            req.purpose, req.target_structure, identity["l1"], identity["l3"], req.skill,
+            output_shape=req.output_shape,
+        )
         return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -133,7 +139,9 @@ async def invoke_confirm_launch_intent(req: ConfirmLaunchIntentRequest):
             (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
             None, None,
         )
-        result = confirm_launch_intent(req.history, l1=identity["l1"], skill=req.skill)
+        result = confirm_launch_intent(
+            req.history, l1=identity["l1"], skill=req.skill, output_shape=req.output_shape,
+        )
         return {"confirmed": result}
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -323,7 +331,10 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
             "derived_requirements": req.derived_requirements,
         }
         required_questions = resolve_required_questions(milestone_config)
-        result = assess_coverage(required_questions, req.chat_summary, identity["l1"], identity["l3"], req.skill)
+        result = assess_coverage(
+            required_questions, req.chat_summary, identity["l1"], identity["l3"], req.skill,
+            output_shape=req.output_shape,
+        )
         return result
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -351,6 +362,7 @@ async def invoke_chat_summary(req: ChatSummaryRequest):
             req.history, required_questions=req.required_questions, purpose=req.purpose,
             prior_chat_summary=req.prior_chat_summary, cursor=req.cursor,
             l1=identity["l1"], l3=identity["l3"], skill=req.skill,
+            output_shape=req.output_shape,
         )
         return result
     except ValueError as ve:

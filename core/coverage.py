@@ -50,7 +50,7 @@ def resolve_required_questions(milestone_config):
     return milestone_config.get("required_questions")
 
 
-def assess_coverage(required_questions, chat_summary, l1, l3, skill):
+def assess_coverage(required_questions, chat_summary, l1, l3, skill, output_shape=None):
     """Runs every real turn (core/orchestrator.py): given the milestone's
     required_questions (L4 -- the gates being checked) and chat_summary
     (L5 -- this turn's core/reconcile.py output, formerly durable_facts,
@@ -74,7 +74,17 @@ def assess_coverage(required_questions, chat_summary, l1, l3, skill):
     app_manual, when the app has them) folds into the LENS block alongside
     skill, same pattern derive_requirements() uses. This function does no
     Firestore I/O itself -- it only assembles the prompt from what it's
-    given and calls the model."""
+    given and calls the model.
+
+    output_shape: Backend's real functions_registry "Coverage" entry can now
+    carry its own literal JSON Schema for this call's response, same raw-
+    ingredient status as skill -- Kernel doesn't author or validate it, just
+    passes it straight to the model when present. Optional/fail-open, same
+    pattern as tool_law/compiled_l1/everything else in this contract: None
+    (the default -- either the caller never had one to pass, or Backend's
+    resolve_function_ingredients() hasn't shipped this yet) falls back to
+    the module-level COVERAGE_SCHEMA constant below, byte-identical to this
+    function's behavior before this parameter existed."""
     model, config = AgentFactory.get_summarizer()
 
     current_facts = [f for f in chat_summary if f.get("status", "current") == "current"]
@@ -93,5 +103,5 @@ def assess_coverage(required_questions, chat_summary, l1, l3, skill):
     lens = compose_l4_lens(l3, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=COVERAGE_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or COVERAGE_SCHEMA)
     return hammer_json(get_clean_text(response))

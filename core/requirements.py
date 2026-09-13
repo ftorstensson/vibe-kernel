@@ -23,7 +23,7 @@ REQUIREMENTS_SCHEMA = {
 }
 
 
-def derive_requirements(purpose, target_structure, l1, l3, skill):
+def derive_requirements(purpose, target_structure, l1, l3, skill, output_shape=None):
     """Standalone, Phase 1 only -- not wired into the real Clerk/gate mechanism.
     Runs once per milestone (a planning step, not per-turn). Does NOT classify
     each target_structure item individually -- that was the first version's
@@ -52,7 +52,16 @@ def derive_requirements(purpose, target_structure, l1, l3, skill):
     ignition_inputs in both the schema and the mandate so the model reasons
     through the task before committing to a list, not after -- legible to a
     human reviewing the output, and reasoning-first tends to produce a
-    better derivation than jumping straight to a list."""
+    better derivation than jumping straight to a list.
+
+    output_shape: same real-ingredient status as skill -- Backend's real
+    functions_registry "Requirements" entry can carry its own literal JSON
+    Schema for this call's response. Optional/fail-open: None (this
+    function's only standalone endpoint, /kernel/functions/derive_requirements,
+    has no envelope path to fall back on if Backend hasn't resolved one yet)
+    falls back to the module-level REQUIREMENTS_SCHEMA constant below,
+    byte-identical to this function's behavior before this parameter
+    existed."""
     model, config = AgentFactory.get_summarizer()
 
     # L5 (Signal), not L4 (Task) -- resolved, not left open. The real L4-vs-
@@ -74,5 +83,5 @@ def derive_requirements(purpose, target_structure, l1, l3, skill):
     lens = compose_l4_lens(l3, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=REQUIREMENTS_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or REQUIREMENTS_SCHEMA)
     return hammer_json(get_clean_text(response))

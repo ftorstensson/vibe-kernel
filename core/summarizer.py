@@ -26,7 +26,7 @@ EXTRACTION_SCHEMA = {
 }
 
 
-def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_chat_summary=None, l1=None, l3=None, skill=""):
+def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_chat_summary=None, l1=None, l3=None, skill="", output_shape=None):
     """Chat Manager's real extraction step. l1/l3/skill are real, not a
     hand-written mandate string -- Backend resolves the raw ingredients (the
     real functions_registry "Chat Manager" skill, the "scribe" archetype's
@@ -74,7 +74,15 @@ def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_
     it already distilled once. skill's own text carries the instruction not
     to re-extract anything already in this list; Kernel only assembles the
     data block itself (the listing below), unconditionally available in the
-    truth block whenever prior_chat_summary is non-empty."""
+    truth block whenever prior_chat_summary is non-empty.
+
+    output_shape: same real-ingredient status as skill -- Backend's real
+    functions_registry "Chat Manager" entry can carry its own literal JSON
+    Schema for this call's response, threaded straight through from
+    build_chat_summary()'s own same-named parameter. Optional/fail-open:
+    None falls back to the module-level EXTRACTION_SCHEMA constant below,
+    byte-identical to this function's behavior before this parameter
+    existed."""
     model, config = AgentFactory.get_summarizer()
 
     numbered_turns = "\n".join(f"{i}: [{t['role']}] {t['content']}" for i, t in enumerate(turns, start=offset))
@@ -102,5 +110,5 @@ def extract_facts(turns, required_questions=None, purpose=None, offset=0, prior_
     lens = compose_l4_lens(l3, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=EXTRACTION_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or EXTRACTION_SCHEMA)
     return hammer_json(get_clean_text(response)).get("items", [])
