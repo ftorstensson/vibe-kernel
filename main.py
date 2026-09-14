@@ -94,6 +94,7 @@ async def invoke(req: SovereignRequest):
             "assessments": result.get("assessments"),
             "trigger_log": result.get("trigger_log"),
             "chat_whisper": result.get("chat_whisper"),
+            "chat_manager_error": result.get("chat_manager_error"),
         }
 
     except ValueError as ve:

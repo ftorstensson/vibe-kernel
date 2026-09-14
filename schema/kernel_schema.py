@@ -368,6 +368,30 @@ class SovereignResponse(BaseModel):
     # gate_status/whisper/assessments -- Chat Manager runs unconditionally
     # on both paths, this isn't gate-specific.
     chat_whisper: Optional[str] = None
+    # chat_manager_error (doc-16 Phase 4's real gap, confirmed with PM14
+    # directly): before this field existed, a genuine Chat Manager crash
+    # and "nothing to extract" (no required_questions at all, on the
+    # task-scoped path) both produced an identical chat_summary=None --
+    # Backend had no way to tell them apart, and the exception itself was
+    # silently swallowed in core/orchestrator.py's own try/except with no
+    # logging at all. Fixed: the real exception is now logged
+    # ([CHAT MANAGER CRASH], matching main.py's own [KERNEL CRASH]
+    # convention) and its message surfaced here. Populated ONLY on a
+    # genuine Chat Manager crash, never for "didn't run"/"ran fine" --
+    # both of those stay None, unchanged. On the task-scoped path
+    # specifically, this is deliberately narrower than "anything failed
+    # in the gate-check block" -- that same try/except also wraps
+    # GATEKEEPER_ASSESSMENT's own evaluate_triggers() call (assess_
+    # coverage, a real model call that can also throw), a real
+    # pre-existing coupling. A Gatekeeper-side failure is still logged
+    # (a distinctly-tagged [GATEKEEPER ASSESSMENT CRASH]) and the turn
+    # still fails open exactly as before, but it does NOT populate this
+    # field -- naming it "chat_manager_error" for a Gatekeeper crash
+    # would be actively wrong, not just imprecise. This is purely
+    # diagnostic/additive: no control-flow change, no new whisper or
+    # retry -- the turn behaves identically to before this field
+    # existed either way.
+    chat_manager_error: Optional[str] = None
 
 class DeriveRequirementsRequest(BaseModel):
     """Functions Library, entry 1: derive_requirements() needs no conversation
