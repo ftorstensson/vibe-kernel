@@ -4,7 +4,7 @@ from core.composition import (
     compose_phase_context_lens, compose_project_map_lens, join_blocks,
 )
 from core.kernel_utils import get_clean_text
-from core.orchestrator_answer import REPLY_TOOL, COMPLETION_TOOL, resolve_orchestrator_answer
+from core.orchestrator_answer import REPLY_TOOL, COMPLETION_TOOL, REFUSE_TOOL, resolve_orchestrator_answer
 from core.prompt_builder import PromptBuilder
 from schema.kernel_schema import AgentEnvelope
 
@@ -337,7 +337,7 @@ class SocialEngine:
         return {"social_response": get_clean_text(response), "tool_call": tool_call}
 
     @staticmethod
-    async def run_global_turn_answer(envelope: AgentEnvelope, allowed_actions=None):
+    async def run_global_turn_answer(envelope: AgentEnvelope, allowed_actions=None, rejected_answer=None, rejection_reason=None):
         """Phase 2a (doc-16): the Orchestrator's Answer as a real structured
         choice -- Reply | Dispatch | Completion -- instead of run_global_turn's
         own freeform-text-plus-optional-tool-call shape above. Additive only:
@@ -375,15 +375,45 @@ class SocialEngine:
         real API (9 real calls, every one returned exactly one clean tool
         call with zero accompanying prose).
 
-        Returns {"answer_type": "reply"|"dispatch"|"completion", "args": {...}}
+        Returns {"answer_type": "reply"|"dispatch"|"completion"|"refuse", "args": {...}}
         -- see core/orchestrator_answer.py's resolve_orchestrator_answer()
         for the real normalization logic, including its own defensive
-        handling of a multi-tool-call or zero-tool-call response."""
+        handling of a multi-tool-call or zero-tool-call response.
+        "refuse" (Phase 2b, doc-16's own refusal branch, a real 4th tool
+        approved by PM14 -- see REFUSE_TOOL's own module docstring) is
+        always a possible answer_type regardless of allowed_actions, since
+        that tool is always offered -- Backend's own graceful-failure
+        handling for it, not a retry, per doc-16's own "goes straight to
+        graceful failure, not another retry."
+
+        rejected_answer/rejection_reason (Phase 2b, doc-16): real raw
+        ingredients for a Validator-rejection retry -- doc-13's own
+        section 4 ("on rejection, nothing persists; Backend re-invokes
+        Kernel for the same run with the rejection reason appended as a
+        fresh L5 Signal") and section 6 ("Kernel runs the actual
+        reasoning, nothing else... this rules out an in-call tool loop
+        inside Kernel by construction") are both explicit: the Validator
+        itself, legality checking, and the retry loop (including its own
+        count/cap) are entirely Backend's job -- Kernel never checks
+        whether an Answer is legal and never loops internally. This
+        function's only job on a retry is composing the rejection as a
+        real Signal, same as chat_whisper, so the model gets a genuine
+        chance to self-correct. rejected_answer mirrors this function's
+        own {answer_type, args} return shape exactly (not a bespoke
+        summary of it) -- whatever Backend got back from the call being
+        retried, round-tripped as-is. Both None (the default) for a
+        fresh, non-retry call -- the common case, and byte-identical to
+        this function's behavior before this pair of parameters existed."""
         allowed = allowed_actions if allowed_actions is not None else ["reply", "dispatch"]
         tool_by_name = {"reply": REPLY_TOOL, "dispatch": START_MILESTONE_WORK_TOOL, "completion": COMPLETION_TOOL}
         tools = [tool_by_name[name] for name in allowed if name in tool_by_name]
         if "dispatch" in allowed and not envelope.project_map:
             tools = [t for t in tools if t is not START_MILESTONE_WORK_TOOL]
+        # REFUSE_TOOL is always offered, never gated behind allowed_actions
+        # -- see its own module docstring (core/orchestrator_answer.py) for
+        # why: a model must never be structurally unable to decline, a
+        # real design choice confirmed with Backend, not an oversight.
+        tools.append(REFUSE_TOOL)
 
         pm_model, pm_config = AgentFactory.get_partner_pm()
         pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
@@ -422,6 +452,20 @@ class SocialEngine:
         pm_signal_lines = []
         if envelope.chat_whisper:
             pm_signal_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
+        # Phase 2b retry Signal -- see this function's own docstring for
+        # why this is the one, only thing Kernel does differently on a
+        # retry (no legality re-check, no loop, no count-tracking, all
+        # Backend's). rejection_reason alone (no rejected_answer) still
+        # composes something real rather than silently no-op'ing -- a
+        # caller passing one without the other is unusual but shouldn't
+        # lose the reason just because the answer echo is missing.
+        if rejection_reason or rejected_answer is not None:
+            pm_signal_lines.append(
+                f"REJECTED ANSWER: {rejected_answer}\n"
+                f"REJECTION REASON: {rejection_reason}\n"
+                "Your previous answer above was not accepted for the reason given. "
+                "Try again, respecting the actual constraints this time."
+            )
         pm_signal = "\n".join(pm_signal_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 

@@ -470,7 +470,10 @@ async def invoke_agent_run_global_turn_answer(req: GlobalAgentAnswerRequest):
             schema_map=req.schema_map, chat_whisper=req.chat_whisper, tool_law=req.tool_law,
             compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, project_map=req.project_map,
         )
-        return await SocialEngine.run_global_turn_answer(envelope, allowed_actions=req.allowed_actions)
+        return await SocialEngine.run_global_turn_answer(
+            envelope, allowed_actions=req.allowed_actions,
+            rejected_answer=req.rejected_answer, rejection_reason=req.rejection_reason,
+        )
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:

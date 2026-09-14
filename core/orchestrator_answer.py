@@ -85,6 +85,49 @@ COMPLETION_TOOL = {
     },
 }
 
+# Phase 2b (doc-16): the refusal branch -- "a model can refuse instead of
+# answering [...] that goes to graceful failure, not another retry." No
+# defined mechanism in doc-13 (checked directly, not assumed absent) --
+# genuinely new scope beyond Reply/Dispatch/Completion, approved by PM14
+# as a real 4th tool rather than Backend inferring a refusal from a
+# reply's own text content (which would reintroduce exactly the
+# content-inference fragility native tool calls exist to remove, for
+# this one case specifically -- Backend's own reasoning, not just mine).
+#
+# ALWAYS included in the tools list, never gated behind allowed_actions --
+# see run_global_turn_answer's own docstring for why: a model must never
+# be structurally unable to decline, the same reason a real escape hatch
+# doesn't get locked behind a permission the person needing it might not
+# have. This is a real, load-bearing design choice, not an oversight --
+# confirmed directly with Backend before building, since their own
+# Validator/retry loop needed to know whether "the model called refuse
+# when it wasn't offered" is even a reachable case (it isn't, by
+# construction).
+REFUSE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "refuse",
+        "description": (
+            "Decline to produce a Reply, Dispatch, or Completion this turn. Use "
+            "this only when you genuinely cannot or should not answer at all -- "
+            "not as a substitute for a plain reply when you're simply unsure, "
+            "and not to avoid picking between otherwise-legal options. This goes "
+            "straight to graceful failure, not another attempt -- only call it "
+            "when continuing would be worse than stopping here."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "description": "A short, real reason you're declining to answer.",
+                },
+            },
+            "required": ["reason"],
+        },
+    },
+}
+
 
 # The real dispatch tool is pods/social/engine.py's own existing
 # START_MILESTONE_WORK_TOOL (deliberately reused, not a new "dispatch"
@@ -104,6 +147,7 @@ _ANSWER_TYPE_BY_TOOL_NAME = {
     "reply": "reply",
     "start_milestone_work": "dispatch",
     "completion": "completion",
+    "refuse": "refuse",
 }
 
 
