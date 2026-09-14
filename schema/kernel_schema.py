@@ -1069,7 +1069,27 @@ class GlobalAgentAnswerRequest(BaseModel):
     whichever of REPLY_TOOL/pods/social/engine.py's own
     START_MILESTONE_WORK_TOOL/COMPLETION_TOOL the caller names. "dispatch"
     is only actually offered when project_map is also non-empty, same
-    real precondition GlobalAgentTurnRequest's own path already enforces."""
+    real precondition GlobalAgentTurnRequest's own path already enforces.
+
+    rejected_answer/rejection_reason (Phase 2b): the real retry mechanism
+    doc-13 section 4 specifies for a Validator rejection -- "on rejection,
+    nothing persists; Backend re-invokes Kernel for the same run with the
+    rejection reason appended as a fresh L5 Signal." Confirmed directly
+    against doc-13, not assumed: the Validator itself, legality checking,
+    and the retry loop (including its own count/cap -- "a build parameter,
+    not an architecture decision") are entirely Backend's job. Kernel
+    never checks whether an Answer is legal and never loops internally --
+    section 6 is explicit that an in-call loop is ruled out by
+    construction ("Kernel runs the actual reasoning, nothing else...
+    handed a Briefing, answers once, forgets everything immediately").
+    This pair of fields is the one thing Kernel does differently on a
+    retry: composes the rejection as a real Signal (same status as
+    chat_whisper) so the model gets a genuine chance to self-correct.
+    rejected_answer mirrors GlobalAgentAnswerResponse's own {answer_type,
+    args} shape exactly -- whatever Backend got back from the call being
+    retried, round-tripped as-is, not a bespoke summary. Both None (the
+    default) for a fresh, non-retry call -- byte-identical to this
+    endpoint's behavior before this pair of fields existed."""
     app_id: str
     project_id: str
     milestone_id: Optional[str] = None
@@ -1084,19 +1104,32 @@ class GlobalAgentAnswerRequest(BaseModel):
     compiled_l3: Optional[str] = None
     project_map: List[Dict[str, Any]] = Field(default_factory=list)
     allowed_actions: Optional[List[str]] = None
+    rejected_answer: Optional[Dict[str, Any]] = None
+    rejection_reason: Optional[str] = None
 
 class GlobalAgentAnswerResponse(BaseModel):
-    """answer_type is always exactly one of "reply"/"dispatch"/"completion"
-    -- normalized in core/orchestrator_answer.py's resolve_orchestrator_answer()
-    regardless of the underlying tool's own real function name (the real
-    dispatch tool is named start_milestone_work, not "dispatch" -- see that
-    module's own docstring for why the normalization exists). args is
-    whichever tool's own real arguments came back (message for reply,
-    milestone_id/reasoning for dispatch, summary for completion) -- kept
-    as a plain dict rather than three separate optional field sets, since
-    the caller already knows which shape to expect from answer_type
+    """answer_type is always exactly one of "reply"/"dispatch"/"completion"/
+    "refuse" -- normalized in core/orchestrator_answer.py's
+    resolve_orchestrator_answer() regardless of the underlying tool's own
+    real function name (the real dispatch tool is named
+    start_milestone_work, not "dispatch" -- see that module's own
+    docstring for why the normalization exists). args is whichever tool's
+    own real arguments came back (message for reply, milestone_id/
+    reasoning for dispatch, summary for completion, reason for refuse) --
+    kept as a plain dict rather than four separate optional field sets,
+    since the caller already knows which shape to expect from answer_type
     itself, and a discriminated-union response schema is exactly the
     Vertex/Gemini limitation doc-16's own research flagged for the
-    request side -- no reason to reintroduce it here on the response side."""
+    request side -- no reason to reintroduce it here on the response side.
+
+    "refuse" (Phase 2b, doc-16's own refusal branch) is always a real
+    possible value regardless of what the caller's own allowed_actions
+    request field said -- REFUSE_TOOL is always offered, never gated,
+    confirmed with Backend before building (see REFUSE_TOOL's own module
+    docstring, core/orchestrator_answer.py). Per doc-16: "goes straight to
+    graceful failure, not another retry" -- Backend's own concern, not
+    Kernel's; this endpoint returns it as a normal, well-formed Answer
+    like any other, same as it does for a Validator-legal reply/dispatch/
+    completion."""
     answer_type: str
     args: Dict[str, Any]
