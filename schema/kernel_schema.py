@@ -1031,3 +1031,72 @@ class GlobalAgentTurnRequest(BaseModel):
 class GlobalAgentTurnResponse(BaseModel):
     social_response: Optional[str] = None
     tool_call: Optional[Dict[str, Any]] = None
+
+class GlobalAgentAnswerRequest(BaseModel):
+    """Phase 2a (doc-16): SocialEngine.run_global_turn_answer() exposed
+    standalone -- the Orchestrator's Answer as a real structured choice
+    (Reply | Dispatch | Completion, native tool calls) instead of
+    GlobalAgentTurnRequest's own freeform-text-plus-optional-tool-call
+    shape. A genuinely separate endpoint/request, not a variant of
+    GlobalAgentTurnRequest with a flag -- the response shape itself is
+    different (one real Answer, not social_response+tool_call).
+
+    tool_law IS still read here (real correction, caught by Backend before
+    this shipped: an earlier draft dropped this field entirely, reasoning
+    that tool_choice="required" makes "you have no callable tools" text
+    wrong -- true, but registry_docs/tool_law is real, Backend-maintained,
+    safety-critical content, not just tool-mechanics text, and dropping
+    the field would have permanently locked this path out of ever
+    receiving it). run_global_turn_answer (pods/social/engine.py) composes
+    envelope.tool_law or DEFAULT_TOOL_LAW as the base, same fallback
+    pattern as everywhere else in this contract, then appends the real
+    tool-choice-specific instruction (which tools are offered, must-call-
+    one) after it -- Backend's real content and the mechanism-specific
+    addition both reach the model, neither replaces the other.
+
+    allowed_actions: real raw ingredient, same status as every other
+    per-turn signal in this contract -- which of "reply"/"dispatch"/
+    "completion" this specific agent/turn may use. Optional[List[str]],
+    None (the default) meaning ["reply", "dispatch"], matching today's
+    real run_global_turn behavior (Completion is opt-in only). This is
+    NOT read from functions_registry's own allowed_actions field --
+    confirmed with Backend that field is empty on all four Functions
+    Library entries, never authored, and scoped to Functions, not agents
+    like the Global PM in the first place (a real, separate gap doc-16's
+    Phase 1 intended to cover but hasn't yet). Kernel doesn't care where
+    this list comes from -- a real registry field once one exists, a
+    hardcoded default, Studio's own future UI -- it just declares
+    whichever of REPLY_TOOL/pods/social/engine.py's own
+    START_MILESTONE_WORK_TOOL/COMPLETION_TOOL the caller names. "dispatch"
+    is only actually offered when project_map is also non-empty, same
+    real precondition GlobalAgentTurnRequest's own path already enforces."""
+    app_id: str
+    project_id: str
+    milestone_id: Optional[str] = None
+    milestone_config: Dict[str, Any] = Field(default_factory=dict)
+    persona_config: Dict[str, Any]
+    knowledge_bricks: Dict[str, Any] = Field(default_factory=dict)
+    history: List[Dict[str, str]] = Field(default_factory=list)
+    schema_map: Dict[str, Any] = Field(default_factory=dict)
+    chat_whisper: Optional[str] = None
+    tool_law: Optional[str] = None
+    compiled_l1: Optional[str] = None
+    compiled_l3: Optional[str] = None
+    project_map: List[Dict[str, Any]] = Field(default_factory=list)
+    allowed_actions: Optional[List[str]] = None
+
+class GlobalAgentAnswerResponse(BaseModel):
+    """answer_type is always exactly one of "reply"/"dispatch"/"completion"
+    -- normalized in core/orchestrator_answer.py's resolve_orchestrator_answer()
+    regardless of the underlying tool's own real function name (the real
+    dispatch tool is named start_milestone_work, not "dispatch" -- see that
+    module's own docstring for why the normalization exists). args is
+    whichever tool's own real arguments came back (message for reply,
+    milestone_id/reasoning for dispatch, summary for completion) -- kept
+    as a plain dict rather than three separate optional field sets, since
+    the caller already knows which shape to expect from answer_type
+    itself, and a discriminated-union response schema is exactly the
+    Vertex/Gemini limitation doc-16's own research flagged for the
+    request side -- no reason to reintroduce it here on the response side."""
+    answer_type: str
+    args: Dict[str, Any]
