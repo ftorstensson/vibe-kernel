@@ -61,7 +61,7 @@ class LiteLLMModel:
         self.model_name = model_name
         self.tools = tools
 
-    def generate_content(self, prompt, generation_config=None, response_schema=None, tools=None):
+    def generate_content(self, prompt, generation_config=None, response_schema=None, tools=None, tool_choice=None):
         """tools (per-call) lets one shared model config (e.g.
         AgentFactory.get_partner_pm(), used by both run_turn and
         run_global_turn) offer a real tool on only SOME calls -- run_turn
@@ -70,7 +70,19 @@ class LiteLLMModel:
         Overrides self.tools (construction-time, used by get_hound's
         Google Search grounding) rather than merging with it -- no
         current caller needs both at once, and merging silently would
-        make it easy to accidentally combine two unrelated tool sets."""
+        make it easy to accidentally combine two unrelated tool sets.
+
+        tool_choice (Phase 2a, core/orchestrator_answer.py): optional,
+        None by default so every existing caller is byte-identical to
+        before this parameter existed. "required" maps to Gemini's real
+        FunctionCallingConfig mode=ANY via litellm's own Vertex adapter
+        (confirmed against its source) -- forces the model to call one of
+        the offered tools rather than silently returning plain text with
+        none. Not parallel_tool_calls -- that param is a real no-op for
+        Gemini via litellm once more than one tool is declared, confirmed
+        against the same adapter source and empirically against the real
+        API -- see core/orchestrator_answer.py's own module docstring for
+        the full trace of why tool_choice="required" is used instead."""
         content = prompt if isinstance(prompt, str) else "\n".join(str(p) for p in prompt)
         kwargs = {
             "model": self.model_name,
@@ -85,6 +97,8 @@ class LiteLLMModel:
         effective_tools = tools or self.tools
         if effective_tools:
             kwargs["tools"] = effective_tools
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
         if response_schema is not None:
             kwargs["response_format"] = {
                 "type": "json_schema",

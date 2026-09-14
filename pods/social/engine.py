@@ -4,6 +4,7 @@ from core.composition import (
     compose_phase_context_lens, compose_project_map_lens, join_blocks,
 )
 from core.kernel_utils import get_clean_text
+from core.orchestrator_answer import REPLY_TOOL, COMPLETION_TOOL, resolve_orchestrator_answer
 from core.prompt_builder import PromptBuilder
 from schema.kernel_schema import AgentEnvelope
 
@@ -334,6 +335,100 @@ class SocialEngine:
         # ignored rather than crashing or dispatching more than once.
         tool_call = response.tool_calls[0] if response.tool_calls else None
         return {"social_response": get_clean_text(response), "tool_call": tool_call}
+
+    @staticmethod
+    async def run_global_turn_answer(envelope: AgentEnvelope, allowed_actions=None):
+        """Phase 2a (doc-16): the Orchestrator's Answer as a real structured
+        choice -- Reply | Dispatch | Completion -- instead of run_global_turn's
+        own freeform-text-plus-optional-tool-call shape above. Additive only:
+        does not modify or call run_global_turn -- a fully separate function,
+        same principle as core/strike_launch.py's deliberate duplication in
+        Phase 1.5 (the existing function keeps serving real /kernel/invoke
+        traffic unchanged; this is a new, parallel path). Reuses the same
+        private composition helpers run_global_turn already uses
+        (_compiled_l3/_compiled_l1_lines/compose_partner_protocols_lens/
+        _active_partner_protocols/compose_project_map_lens) rather than
+        duplicating that logic too -- those are pure, already-shared, and
+        reusing them can't drift the two functions' own L1/L2/L3 composition
+        apart the way reimplementing it separately could.
+
+        allowed_actions: real raw ingredient, same status as gatekeeper_
+        whisper/tool_law/output_shape/everything else in this contract --
+        Backend resolves which of "reply"/"dispatch"/"completion" this
+        specific agent/turn may use (see schema/kernel_schema.py's own
+        GlobalAgentAnswerRequest docstring for the real registry gap this
+        works around today), Kernel just declares whichever of REPLY_TOOL/
+        DISPATCH_TOOL/COMPLETION_TOOL that list names -- doesn't author or
+        validate the list itself. Defaults to ["reply", "dispatch"] when
+        omitted, matching today's real run_global_turn behavior (Completion
+        opt-in only, matching doc-16's own "the PM never produces Completion"
+        as the common case, not a default-off exception nobody sets).
+        "dispatch" is only actually offered when envelope.project_map is
+        also non-empty, same real precondition run_global_turn already
+        enforces (nothing real to dispatch to otherwise).
+
+        Uses tool_choice="required" (Gemini's real mode=ANY), not
+        parallel_tool_calls=False -- see core/orchestrator_answer.py's own
+        module docstring for why that specific mechanism doesn't work for
+        Gemini via litellm once more than one tool is declared, confirmed
+        against litellm's own adapter source and empirically against the
+        real API (9 real calls, every one returned exactly one clean tool
+        call with zero accompanying prose).
+
+        Returns {"answer_type": "reply"|"dispatch"|"completion", "args": {...}}
+        -- see core/orchestrator_answer.py's resolve_orchestrator_answer()
+        for the real normalization logic, including its own defensive
+        handling of a multi-tool-call or zero-tool-call response."""
+        allowed = allowed_actions if allowed_actions is not None else ["reply", "dispatch"]
+        tool_by_name = {"reply": REPLY_TOOL, "dispatch": START_MILESTONE_WORK_TOOL, "completion": COMPLETION_TOOL}
+        tools = [tool_by_name[name] for name in allowed if name in tool_by_name]
+        if "dispatch" in allowed and not envelope.project_map:
+            tools = [t for t in tools if t is not START_MILESTONE_WORK_TOOL]
+
+        pm_model, pm_config = AgentFactory.get_partner_pm()
+        pm_dna = envelope.persona_config.get("system_prompt", "Lead Co-founder.")
+        pm_lens = _compiled_l3(envelope)
+        partner_protocols_block = compose_partner_protocols_lens(_active_partner_protocols(envelope))
+        if partner_protocols_block:
+            pm_lens = f"{pm_lens}\n\n{partner_protocols_block}" if pm_lens else partner_protocols_block
+        project_map_block = compose_project_map_lens(envelope.project_map)
+        if project_map_block:
+            pm_lens = f"{pm_lens}\n\n{project_map_block}" if pm_lens else project_map_block
+
+        pm_mandate_lines = _compiled_l1_lines(envelope)
+        # Composed ALONGSIDE Backend's real tool_law content, not instead
+        # of it -- real gap Backend caught: registry_docs/tool_law is real,
+        # Backend-maintained, safety-critical content (why it lives in
+        # Firestore instead of a hardcoded Kernel string in the first
+        # place), not just tool-calling mechanics text. Dropping the field
+        # entirely would have permanently locked this path out of ever
+        # receiving Backend's real content. envelope.tool_law or
+        # DEFAULT_TOOL_LAW is still the base (same fallback everywhere else
+        # in this contract); the tool_choice="required" specific addition
+        # (which tools are actually offered, must-call-one, no plain text)
+        # is appended after it, not a replacement -- DEFAULT_TOOL_LAW's own
+        # "you have NO callable tools" framing doesn't literally apply here
+        # (at least REPLY_TOOL is always offered), but the safety content
+        # underneath that framing still matters and still reaches the
+        # model.
+        offered_names = ", ".join(t["function"]["name"] for t in tools)
+        pm_mandate_lines.append(
+            f"TOOL LAW: {envelope.tool_law or DEFAULT_TOOL_LAW}\n"
+            f"This turn specifically, you must respond by calling exactly one of these tools: "
+            f"{offered_names}. Never respond with plain text alone -- every real reply happens "
+            "through the reply tool itself, not as freeform content alongside or instead of a tool call."
+        )
+        pm_mandate = "\n".join(pm_mandate_lines)
+        pm_signal_lines = []
+        if envelope.chat_whisper:
+            pm_signal_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
+        pm_signal = "\n".join(pm_signal_lines)
+        pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
+
+        work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth, signal=pm_signal)
+        response = pm_model.generate_content([work_order], generation_config=pm_config, tools=tools, tool_choice="required")
+
+        return resolve_orchestrator_answer(response)
 
     @staticmethod
     async def synthesize_dispatch(

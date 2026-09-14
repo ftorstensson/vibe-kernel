@@ -13,6 +13,7 @@ from schema.kernel_schema import (
     LaunchStrikeTeamRequest, LaunchStrikeTeamResponse,
     AgentTurnRequest, AgentTurnResponse,
     GlobalAgentTurnRequest, GlobalAgentTurnResponse,
+    GlobalAgentAnswerRequest, GlobalAgentAnswerResponse,
 )
 from core.orchestrator import MasterOrchestrator
 from core.requirements import derive_requirements
@@ -445,6 +446,31 @@ async def invoke_agent_run_global_turn(req: GlobalAgentTurnRequest):
         )
         result = await SocialEngine.run_global_turn(envelope)
         return {"social_response": result.get("social_response"), "tool_call": result.get("tool_call")}
+    except ValueError as ve:
+        raise HTTPException(status_code=502, detail=str(ve))
+    except Exception as e:
+        print(f"[KERNEL CRASH] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Phase 2a (doc-16), new endpoint -- SocialEngine.run_global_turn_answer()
+# exposed standalone: the Orchestrator's Answer as a real structured choice
+# (Reply | Dispatch | Completion, native tool calls), not the freeform-
+# text-plus-optional-tool-call shape /kernel/agents/run_global_turn above
+# still returns unchanged. Additive only -- that endpoint, run_global_turn
+# itself, and everything upstream of it are all untouched; this is a
+# second, parallel path nothing real calls yet.
+@app.post("/kernel/agents/run_global_turn_answer", response_model=GlobalAgentAnswerResponse)
+async def invoke_agent_run_global_turn_answer(req: GlobalAgentAnswerRequest):
+    try:
+        envelope = AgentEnvelope(
+            app_id=req.app_id, project_id=req.project_id, milestone_id=req.milestone_id,
+            milestone_config=req.milestone_config, persona_config=req.persona_config,
+            knowledge_bricks=req.knowledge_bricks, history=req.history,
+            schema_map=req.schema_map, chat_whisper=req.chat_whisper, tool_law=req.tool_law,
+            compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, project_map=req.project_map,
+        )
+        return await SocialEngine.run_global_turn_answer(envelope, allowed_actions=req.allowed_actions)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
