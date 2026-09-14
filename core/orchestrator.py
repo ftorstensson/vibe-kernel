@@ -120,13 +120,30 @@ class MasterOrchestrator:
             # open -- the Global Agent should still respond even if extraction
             # breaks, just without this turn's chat_summary update, same as the
             # task-scoped path already fails open on Gatekeeper/ignition errors.
+            #
+            # chat_manager_error (doc-16 Phase 4's real gap, per direct PM14
+            # confirmation): the turn still fails open exactly as before --
+            # same control flow, same silent-to-the-PM behavior, no new
+            # whisper/retry -- this only stops the exception itself from
+            # disappearing. Logged (matching main.py's own [KERNEL CRASH]
+            # convention) so a real crash is diagnosable instead of
+            # invisible, and surfaced as a real response field so Backend
+            # can finally tell "Chat Manager crashed" apart from "nothing to
+            # extract" -- today both produce an identical chat_summary=None,
+            # confirmed by reading the return dict below before this field
+            # existed. This try/except is genuinely isolated to just
+            # _run_chat_manager on this path (no Gatekeeper call inside it,
+            # unlike the task-scoped path below), so "chat_manager_error" is
+            # accurate here without needing the inner try that path needs.
             envelope.chat_whisper = None
             chat_computed = False
+            chat_manager_error = None
             try:
                 MasterOrchestrator._run_chat_manager(envelope)
                 chat_computed = True
-            except Exception:
-                pass
+            except Exception as e:
+                chat_manager_error = str(e)
+                print(f"[CHAT MANAGER CRASH] {e}")
             # GLOBAL_DISPATCH_CHOICE (core/triggers.py) runs run_global_turn
             # for real -- tool_call is real native function-calling output
             # (Gemini's start_milestone_work), not something Kernel resolves
@@ -228,6 +245,7 @@ class MasterOrchestrator:
                 "gate_status": gate_status,
                 "whisper": envelope.gatekeeper_whisper,
                 "assessments": assessments,
+                "chat_manager_error": chat_manager_error,
             }
 
         # 3. Detect readiness -- gate-driven, not keyword matching. Fred's
@@ -252,6 +270,7 @@ class MasterOrchestrator:
         # answer, not a cached guess.
         required_questions = resolve_required_questions(envelope.milestone_config)
         chat_computed = False
+        chat_manager_error = None
         envelope.gatekeeper_whisper = None
         envelope.chat_whisper = None
 
@@ -301,8 +320,29 @@ class MasterOrchestrator:
                 # the PM's job regardless of milestone state, unlike the
                 # real triggers below. Shared with the Global Agent path --
                 # see _run_chat_manager()'s own docstring.
-                context["chat_summary"] = MasterOrchestrator._run_chat_manager(envelope, required_questions)
-                chat_computed = True
+                #
+                # Inner try/except (doc-16 Phase 4, PM14-confirmed design):
+                # this outer try ALSO wraps GATEKEEPER_ASSESSMENT's own
+                # evaluate_triggers() call below (assess_coverage, a real
+                # model call that can genuinely throw) -- a real,
+                # pre-existing coupling, not something this change
+                # introduces (already flagged to Backend for their own
+                # gate_sequencer.py error-boundary design). Naming a
+                # response field "chat_manager_error" without separating
+                # the two would mislabel a real Gatekeeper crash as Chat
+                # Manager's. This inner block does exactly one thing:
+                # tags which step actually threw, then re-raises so the
+                # OUTER except still fires identically to before this
+                # change (context["ready"] = False either way, same
+                # control flow) -- purely additive instrumentation, no
+                # behavior change beyond the new field and the logging.
+                try:
+                    context["chat_summary"] = MasterOrchestrator._run_chat_manager(envelope, required_questions)
+                    chat_computed = True
+                except Exception as e:
+                    chat_manager_error = str(e)
+                    print(f"[CHAT MANAGER CRASH] {e}")
+                    raise
 
                 if already_fired:
                     # The gate has already permanently passed -- Gatekeeper's
@@ -325,7 +365,17 @@ class MasterOrchestrator:
                     # it didn't run this turn, not silence.
                     context["ready"] = True
                 trigger_log += await evaluate_triggers([GATEKEEPER_ASSESSMENT], context)
-            except Exception:
+            except Exception as e:
+                # chat_manager_error already set (and already logged) means
+                # the inner block above is what actually threw and
+                # re-raised -- don't log it a second time under a
+                # misleading tag. None means Gatekeeper's own step is what
+                # threw instead -- log that for real diagnosability too,
+                # just not under the chat_manager_error field (out of
+                # scope for this pass -- Gatekeeper already has its own
+                # skip_reason/trace-log observability elsewhere).
+                if chat_manager_error is None:
+                    print(f"[GATEKEEPER ASSESSMENT CRASH] {e}")
                 context["ready"] = False
         envelope.physics_open = context["ready"]
 
@@ -357,6 +407,7 @@ class MasterOrchestrator:
                 "assessments": context["assessments"],
                 "trigger_log": trigger_log,
                 "chat_whisper": envelope.chat_whisper,
+                "chat_manager_error": chat_manager_error,
             }
 
         else:
@@ -373,4 +424,5 @@ class MasterOrchestrator:
                 "assessments": context["assessments"],
                 "trigger_log": trigger_log,
                 "chat_whisper": envelope.chat_whisper,
+                "chat_manager_error": chat_manager_error,
             }
