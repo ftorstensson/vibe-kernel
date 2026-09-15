@@ -233,6 +233,14 @@ class SocialEngine:
             pm_signal_lines.append(f"CHAT WHISPER: {envelope.chat_whisper}")
         pm_signal = "\n".join(pm_signal_lines)
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
+        # Phase 7 prep: Backend-resolved ancestor-scope chat facts (Global/
+        # parent-Phase), Truth-shaped per doc-13's L6/Memory -- appended
+        # here, not pm_signal_lines. Guarded like every other optional
+        # ingredient in this function: absent/empty is a real, common state
+        # (every turn before Backend starts sending this), not an error, so
+        # this stays a no-op until it does.
+        if envelope.ancestor_chat_summary:
+            pm_truth += f"\nANCESTOR_CHAT_CONTEXT: {envelope.ancestor_chat_summary}"
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth, signal=pm_signal)
         response = pm_model.generate_content([work_order], generation_config=pm_config)

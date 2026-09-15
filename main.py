@@ -418,6 +418,7 @@ async def invoke_agent_run_turn(req: AgentTurnRequest):
             milestone_config=req.milestone_config, persona_config=req.persona_config,
             knowledge_bricks=req.knowledge_bricks, history=req.history, physics_open=req.physics_open,
             schema_map=req.schema_map, chat_whisper=req.chat_whisper, gatekeeper_whisper=req.gatekeeper_whisper,
+            ancestor_chat_summary=req.ancestor_chat_summary,
             kaiser_mandate=req.kaiser_mandate or "", partner_protocols=req.partner_protocols, tool_law=req.tool_law,
             compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, phase_purpose=req.phase_purpose,
         )
