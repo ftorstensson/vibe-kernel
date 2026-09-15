@@ -872,6 +872,16 @@ class AgentEnvelope(BaseModel):
     # and knowledge_bricks already use.
     chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     chat_summary_cursor: int = 0
+    # Phase 7 prep: a filtered, ordered view of ancestor-scope (Global/
+    # parent-Phase) chat_summary facts, resolved and capped by Backend
+    # (resolve_desk_scope_chain + filter_facts_by_scope) before this turn --
+    # distinct from chat_summary above, which is this milestone's OWN
+    # persisted state. Truth-shaped (doc-13 L6/Memory: "each Desk gets a
+    # scoped view into it: its own facts, everything above it in the
+    # hierarchy"), not Signal -- composed into pm_truth by run_turn, never
+    # pm_signal_lines. Empty list is a real, common no-op: run_turn only
+    # appends its ANCESTOR_CHAT_CONTEXT line when this is genuinely present.
+    ancestor_chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     # Chat Manager's own identity for the live turn's extraction step -- see
     # SovereignRequest's docstring for why these two specifically (everything
     # else Chat Manager's L1/L3 needs is already on persona_config).
@@ -1007,6 +1017,11 @@ class AgentTurnRequest(BaseModel):
     schema_map: Dict[str, Any] = Field(default_factory=dict)
     chat_whisper: Optional[str] = None
     gatekeeper_whisper: Optional[str] = None
+    # See AgentEnvelope's own docstring for this field -- same real
+    # Truth-shaped, Backend-resolved ancestor-scope view, arriving here as a
+    # caller-supplied VALUE (not an ingredient Kernel composes from), same
+    # status as gatekeeper_whisper/chat_whisper/kaiser_mandate above.
+    ancestor_chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     # Optional[str], not str = "" -- confirmed for real (live integration
     # test): AgentEnvelope's own kaiser_mandate field is str = "" because
     # it was always Kernel-internal turn-local scratch state, never part of
