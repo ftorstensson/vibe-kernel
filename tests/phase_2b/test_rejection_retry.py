@@ -50,7 +50,7 @@ class _FakeModel:
     def __init__(self):
         self.captured = None
 
-    def generate_content(self, work_order, generation_config=None, tools=None, tool_choice=None):
+    def generate_content(self, work_order, generation_config=None, tools=None, tool_choice=None, **kwargs):
         self.captured = work_order
         return _FakeReplyResponse()
 

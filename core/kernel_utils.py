@@ -25,14 +25,21 @@ def hammer_json(raw_text):
     which is exactly the symptom a real empty-array response produced live.
     An empty list means "nothing here," not malformed JSON -- return {}."""
     try:
-        clean_json = re.sub(r'^\`\`\`json\s*|\`\`\`$', '', raw_text.strip(), flags=re.MULTILINE).strip()
-        parsed = json.loads(clean_json)
-        if isinstance(parsed, list):
-            return parsed[0] if parsed else {}
-        return parsed
+        return parse_json_lenient(raw_text)
     except Exception as e:
         logger.error(f"JSON Hammer Failed: {e}")
         return {"error": "JSON_PARSE_FAILED", "raw": raw_text}
+
+
+def parse_json_lenient(raw_text):
+    """hammer_json's parsing step on its own (raises on failure instead of
+    returning the error dict), so core/capture.py can report the parsed value
+    of a structured call using exactly the logic Kernel itself uses."""
+    clean_json = re.sub(r'^\`\`\`json\s*|\`\`\`$', '', raw_text.strip(), flags=re.MULTILINE).strip()
+    parsed = json.loads(clean_json)
+    if isinstance(parsed, list):
+        return parsed[0] if parsed else {}
+    return parsed
 
 def wash_link(url):
     """Entry 080: Extract raw URI from any accidental Markdown wrappers."""

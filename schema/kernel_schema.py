@@ -1,7 +1,27 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
-class SovereignRequest(BaseModel):
+class CaptureRequestMixin(BaseModel):
+    """Step 0 capture (doc-26, core/capture.py). include_briefing opts one
+    request in to receiving every model call it made on the response
+    (calls/kernel_version); briefing_max_bytes, when set, makes any call whose
+    prompt or output exceeds it come back as a flagged stub (big field null,
+    oversize true, sizes and sha256 kept) rather than truncated. Kernel stores
+    nothing and never picks a threshold itself."""
+    include_briefing: bool = False
+    briefing_max_bytes: Optional[int] = None
+
+
+class CaptureResponseMixin(BaseModel):
+    """Null unless the request set include_briefing. calls: ordered by start,
+    one entry per model call (see core/capture.py for the entry shape and the
+    segment rules). kernel_version: {revision: Cloud Run K_REVISION,
+    git_sha: KERNEL_GIT_SHA when set at deploy}."""
+    calls: Optional[List[Dict[str, Any]]] = None
+    kernel_version: Optional[Dict[str, Any]] = None
+
+
+class SovereignRequest(CaptureRequestMixin):
     """Kernel is a stateless executor: given a complete input, it composes
     and calls the model and returns a result -- it never reaches into
     Firestore to go get its own inputs. Backend is the sole owner of
@@ -261,7 +281,7 @@ class SovereignRequest(BaseModel):
     keymaster_skill: Optional[str] = None
     keymaster_output_shape: Optional[Dict[str, Any]] = None
 
-class SovereignResponse(BaseModel):
+class SovereignResponse(CaptureResponseMixin):
     """The Formalized Interface for the App to consume.
 
     chat_summary/chat_summary_cursor: the advanced state after this turn's
@@ -393,7 +413,7 @@ class SovereignResponse(BaseModel):
     # existed either way.
     chat_manager_error: Optional[str] = None
 
-class DeriveRequirementsRequest(BaseModel):
+class DeriveRequirementsRequest(CaptureRequestMixin):
     """Functions Library, entry 1: derive_requirements() needs no conversation
     state -- no project_id/milestone_id, no envelope, no chat history -- just
     the milestone's own purpose and target output structure, which the caller
@@ -425,11 +445,11 @@ class DeriveRequirementsRequest(BaseModel):
     # core/requirements.py's own REQUIREMENTS_SCHEMA constant.
     output_shape: Optional[Dict[str, Any]] = None
 
-class DeriveRequirementsResponse(BaseModel):
+class DeriveRequirementsResponse(CaptureResponseMixin):
     rationale: str
     ignition_inputs: List[Dict[str, str]]
 
-class ConfirmLaunchIntentRequest(BaseModel):
+class ConfirmLaunchIntentRequest(CaptureRequestMixin):
     """Functions Library, Keymaster's own standalone endpoint -- same
     reasoning as DeriveRequirementsRequest: confirm_launch_intent() needs no
     envelope/milestone state, just the recent conversation history, which
@@ -454,10 +474,10 @@ class ConfirmLaunchIntentRequest(BaseModel):
     # core/ignition.py's own LAUNCH_CONFIRM_SCHEMA constant.
     output_shape: Optional[Dict[str, Any]] = None
 
-class ConfirmLaunchIntentResponse(BaseModel):
+class ConfirmLaunchIntentResponse(CaptureResponseMixin):
     confirmed: bool
 
-class SynthesizeDispatchRequest(BaseModel):
+class SynthesizeDispatchRequest(CaptureRequestMixin):
     """The last step of start_milestone_work's real round-trip (see
     pods/social/engine.py's run_global_turn / START_MILESTONE_WORK_TOOL):
     once Backend has resolved the dispatched milestone's own data and run
@@ -516,7 +536,7 @@ class SynthesizeDispatchRequest(BaseModel):
     dispatch_status: str
     dispatch_response: str
 
-class SynthesizeDispatchResponse(BaseModel):
+class SynthesizeDispatchResponse(CaptureResponseMixin):
     social_response: str
 
 class CompileIdentityRequest(BaseModel):
@@ -578,7 +598,7 @@ class CompileIdentityResponse(BaseModel):
     l1: str
     l3: Optional[str] = None
 
-class SummarizeForMapRequest(BaseModel):
+class SummarizeForMapRequest(CaptureRequestMixin):
     """Test Run 1, items 6/7: the real summarization half of the Global Map
     split (see core/map_summary.py's own docstring for the full trace).
     Backend calls this once per milestone/phase at publish/compile time
@@ -594,7 +614,7 @@ class SummarizeForMapRequest(BaseModel):
     app_id: str
     text: str
 
-class SummarizeForMapResponse(BaseModel):
+class SummarizeForMapResponse(CaptureResponseMixin):
     summary: str
 
 class AgentPreviewRequest(BaseModel):
@@ -690,7 +710,7 @@ class PreviewFunctionResponse(BaseModel):
     l4: Dict[str, Any]
     l5: Optional[List[Any]] = None
 
-class AssessCoverageRequest(BaseModel):
+class AssessCoverageRequest(CaptureRequestMixin):
     """Coverage's own standalone endpoint, same reasoning as
     DeriveRequirementsRequest: Coverage needs no envelope/history of its
     own -- just the milestone's own raw fields and the current chat_summary
@@ -757,12 +777,12 @@ class AssessCoverageRequest(BaseModel):
     output_shape: Optional[Dict[str, Any]] = None
     active_scope_path: Optional[str] = None
 
-class AssessCoverageResponse(BaseModel):
+class AssessCoverageResponse(CaptureResponseMixin):
     assessments: List[Dict[str, Any]]
     gate_status: str
     whisper: str
 
-class ChatSummaryRequest(BaseModel):
+class ChatSummaryRequest(CaptureRequestMixin):
     """Computes chat_summary (L5, renamed from durable_facts -- matching
     Gatekeeper's own canvas board target display name) from a real
     conversation history the caller already has -- Kernel no longer fetches
@@ -810,7 +830,7 @@ class ChatSummaryRequest(BaseModel):
     # EXTRACTION_SCHEMA constant.
     output_shape: Optional[Dict[str, Any]] = None
 
-class ChatSummaryResponse(BaseModel):
+class ChatSummaryResponse(CaptureResponseMixin):
     """chat_whisper: the single most pressing thing Chat Manager couldn't
     confidently classify as new/update/conflict this call, or None if
     nothing needs the Director's clarification -- see
@@ -925,7 +945,7 @@ class AgentEnvelope(BaseModel):
     # core/ignition.py's own LAUNCH_CONFIRM_SCHEMA constant.
     keymaster_output_shape: Optional[Dict[str, Any]] = None
 
-class LaunchStrikeTeamRequest(BaseModel):
+class LaunchStrikeTeamRequest(CaptureRequestMixin):
     """Phase 1.5 migration pass, new endpoint: the Strike Team launch half of
     core/triggers.py's STRIKE_TEAM_LAUNCH trigger (_strike_team_action),
     exposed standalone so Backend's own new sequencing logic can call it
@@ -954,7 +974,7 @@ class LaunchStrikeTeamRequest(BaseModel):
     chat_summary: List[Dict[str, Any]] = Field(default_factory=list)
     milestone_config: Dict[str, Any] = Field(default_factory=dict)
 
-class LaunchStrikeTeamResponse(BaseModel):
+class LaunchStrikeTeamResponse(CaptureResponseMixin):
     """bricks/brief/appendix match _strike_team_action's own three real
     outputs exactly (context["bricks"]/context["brief"]/context["appendix"]
     there). kaiser_mandate is the fixed "RESEARCH COMPLETE. Discuss the new
@@ -985,7 +1005,7 @@ class LaunchStrikeTeamResponse(BaseModel):
     appendix: List[Dict[str, Any]]
     kaiser_mandate: str
 
-class AgentTurnRequest(BaseModel):
+class AgentTurnRequest(CaptureRequestMixin):
     """Phase 1.5 migration pass, new endpoint: SocialEngine.run_turn() exposed
     standalone, for Backend's own new sequencing logic to call once it has
     resolved this turn's real Signals (gatekeeper_whisper/chat_whisper/
@@ -1038,10 +1058,10 @@ class AgentTurnRequest(BaseModel):
     compiled_l3: Optional[str] = None
     phase_purpose: Optional[str] = None
 
-class AgentTurnResponse(BaseModel):
+class AgentTurnResponse(CaptureResponseMixin):
     social_response: Optional[str] = None
 
-class GlobalAgentTurnRequest(BaseModel):
+class GlobalAgentTurnRequest(CaptureRequestMixin):
     """Same reasoning as AgentTurnRequest, for SocialEngine.run_global_turn()
     instead -- a genuinely separate endpoint, not the same one with an
     is_global flag, since tool_call is a real capability difference (only
@@ -1067,11 +1087,11 @@ class GlobalAgentTurnRequest(BaseModel):
     compiled_l3: Optional[str] = None
     project_map: List[Dict[str, Any]] = Field(default_factory=list)
 
-class GlobalAgentTurnResponse(BaseModel):
+class GlobalAgentTurnResponse(CaptureResponseMixin):
     social_response: Optional[str] = None
     tool_call: Optional[Dict[str, Any]] = None
 
-class GlobalAgentAnswerRequest(BaseModel):
+class GlobalAgentAnswerRequest(CaptureRequestMixin):
     """Phase 2a (doc-16): SocialEngine.run_global_turn_answer() exposed
     standalone -- the Orchestrator's Answer as a real structured choice
     (Reply | Dispatch | Completion, native tool calls) instead of
@@ -1146,7 +1166,7 @@ class GlobalAgentAnswerRequest(BaseModel):
     rejected_answer: Optional[Dict[str, Any]] = None
     rejection_reason: Optional[str] = None
 
-class GlobalAgentAnswerResponse(BaseModel):
+class GlobalAgentAnswerResponse(CaptureResponseMixin):
     """answer_type is always exactly one of "reply"/"dispatch"/"completion"/
     "refuse" -- normalized in core/orchestrator_answer.py's
     resolve_orchestrator_answer() regardless of the underlying tool's own

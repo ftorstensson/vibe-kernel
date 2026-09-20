@@ -243,7 +243,7 @@ class SocialEngine:
             pm_truth += f"\nANCESTOR_CHAT_CONTEXT: {envelope.ancestor_chat_summary}"
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth, signal=pm_signal)
-        response = pm_model.generate_content([work_order], generation_config=pm_config)
+        response = pm_model.generate_content([work_order], generation_config=pm_config, label="pm.run_turn")
 
         return get_clean_text(response)
 
@@ -334,7 +334,7 @@ class SocialEngine:
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth, signal=pm_signal)
-        response = pm_model.generate_content([work_order], generation_config=pm_config, tools=tools)
+        response = pm_model.generate_content([work_order], generation_config=pm_config, tools=tools, label="pm.run_global_turn")
 
         # Defensive against a hypothetical multiple-tool-calls response --
         # the schema only ever declares one function, and the design is
@@ -478,7 +478,7 @@ class SocialEngine:
         pm_truth = f"ESTABLISHED_KNOWLEDGE: {envelope.knowledge_bricks}\nCURRENT_CHAT: {envelope.history[-5:]}"
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth, signal=pm_signal)
-        response = pm_model.generate_content([work_order], generation_config=pm_config, tools=tools, tool_choice="required")
+        response = pm_model.generate_content([work_order], generation_config=pm_config, tools=tools, tool_choice="required", label="pm.run_global_turn_answer")
 
         return resolve_orchestrator_answer(response)
 
@@ -540,6 +540,6 @@ class SocialEngine:
         )
 
         work_order = PromptBuilder.assemble(mandate=pm_mandate, lens=f"{pm_dna}\n{pm_lens}", truth=pm_truth)
-        response = pm_model.generate_content([work_order], generation_config=pm_config)
+        response = pm_model.generate_content([work_order], generation_config=pm_config, label="pm.synthesize_dispatch")
 
         return get_clean_text(response)

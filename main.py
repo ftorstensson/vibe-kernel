@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from schema.kernel_schema import (
     SovereignRequest, SovereignResponse, AgentEnvelope,
     DeriveRequirementsRequest, DeriveRequirementsResponse,
@@ -23,11 +23,21 @@ from core.ignition import confirm_launch_intent
 from core.composition import compose_function_identity, compose_agent_identity
 from core.map_summary import summarize_for_map
 from core.strike_launch import execute_strike_team_launch
+from core.capture import capture_calls, attach_capture, capture_token_valid, set_capture_authorized, CAPTURE_TOKEN_HEADER
 from pods.social.engine import SocialEngine
 import uvicorn
 import os
 
-app = FastAPI(title="Vibe Kernel: Sovereign Cartography v21.1")
+async def capture_gate(request: Request):
+    """Decides, once per request, whether include_briefing may be honoured
+    (see core/capture.py). Any failure means not authorized."""
+    try:
+        set_capture_authorized(capture_token_valid(request.headers.get(CAPTURE_TOKEN_HEADER)))
+    except Exception:
+        set_capture_authorized(False)
+
+
+app = FastAPI(title="Vibe Kernel: Sovereign Cartography v21.1", dependencies=[Depends(capture_gate)])
 
 # Stateless executor: given a complete input, Kernel composes/calls the
 # model/returns a result -- it never reaches into Firestore for its own
@@ -77,10 +87,11 @@ async def invoke(req: SovereignRequest):
             keymaster_output_shape=req.keymaster_output_shape,
         )
 
-        result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = await MasterOrchestrator.process_turn(envelope, req.user_message, is_global=req.is_global)
 
         # This return matches the SovereignResponse schema
-        return {
+        return attach_capture({
             "social_response": result.get("social_response"),
             "status": result.get("status"),
             "data_patch": result.get("data_patch"),
@@ -95,7 +106,7 @@ async def invoke(req: SovereignRequest):
             "trigger_log": result.get("trigger_log"),
             "chat_whisper": result.get("chat_whisper"),
             "chat_manager_error": result.get("chat_manager_error"),
-        }
+        }, capture)
 
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
@@ -117,11 +128,12 @@ async def invoke_derive_requirements(req: DeriveRequirementsRequest):
             (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
             req.app_manual, req.global_mission,
         )
-        result = derive_requirements(
-            req.purpose, req.target_structure, identity["l1"], identity["l3"], req.skill,
-            output_shape=req.output_shape,
-        )
-        return result
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = derive_requirements(
+                req.purpose, req.target_structure, identity["l1"], identity["l3"], req.skill,
+                output_shape=req.output_shape,
+            )
+        return attach_capture(result, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -145,10 +157,11 @@ async def invoke_confirm_launch_intent(req: ConfirmLaunchIntentRequest):
             (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
             None, None,
         )
-        result = confirm_launch_intent(
-            req.history, l1=identity["l1"], skill=req.skill, output_shape=req.output_shape,
-        )
-        return {"confirmed": result}
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = confirm_launch_intent(
+                req.history, l1=identity["l1"], skill=req.skill, output_shape=req.output_shape,
+            )
+        return attach_capture({"confirmed": result}, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -167,11 +180,12 @@ async def invoke_confirm_launch_intent(req: ConfirmLaunchIntentRequest):
 @app.post("/kernel/synthesize_dispatch", response_model=SynthesizeDispatchResponse)
 async def invoke_synthesize_dispatch(req: SynthesizeDispatchRequest):
     try:
-        result = await SocialEngine.synthesize_dispatch(
-            req.persona_config, req.trigger_message, req.global_response,
-            req.milestone_name, req.milestone_purpose, req.dispatch_status, req.dispatch_response,
-        )
-        return {"social_response": result}
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = await SocialEngine.synthesize_dispatch(
+                req.persona_config, req.trigger_message, req.global_response,
+                req.milestone_name, req.milestone_purpose, req.dispatch_status, req.dispatch_response,
+            )
+        return attach_capture({"social_response": result}, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -212,7 +226,9 @@ async def invoke_compile_identity(req: CompileIdentityRequest):
 @app.post("/kernel/summarize_for_map", response_model=SummarizeForMapResponse)
 async def invoke_summarize_for_map(req: SummarizeForMapRequest):
     try:
-        return {"summary": summarize_for_map(req.text)}
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            summary = summarize_for_map(req.text)
+        return attach_capture({"summary": summary}, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -343,11 +359,12 @@ async def invoke_assess_coverage(req: AssessCoverageRequest):
         # req.active_scope_path defaults to None, which filter_facts_by_scope()
         # already treats as a no-op, so existing callers see no change.
         scoped_chat_summary = filter_facts_by_scope(req.chat_summary, req.active_scope_path)
-        result = assess_coverage(
-            required_questions, scoped_chat_summary, identity["l1"], identity["l3"], req.skill,
-            output_shape=req.output_shape,
-        )
-        return result
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = assess_coverage(
+                required_questions, scoped_chat_summary, identity["l1"], identity["l3"], req.skill,
+                output_shape=req.output_shape,
+            )
+        return attach_capture(result, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -370,13 +387,14 @@ async def invoke_chat_summary(req: ChatSummaryRequest):
             (req.archetype or {}).get("mandate"), (req.platform or {}).get("mandate"),
             req.app_manual, req.global_mission,
         )
-        result = build_chat_summary(
-            req.history, required_questions=req.required_questions, purpose=req.purpose,
-            prior_chat_summary=req.prior_chat_summary, cursor=req.cursor,
-            l1=identity["l1"], l3=identity["l3"], skill=req.skill,
-            output_shape=req.output_shape,
-        )
-        return result
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = build_chat_summary(
+                req.history, required_questions=req.required_questions, purpose=req.purpose,
+                prior_chat_summary=req.prior_chat_summary, cursor=req.cursor,
+                l1=identity["l1"], l3=identity["l3"], skill=req.skill,
+                output_shape=req.output_shape,
+            )
+        return attach_capture(result, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -394,8 +412,9 @@ async def invoke_chat_summary(req: ChatSummaryRequest):
 @app.post("/kernel/functions/launch_strike_team", response_model=LaunchStrikeTeamResponse)
 async def invoke_launch_strike_team(req: LaunchStrikeTeamRequest):
     try:
-        result = await execute_strike_team_launch(req.app_id, req.purpose, req.chat_summary, req.milestone_config)
-        return result
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = await execute_strike_team_launch(req.app_id, req.purpose, req.chat_summary, req.milestone_config)
+        return attach_capture(result, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -422,8 +441,9 @@ async def invoke_agent_run_turn(req: AgentTurnRequest):
             kaiser_mandate=req.kaiser_mandate or "", partner_protocols=req.partner_protocols, tool_law=req.tool_law,
             compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, phase_purpose=req.phase_purpose,
         )
-        response = await SocialEngine.run_turn(envelope)
-        return {"social_response": response}
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            response = await SocialEngine.run_turn(envelope)
+        return attach_capture({"social_response": response}, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -446,8 +466,9 @@ async def invoke_agent_run_global_turn(req: GlobalAgentTurnRequest):
             schema_map=req.schema_map, chat_whisper=req.chat_whisper, tool_law=req.tool_law,
             compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, project_map=req.project_map,
         )
-        result = await SocialEngine.run_global_turn(envelope)
-        return {"social_response": result.get("social_response"), "tool_call": result.get("tool_call")}
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = await SocialEngine.run_global_turn(envelope)
+        return attach_capture({"social_response": result.get("social_response"), "tool_call": result.get("tool_call")}, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:
@@ -472,10 +493,12 @@ async def invoke_agent_run_global_turn_answer(req: GlobalAgentAnswerRequest):
             schema_map=req.schema_map, chat_whisper=req.chat_whisper, tool_law=req.tool_law,
             compiled_l1=req.compiled_l1, compiled_l3=req.compiled_l3, project_map=req.project_map,
         )
-        return await SocialEngine.run_global_turn_answer(
-            envelope, allowed_actions=req.allowed_actions,
-            rejected_answer=req.rejected_answer, rejection_reason=req.rejection_reason,
-        )
+        with capture_calls(req.include_briefing, req.briefing_max_bytes) as capture:
+            result = await SocialEngine.run_global_turn_answer(
+                envelope, allowed_actions=req.allowed_actions,
+                rejected_answer=req.rejected_answer, rejection_reason=req.rejection_reason,
+            )
+        return attach_capture(result, capture)
     except ValueError as ve:
         raise HTTPException(status_code=502, detail=str(ve))
     except Exception as e:

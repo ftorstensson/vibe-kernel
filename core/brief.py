@@ -84,5 +84,5 @@ def derive_brief(purpose, chat_summary):
     truth = f"MILESTONE PURPOSE:\n{purpose}\n\nCHAT SUMMARY:\n{facts_listing}"
 
     work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=BRIEF_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=BRIEF_SCHEMA, label="strike.derive_brief")
     return hammer_json(get_clean_text(response))

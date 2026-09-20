@@ -51,7 +51,7 @@ class StrikeEngine:
             print(f" -> {role} asked: {questions}")
 
             # 2. PARALLEL HUNT for this specialist's own questions
-            hunt_tasks = [asyncio.to_thread(Hound.hunt, q) for q in questions]
+            hunt_tasks = [asyncio.to_thread(Hound.hunt, q, role, i) for i, q in enumerate(questions)]
             hunt_results = await asyncio.gather(*hunt_tasks)
 
             # 3. CONSOLIDATE this specialist's own slice of the treasure chest

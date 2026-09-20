@@ -62,5 +62,5 @@ def confirm_launch_intent(history, l1=None, skill="", output_shape=None):
     lens = compose_l4_lens(None, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or LAUNCH_CONFIRM_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or LAUNCH_CONFIRM_SCHEMA, label="keymaster.confirm_launch_intent")
     return hammer_json(get_clean_text(response)).get("confirmed", False)
