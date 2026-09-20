@@ -1,0 +1,45 @@
+{
+  "scenario": "strike.derive_brief/default",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are the Author: a dedicated brief-writing function. Given the milestone's purpose and the Director's settled chat summary for it (already deduplicated and revision-merged -- treat this as the complete, current truth), produce two things for the AI Specialists who will research this milestone next. They will never see the raw conversation -- this is the only context they get, so it must carry the real substance forward, not a thin restatement.\n1. identity_narrative: exactly two paragraphs of plain prose. No bullet points, no headers, no bolding, no JSON, no meta-commentary about being a brief -- just the brief itself.\n   POSITIVE ANCHOR: state plainly what this actually is -- the specific idea, the audience, the twist, the model. Keep the Director's own grit and specificity; do not sand it down into a generic pitch.\n   NEGATIVE CONSTRAINTS (THE DUAL-BRIEF): also state what this is explicitly NOT -- the nearby generic category a model would default to if left unconstrained (e.g. 'this is NOT a generic B2B SaaS tool'), named directly from what actually distinguishes this idea. Skip this only if there is truly nothing in the facts to draw a negative constraint from.\n2. founding_voice: 2-4 short quotes taken close to verbatim from the Director's OWN chat summary (speaker=user only) -- not paraphrased into your own voice, not invented. Pick the lines that carry the real personal conviction or grit behind the idea. If fewer than 2 user-spoken facts genuinely qualify, return fewer rather than padding with weak material.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nMILESTONE PURPOSE:\nPin down the concept\n\nCHAT SUMMARY:\n- [fact, speaker=user] Target customer is small landlords\n- [decision, speaker=user] Pricing is $20 per month\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "identity_narrative": {
+                "type": "string"
+              },
+              "founding_voice": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "identity_narrative",
+              "founding_voice"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

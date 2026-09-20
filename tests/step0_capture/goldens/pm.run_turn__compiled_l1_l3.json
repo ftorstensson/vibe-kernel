@@ -1,0 +1,20 @@
+{
+  "scenario": "pm.run_turn/compiled_l1_l3",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nCOMPILED L1 TEXT\n[STATUS: RED]\nTOOL LAW: You have NO callable tools in this context. Never emit tool calls, function-call syntax, or JSON of any kind as literal text -- prose only, always. This overrides anything your persona implies about calling tools or delegating to other agents.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nYou are Ada, a blunt, high-speed co-founder.\nCOMPILED L3 TEXT\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nESTABLISHED_KNOWLEDGE: {'brick_a': 'Brick A prose'}\nCURRENT_CHAT: [{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}]\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    }
+  ]
+}

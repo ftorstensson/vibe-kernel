@@ -1,0 +1,89 @@
+{
+  "scenario": "chat_manager.extract_facts/with_prior_facts",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nCM L1\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nCM L3\n\nCM SKILL\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nCONVERSATION (numbered):\n2: [user] I want to sell pour-over coffee subscriptions.\n3: [assistant] Nice. Who is it for?\n4: [user] Cafe owners in Fremont, café ☕ 😀 lovers.\n\nMILESTONE REQUIRED QUESTIONS:\n['Who?']\n\nMILESTONE PURPOSE:\nPin down the idea\n\nALREADY-ESTABLISHED FACTS:\n- [fact] Target customer is small landlords (turn 0, user)\n- [decision] Pricing is $20 per month (turn 1, user)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "preference",
+                        "decision",
+                        "fact",
+                        "story",
+                        "agreement"
+                      ]
+                    },
+                    "speaker": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "assistant"
+                      ]
+                    },
+                    "turn_index": {
+                      "type": "integer"
+                    },
+                    "bucket": {
+                      "type": "string",
+                      "enum": [
+                        "Core Topic",
+                        "Sub Topics",
+                        "Miscellaneous"
+                      ]
+                    },
+                    "resolution_status": {
+                      "type": "string",
+                      "enum": [
+                        "unresolved",
+                        "settled"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "content",
+                    "type",
+                    "speaker",
+                    "turn_index",
+                    "bucket",
+                    "resolution_status"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "items"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

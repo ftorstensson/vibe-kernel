@@ -1,0 +1,276 @@
+{
+  "scenario": "strike.execute_strike_team_launch/full_chain",
+  "order_insensitive": true,
+  "request_count": 12,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 1"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 1"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 2"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 2"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 3"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 3"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Brand Strategist\n        # RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\n        Given the settled brief below, identify the 3 most critical, specific\n        questions the Hounds must go research to ground your analysis in real\n        evidence. State the specific intent before searching, per the protocol\n        above -- each question must be concrete and search-optimized, not\n        generic market-research boilerplate, and grounded in what THIS role\n        specifically needs verified, not a shared checklist every specialist\n        would ask the same way.\n\n        ### THE IDENTITY (WHO YOU ARE)\n        ARCHETYPE: analyst\n\nVoice: dry.\n\nKB: markets\n\n        ### THE TRUTH (THE SETTLED BRIEF)\n        canned narrative paragraph one.\n\ncanned paragraph two.\n\nIN THE DIRECTOR'S OWN WORDS:\n- \"canned quote a\"\n- \"canned quote b\"\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "questions"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Brand Strategist\n        # THE ELI PROTOCOL\n- [E]vidence: Cite a real fact, product, or user behavior.\n- [L]ogic: Explain why this matters for THIS specific product.\n- [I]mplication: State what the NEXT team must do with this.\n\n\n        ### THE IDENTITY (WHO YOU ARE)\n        ARCHETYPE: analyst\n\nVoice: dry.\n\nKB: markets\n\n        ### THE TRUTH (DATA)\n        \ncanned grounded research text\ncanned grounded research text\ncanned grounded research text\n\n        ### THE LENS (CITATIONS)\n        AVAILABLE_SOURCE_IDS: [4, 5, 6]\n        LAW: You MUST cite your claims using [ID] notation.\n        LAW: If you mention a market fact, follow it with the ID (e.g., \"The market is growing [1]\").\n        LAW: Use only the IDs provided. Do not invent links.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Market Analyst\n        # RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\n        Given the settled brief below, identify the 3 most critical, specific\n        questions the Hounds must go research to ground your analysis in real\n        evidence. State the specific intent before searching, per the protocol\n        above -- each question must be concrete and search-optimized, not\n        generic market-research boilerplate, and grounded in what THIS role\n        specifically needs verified, not a shared checklist every specialist\n        would ask the same way.\n\n        ### THE IDENTITY (WHO YOU ARE)\n        No specific identity provided. Act as a generic specialist.\n\n        ### THE TRUTH (THE SETTLED BRIEF)\n        canned narrative paragraph one.\n\ncanned paragraph two.\n\nIN THE DIRECTOR'S OWN WORDS:\n- \"canned quote a\"\n- \"canned quote b\"\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "questions"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Market Analyst\n        # THE ELI PROTOCOL\n- [E]vidence: Cite a real fact, product, or user behavior.\n- [L]ogic: Explain why this matters for THIS specific product.\n- [I]mplication: State what the NEXT team must do with this.\n\n\n        ### THE IDENTITY (WHO YOU ARE)\n        No specific identity provided. Act as a generic specialist.\n\n        ### THE TRUTH (DATA)\n        \ncanned grounded research text\ncanned grounded research text\ncanned grounded research text\n\n        ### THE LENS (CITATIONS)\n        AVAILABLE_SOURCE_IDS: [1, 2, 3]\n        LAW: You MUST cite your claims using [ID] notation.\n        LAW: If you mention a market fact, follow it with the ID (e.g., \"The market is growing [1]\").\n        LAW: Use only the IDs provided. Do not invent links.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are the Author: a dedicated brief-writing function. Given the milestone's purpose and the Director's settled chat summary for it (already deduplicated and revision-merged -- treat this as the complete, current truth), produce two things for the AI Specialists who will research this milestone next. They will never see the raw conversation -- this is the only context they get, so it must carry the real substance forward, not a thin restatement.\n1. identity_narrative: exactly two paragraphs of plain prose. No bullet points, no headers, no bolding, no JSON, no meta-commentary about being a brief -- just the brief itself.\n   POSITIVE ANCHOR: state plainly what this actually is -- the specific idea, the audience, the twist, the model. Keep the Director's own grit and specificity; do not sand it down into a generic pitch.\n   NEGATIVE CONSTRAINTS (THE DUAL-BRIEF): also state what this is explicitly NOT -- the nearby generic category a model would default to if left unconstrained (e.g. 'this is NOT a generic B2B SaaS tool'), named directly from what actually distinguishes this idea. Skip this only if there is truly nothing in the facts to draw a negative constraint from.\n2. founding_voice: 2-4 short quotes taken close to verbatim from the Director's OWN chat summary (speaker=user only) -- not paraphrased into your own voice, not invented. Pick the lines that carry the real personal conviction or grit behind the idea. If fewer than 2 user-spoken facts genuinely qualify, return fewer rather than padding with weak material.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nMILESTONE PURPOSE:\nPin down the concept\n\nCHAT SUMMARY:\n- [fact, speaker=user] Target customer is small landlords\n- [decision, speaker=user] Pricing is $20 per month\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "identity_narrative": {
+                "type": "string"
+              },
+              "founding_voice": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "identity_narrative",
+              "founding_voice"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\n\n        ACT AS THE EDITOR-IN-CHIEF.\n        Synthesize the raw specialist research into the named sections below.\n        Write real content for every section id listed, grounded in its\n        headline and intent -- not a generic restatement of the brief.\n\n        LAW: You MUST check the TYPE of each section.\n        - If TYPE is 'TEXT': Write a dense, strategic summary.\n        - If TYPE is 'VISUAL_SPEC': Write a high-fidelity TECHNICAL SPECIFICATION (Markdown) that a designer or UI agent can use to build an image/component.\n\n        LAW: Preserve [ID] citations. Return ONLY JSON.\n        \n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nSECTIONS:\n- id=b1 type=TEXT: Market -- size the market\n- id=b2 type=VISUAL_SPEC: Logo -- logo spec\nTONE: Goldsmith (Venture-Grade).\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nRAW_SPECIALIST_REPORTS: [{'role': 'Market Analyst', 'content': 'canned model text', 'questions': ['canned question 1', 'canned question 2', 'canned question 3'], 'sources': {'1': {'title': 'Canned Source', 'url': 'https://example.com/canned'}, '2': {'title': 'Canned Source', 'url': 'https://example.com/canned'}, '3': {'title': 'Canned Source', 'url': 'https://example.com/canned'}}}, {'role': 'Brand Strategist', 'content': 'canned model text', 'questions': ['canned question 1', 'canned question 2', 'canned question 3'], 'sources': {'4': {'title': 'Canned Source', 'url': 'https://example.com/canned'}, '5': {'title': 'Canned Source', 'url': 'https://example.com/canned'}, '6': {'title': 'Canned Source', 'url': 'https://example.com/canned'}}}]\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "b1": {
+                "type": "string"
+              },
+              "b2": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b1",
+              "b2"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

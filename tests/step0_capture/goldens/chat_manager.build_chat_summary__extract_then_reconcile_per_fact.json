@@ -1,0 +1,211 @@
+{
+  "scenario": "chat_manager.build_chat_summary/extract_then_reconcile_per_fact",
+  "order_insensitive": false,
+  "request_count": 3,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nCM L1\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nCM L3\n\nCM SKILL\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nCONVERSATION (numbered):\n1: [assistant] Nice. Who is it for?\n2: [user] Cafe owners in Fremont, café ☕ 😀 lovers.\n\nMILESTONE REQUIRED QUESTIONS:\n['Who?']\n\nMILESTONE PURPOSE:\nIdea\n\nALREADY-ESTABLISHED FACTS:\n- [fact] Target customer is small landlords (turn 0, user)\n- [decision] Pricing is $20 per month (turn 1, user)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "preference",
+                        "decision",
+                        "fact",
+                        "story",
+                        "agreement"
+                      ]
+                    },
+                    "speaker": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "assistant"
+                      ]
+                    },
+                    "turn_index": {
+                      "type": "integer"
+                    },
+                    "bucket": {
+                      "type": "string",
+                      "enum": [
+                        "Core Topic",
+                        "Sub Topics",
+                        "Miscellaneous"
+                      ]
+                    },
+                    "resolution_status": {
+                      "type": "string",
+                      "enum": [
+                        "unresolved",
+                        "settled"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "content",
+                    "type",
+                    "speaker",
+                    "turn_index",
+                    "bucket",
+                    "resolution_status"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "items"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are a fact-reconciliation function. Given a list of existing durable facts/decisions (each with an id) and one newly extracted item, decide exactly one classification:\n1. NEW: the item doesn't touch anything existing -- a genuinely separate fact/decision/preference/story. matched_fact_id: null, merged_content: null.\n2. REVISION: the item is about the exact same specific claim as an existing entry -- correcting it, quantifying it, or adding a missing detail to that SAME thing -- not a change of mind. Set matched_fact_id to that entry's id, and merged_content to the enriched content combining the old entry with the new detail.\n   NOT ENOUGH FOR REVISION: being about the same broader idea or project, coming up near each other in the conversation, or sharing a topic. Two genuinely separate pieces of information about the same idea -- e.g. the core mechanic, who it's for, and a guiding principle -- are three separate facts, not revisions of one another, no matter how related or close together they came up. Test: strip away the surrounding conversation -- would this item and the existing entry be answering the exact same specific question? If not, it's NEW. When genuinely unsure, prefer NEW over REVISION -- a wrongly-split fact only costs a little redundancy; a wrongly-merged fact permanently loses the ability to tell which specific thing was actually settled.\n3. CONTRADICTION: the item genuinely conflicts with an existing entry -- a real change, not an elaboration. Set matched_fact_id to the entry it conflicts with. merged_content: null.\nneeds_confirmation is true ONLY for CONTRADICTION -- never silently auto-resolve a real conflict. In that case also give a short clarifying_question the PM should ask the user, e.g. 'we'd decided X before, this sounds different -- still the plan, or has it changed?' For NEW and REVISION, needs_confirmation is false and clarifying_question is null.\nNOTE ON FORMATTING: 'id=... status=... type=...' in EXISTING FACTS below is metadata for you to read, not literal text -- merged_content must be clean prose only, never prefixed with a type tag or any of this bookkeeping notation.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nEXISTING FACTS:\n- id=f1 status=current type=fact: Target customer is small landlords\n- id=f2 status=current type=decision: Pricing is $20 per month\n\nNEW ITEM: type=fact: canned fact one (speaker: user, turn 0)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "revision",
+                  "contradiction"
+                ]
+              },
+              "matched_fact_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "merged_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "needs_confirmation": {
+                "type": "boolean"
+              },
+              "clarifying_question": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "classification",
+              "matched_fact_id",
+              "merged_content",
+              "needs_confirmation",
+              "clarifying_question"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are a fact-reconciliation function. Given a list of existing durable facts/decisions (each with an id) and one newly extracted item, decide exactly one classification:\n1. NEW: the item doesn't touch anything existing -- a genuinely separate fact/decision/preference/story. matched_fact_id: null, merged_content: null.\n2. REVISION: the item is about the exact same specific claim as an existing entry -- correcting it, quantifying it, or adding a missing detail to that SAME thing -- not a change of mind. Set matched_fact_id to that entry's id, and merged_content to the enriched content combining the old entry with the new detail.\n   NOT ENOUGH FOR REVISION: being about the same broader idea or project, coming up near each other in the conversation, or sharing a topic. Two genuinely separate pieces of information about the same idea -- e.g. the core mechanic, who it's for, and a guiding principle -- are three separate facts, not revisions of one another, no matter how related or close together they came up. Test: strip away the surrounding conversation -- would this item and the existing entry be answering the exact same specific question? If not, it's NEW. When genuinely unsure, prefer NEW over REVISION -- a wrongly-split fact only costs a little redundancy; a wrongly-merged fact permanently loses the ability to tell which specific thing was actually settled.\n3. CONTRADICTION: the item genuinely conflicts with an existing entry -- a real change, not an elaboration. Set matched_fact_id to the entry it conflicts with. merged_content: null.\nneeds_confirmation is true ONLY for CONTRADICTION -- never silently auto-resolve a real conflict. In that case also give a short clarifying_question the PM should ask the user, e.g. 'we'd decided X before, this sounds different -- still the plan, or has it changed?' For NEW and REVISION, needs_confirmation is false and clarifying_question is null.\nNOTE ON FORMATTING: 'id=... status=... type=...' in EXISTING FACTS below is metadata for you to read, not literal text -- merged_content must be clean prose only, never prefixed with a type tag or any of this bookkeeping notation.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nEXISTING FACTS:\n- id=f1 status=current type=fact: Target customer is small landlords\n- id=f2 status=current type=decision: Pricing is $20 per month\n- id=00000000-0000-0000-0000-000000000001 status=current type=fact: canned fact one\n\nNEW ITEM: type=decision: canned fact two (speaker: user, turn 1)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "revision",
+                  "contradiction"
+                ]
+              },
+              "matched_fact_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "merged_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "needs_confirmation": {
+                "type": "boolean"
+              },
+              "clarifying_question": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "classification",
+              "matched_fact_id",
+              "merged_content",
+              "needs_confirmation",
+              "clarifying_question"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

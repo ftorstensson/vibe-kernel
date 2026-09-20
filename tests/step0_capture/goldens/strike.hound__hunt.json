@@ -1,0 +1,24 @@
+{
+  "scenario": "strike.hound/hunt",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: What is the specialty coffee market size in Seattle?"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    }
+  ]
+}

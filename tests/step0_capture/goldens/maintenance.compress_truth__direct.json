@@ -1,0 +1,20 @@
+{
+  "scenario": "maintenance.compress_truth/direct",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nACT AS A KERNEL MAINTENANCE JANITOR.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nGoal: Compress multiple strategy bricks into one dense FOUNDATIONAL_CONTEXT block. Preserve all Source IDs ([1], [2]).\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nHISTORICAL_BRICKS: ['old brick one', 'old brick two']\nReturn ONLY the compressed text summary. No JSON. No Markdown.\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable"
+    }
+  ]
+}

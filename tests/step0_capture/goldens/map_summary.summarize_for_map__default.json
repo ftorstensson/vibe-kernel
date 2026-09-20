@@ -1,0 +1,20 @@
+{
+  "scenario": "map_summary.summarize_for_map/default",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are a text-condensation function. Given a real purpose/output description, produce a genuine 1-2 sentence summary suitable for a compressed project map view -- someone scanning many of these at once needs to immediately understand what this specific item is about, not read the full original text. Preserve the real substance and specific content of the input -- never generic filler like \"this covers important work.\" Plain prose, no markdown, no restating the input verbatim, no meta-commentary about summarizing.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nTEXT TO SUMMARIZE:\nA long milestone purpose that needs condensing for the map.\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable"
+    }
+  ]
+}

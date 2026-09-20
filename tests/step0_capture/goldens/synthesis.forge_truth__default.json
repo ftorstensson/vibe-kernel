@@ -1,0 +1,42 @@
+{
+  "scenario": "synthesis.forge_truth/default",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\n\n        ACT AS THE EDITOR-IN-CHIEF.\n        Synthesize the raw specialist research into the named sections below.\n        Write real content for every section id listed, grounded in its\n        headline and intent -- not a generic restatement of the brief.\n\n        LAW: You MUST check the TYPE of each section.\n        - If TYPE is 'TEXT': Write a dense, strategic summary.\n        - If TYPE is 'VISUAL_SPEC': Write a high-fidelity TECHNICAL SPECIFICATION (Markdown) that a designer or UI agent can use to build an image/component.\n\n        LAW: Preserve [ID] citations. Return ONLY JSON.\n        \n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nSECTIONS:\n- id=b1 type=TEXT: Market -- size the market\n- id=b2 type=VISUAL_SPEC: Logo -- logo spec\nTONE: Goldsmith (Venture-Grade).\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nRAW_SPECIALIST_REPORTS: [{'role': 'Market Analyst', 'content': 'Analysis [1]', 'sources': {'1': {'title': 'S', 'url': 'https://x'}}}]\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "b1": {
+                "type": "string"
+              },
+              "b2": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b1",
+              "b2"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

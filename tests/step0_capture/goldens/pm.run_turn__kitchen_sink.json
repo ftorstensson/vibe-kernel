@@ -1,0 +1,20 @@
+{
+  "scenario": "pm.run_turn/kitchen_sink",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nCOMPILED L1\n[STATUS: GREEN]\nKAISER MANDATE: RESEARCH COMPLETE.\nTOOL LAW: CUSTOM TOOL LAW\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nYou are Ada, a blunt, high-speed co-founder.\nCOMPILED L3\n\nPHASE PURPOSE: Phase purpose.\n\nPARTNER PROTOCOL (Gatekeeper): RED means blocked.\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nESTABLISHED_KNOWLEDGE: {'brick_a': 'Brick A prose'}\nCURRENT_CHAT: [{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}]\nANCESTOR_CHAT_CONTEXT: [{'content': 'ancestor fact', 'type': 'fact'}]\n\n### BLOCK 4: THE SIGNAL (SITUATIONAL -- THIS TURN ONLY)\nGATEKEEPER WHISPER: Gate GREEN.\nCHAT WHISPER: Confirm audience.\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    }
+  ]
+}
