@@ -44,9 +44,16 @@ MUTATIONS = {
     "t2_empty_matches_empty": ("token", "empty-env guard removed (empty header == empty env authorizes)"),
     "t3_gate_ignored": ("token", "everything authorized regardless of header (flag honoured with no token)"),
     "t4_token_echoed_in_response": ("token", "attach_capture echoes the env token into a declared response field (kernel_version.revision)"),
-    "t5_plain_equality": ("token", "token compared with == instead of hmac.compare_digest"),
+    "t5_plain_equality": ("token", "token compared with == so hmac.compare_digest is no longer what runs (an invocation-spy check, not a timing test)"),
     "t6_token_printed": ("token", "token check prints the presented token to stdout (a log leak)"),
     "t7_unset_env_authorizes": ("token", "fail-open: an unset env var authorizes any request"),
+    "t8_env_not_stripped": ("token", "env value is not stripped (a Secret Manager trailing newline breaks the match)"),
+    "t9_no_min_length": ("token", "minimum token length removed (a 15-character token is accepted)"),
+    "t10_presented_not_stripped": ("token", "presented header value is not stripped"),
+    "t11_authorization_never_reset": ("token", "capture_gate never removes the authorization when the request ends"),
+    "t12_non_ascii_token_accepted": ("token", "the visible-ASCII requirement on the configured token is removed entirely"),
+    "t14_interior_space_allowed": ("token", "looser rule: isascii() and isprintable() (allows an interior space) instead of visible ASCII 0x21-0x7e"),
+    "t13_reset_without_fallback": ("token", "reset_capture_authorized has no deny-fallback for a token from another context"),
 }
 
 
@@ -148,30 +155,50 @@ def apply(name):
                 e["segments"] = []
             return e
         cap.CallCapture._entry = entry
-    elif name in ("t1_gate_always_authorizes", "t2_empty_matches_empty", "t5_plain_equality", "t6_token_printed", "t7_unset_env_authorizes"):
+    elif name in ("t1_gate_always_authorizes", "t2_empty_matches_empty", "t5_plain_equality", "t6_token_printed", "t7_unset_env_authorizes", "t8_env_not_stripped", "t9_no_min_length", "t10_presented_not_stripped", "t12_non_ascii_token_accepted", "t14_interior_space_allowed"):
         import hmac as _hmac, os as _os
         import main
         def make(kind):
             def valid(presented):
-                expected = _os.environ.get("KERNEL_CAPTURE_TOKEN") or ""
+                raw_env = _os.environ.get("KERNEL_CAPTURE_TOKEN") or ""
+                expected = raw_env if kind == "t8_env_not_stripped" else raw_env.strip()
+                pres = str(presented) if (presented and kind == "t10_presented_not_stripped") else (str(presented).strip() if presented else "")
+                min_len = 1 if kind == "t9_no_min_length" else 16
                 if kind == "t1_gate_always_authorizes":
                     return True
                 if kind == "t2_empty_matches_empty":
-                    return _hmac.compare_digest((presented or "").encode(), expected.encode())
-                if kind == "t5_plain_equality":
-                    return bool(expected) and bool(presented) and presented == expected
+                    if expected != "" and len(expected) < 16:
+                        return False
+                    return _hmac.compare_digest(pres.encode(), expected.encode())
                 if kind == "t6_token_printed":
                     print(f"presented={presented}")
-                    return bool(expected) and bool(presented) and _hmac.compare_digest(str(presented).encode(), expected.encode())
-                if kind == "t7_unset_env_authorizes":
-                    if "KERNEL_CAPTURE_TOKEN" not in _os.environ:
-                        return True
-                    return bool(expected) and bool(presented) and _hmac.compare_digest(str(presented).encode(), expected.encode())
+                if kind == "t7_unset_env_authorizes" and "KERNEL_CAPTURE_TOKEN" not in _os.environ:
+                    return True
+                if len(expected) < min_len or not pres:
+                    return False
+                if kind == "t14_interior_space_allowed":
+                    if not expected.isascii() or not expected.isprintable():
+                        return False
+                elif kind != "t12_non_ascii_token_accepted" and not all(0x21 <= ord(ch) <= 0x7E for ch in expected):
+                    return False
+                if kind == "t5_plain_equality":
+                    return pres == expected
+                return _hmac.compare_digest(pres.encode(), expected.encode())
             return valid
         cap.capture_token_valid = make(name)
         main.capture_token_valid = cap.capture_token_valid
         if name == "t5_plain_equality":
             cap.hmac = type("H", (), {"compare_digest": staticmethod(lambda a, b: a == b)})
+    elif name == "t11_authorization_never_reset":
+        import main
+        cap.reset_capture_authorized = lambda token: None
+        main.reset_capture_authorized = cap.reset_capture_authorized
+    elif name == "t13_reset_without_fallback":
+        import main
+        def strict_reset(token):
+            cap._AUTHORIZED.reset(token)
+        cap.reset_capture_authorized = strict_reset
+        main.reset_capture_authorized = strict_reset
     elif name == "t3_gate_ignored":
         import main
         cap._AUTHORIZED = contextvars_default_true()

@@ -7,6 +7,7 @@ missing or wrong token is ignored silently, so the response is IDENTICAL to a
 request that never asked for capture; the token never appears in any response,
 capture, log line or error body.
 """
+import contextvars
 import io
 import json
 import logging
@@ -135,7 +136,19 @@ check("[unit] empty presented is invalid", valid("", TOKEN) is False, "")
 check("[unit] env unset is invalid even with a token presented", valid(TOKEN, None) is False, "")
 check("[unit] env empty is invalid even with a token presented", valid(TOKEN, "") is False, "")
 check("[unit] env empty and presented empty do NOT match (fail closed)", valid("", "") is False, "")
-check("[unit] non-ASCII token works (encoded before compare, no TypeError)", valid("töken-\U0001F600", "töken-\U0001F600") is True and valid("töken-\U0001F600", "token") is False, "")
+NON_ASCII = "töken-\U0001F600-日本語-abcdef"
+check("[ascii] a non-ASCII configured token is treated as unset: it never authorizes, even with the identical header (Starlette decodes headers as latin-1, so it could never match over HTTP)",
+      valid(NON_ASCII, NON_ASCII) is False and valid(NON_ASCII.encode("utf-8").decode("latin-1"), NON_ASCII) is False, "")
+SYMBOLS = "aB3$%^&*()_+-=[]{};:,.<>?/~!@#0123456789"
+check("[ascii] a printable-ASCII token with symbols is fine", valid(SYMBOLS, SYMBOLS) is True, "")
+check("[ascii] a configured token with an INTERIOR space is treated as unset (visible ASCII 0x21-0x7e only, same as Backend)",
+      valid("abcdefgh ijklmnop-0123", "abcdefgh ijklmnop-0123") is False and valid("abcdefgh ijklmnop-0123", TOKEN) is False, "")
+check("[ascii] interior tab, newline or carriage return also make the configured token unset",
+      valid("abcdefgh\tijklmnop-0123", "abcdefgh\tijklmnop-0123") is False and valid("abcdefgh\nijklmnop-0123", "abcdefgh\nijklmnop-0123") is False and valid("abcdefgh\rijklmnop-0123", "abcdefgh\rijklmnop-0123") is False, "")
+check("[ascii] the boundary characters 0x21 (!) and 0x7e (~) are allowed; 0x20 (space) and 0x7f (DEL) are not",
+      valid("!" * 16, "!" * 16) is True and valid("~" * 16, "~" * 16) is True and valid("a" * 15 + " ", "a" * 15 + " ") is False and valid("a" * 8 + " " + "a" * 8, "a" * 8 + " " + "a" * 8) is False and valid("a" * 15 + "\x7f", "a" * 15 + "\x7f") is False, "")
+check("[ascii] a configured token containing a control character is treated as unset", valid("tok\x01en-0123456789abcdef", "tok\x01en-0123456789abcdef") is False and valid("tok\ten-0123456789abcdef", "tok\ten-0123456789abcdef") is False, "")
+check("[ascii] a configured token containing DEL (0x7f) is treated as unset (a NUL cannot exist in a real env var; the OS rejects it)", valid("tok\x7fen-0123456789abcdef", "tok\x7fen-0123456789abcdef") is False, "")
 check("[unit] very long token works", valid("x" * 100000, "x" * 100000) is True, "")
 
 calls = []
@@ -146,7 +159,114 @@ with patch.object(capture_mod.hmac, "compare_digest", side_effect=lambda a, b: c
     n_with_env = len(calls)
     valid(TOKEN, None)
     valid(TOKEN, "")
-check("[unit] comparison goes through hmac.compare_digest (constant time), and is skipped when env is unset/empty", n_with_env == 2 and len(calls) == 2, (n_with_env, len(calls)))
+check("[unit] hmac.compare_digest is what runs (an invocation spy, not a timing test), and it is skipped when the env is unset/empty", n_with_env == 2 and len(calls) == 2, (n_with_env, len(calls)))
+
+# --- whitespace stripping (Secret Manager values carry a trailing newline; an HTTP header cannot)
+for label_, env_val in (("trailing \\n", TOKEN + "\n"), ("trailing \\r\\n", TOKEN + "\r\n"), ("leading and trailing whitespace", "  " + TOKEN + " \t\n"), ("several trailing newlines", TOKEN + "\n\n")):
+    check(f"[strip] env value with {label_} + the stripped header value -> valid", valid(TOKEN, env_val) is True, repr(env_val))
+check("[strip] the presented value is stripped the same way (trailing newline on the header side)", valid(TOKEN + "\n", TOKEN) is True and valid("  " + TOKEN + "  ", TOKEN + "\n") is True, "")
+check("[strip] stripping is only for the ends: interior whitespace still has to match", valid(TOKEN[:5] + " " + TOKEN[5:], TOKEN) is False and valid(TOKEN, TOKEN[:5] + " " + TOKEN[5:]) is False, "")
+check("[strip] a wrong token is still wrong when the env has a trailing newline", valid(WRONG_SAME_LEN, TOKEN + "\n") is False, "")
+check("[strip] a whitespace-only env value is treated as unset (never authorizes)", valid("   ", "  \n") is False and valid(TOKEN, "  \n\t") is False, "")
+check("[strip] a whitespace-only presented value is not valid", valid("  \n", TOKEN) is False, "")
+
+# --- minimum length: a configured token shorter than 16 after stripping fails closed
+from core.capture import MIN_TOKEN_LENGTH  # noqa: E402
+check("[min-length] the minimum is 16", MIN_TOKEN_LENGTH == 16, MIN_TOKEN_LENGTH)
+t15, t16 = "a" * 15, "a" * 16
+check("[min-length] a 15-character token never authorizes, even with a matching header", valid(t15, t15) is False, "")
+check("[min-length] a 16-character token authorizes with a matching header (boundary)", valid(t16, t16) is True, "")
+check("[min-length] length is measured AFTER stripping: 16 chars + newline is valid, 15 chars + newline is not", valid(t16, t16 + "\n") is True and valid(t15, t15 + "\n") is False, "")
+check("[min-length] padding a short token with whitespace does not get past the minimum", valid("short", "short" + " " * 30) is False and valid("short", " " * 30 + "short") is False, "")
+check("[min-length] a short token does not authorize a longer-prefix header either", valid(t16, t15) is False, "")
+
+# --- over HTTP: a trailing-newline env value (as Secret Manager delivers it) with the stripped header
+for path_, body_ in (("/kernel/agents/run_turn", ENDPOINTS["/kernel/agents/run_turn"]), ("/kernel/functions/assess_coverage", ENDPOINTS["/kernel/functions/assess_coverage"]), ("/kernel/invoke", ENDPOINTS["/kernel/invoke"])):
+    baseline_ = post(path_, body_)
+    with_nl = post(path_, with_flag(body_), AUTH, env=TOKEN + "\n")
+    check(f"{path_}: env value with a trailing newline + the stripped header -> capture honoured", bool(with_nl.json().get("calls")), with_nl.text[:150])
+    short_env = "s3cret-15-chars"
+    short = post(path_, with_flag(body_), {CAPTURE_TOKEN_HEADER: short_env}, env=short_env + "\n")
+    check(f"{path_}: a 15-character configured token (matching header) -> ignored, response identical to a request that never asked",
+          len(short_env) == 15 and short.status_code == baseline_.status_code and short.json() == baseline_.json() and short.json().get("calls") is None, short.text[:150])
+
+# --- (ASCII, over HTTP) a non-ASCII configured token fails closed, visibly identical to "never asked"
+NON_ASCII_ENV = "töken-日本語-0123456789abcdef"
+for path_, body_ in (("/kernel/agents/run_turn", ENDPOINTS["/kernel/agents/run_turn"]), ("/kernel/invoke", ENDPOINTS["/kernel/invoke"])):
+    baseline_ = post(path_, body_)
+    for how, header_value in (("UTF-8 bytes", NON_ASCII_ENV.encode("utf-8")), ("latin-1 decoded text", NON_ASCII_ENV.encode("utf-8").decode("latin-1").encode("latin-1"))):
+        r_ = post(path_, with_flag(body_), {CAPTURE_TOKEN_HEADER: header_value}, env=NON_ASCII_ENV)
+        check(f"{path_}: non-ASCII configured token, header sent as {how} -> fails closed, response identical to a request that never asked",
+              r_.status_code == baseline_.status_code and r_.json() == baseline_.json() and r_.json().get("calls") is None, r_.text[:150])
+space_env = "abcdefgh ijklmnop-0123456789"
+sp_ = post("/kernel/agents/run_turn", with_flag(ENDPOINTS["/kernel/agents/run_turn"]), {CAPTURE_TOKEN_HEADER: space_env}, env=space_env)
+sp_base = post("/kernel/agents/run_turn", ENDPOINTS["/kernel/agents/run_turn"])
+check("/kernel/agents/run_turn: a configured token with an interior space (matching header) -> fails closed, response identical to a request that never asked",
+      sp_.status_code == sp_base.status_code and sp_.json() == sp_base.json() and sp_.json().get("calls") is None, sp_.text[:150])
+symbol_token = "Tk-aB3$%^&*_+~.abcdefgh"
+sym_ = post("/kernel/agents/run_turn", with_flag(ENDPOINTS["/kernel/agents/run_turn"]), {CAPTURE_TOKEN_HEADER: symbol_token}, env=symbol_token)
+check("[ascii] over HTTP a printable-ASCII token with symbols is honoured", bool(sym_.json().get("calls")), sym_.text[:150])
+
+# --- (duplicate headers) Starlette's headers.get returns the FIRST value; pin that behaviour
+dup_path, dup_body = "/kernel/agents/run_turn", ENDPOINTS["/kernel/agents/run_turn"]
+r_wc = post(dup_path, with_flag(dup_body), [(CAPTURE_TOKEN_HEADER, WRONG_SAME_LEN), (CAPTURE_TOKEN_HEADER, TOKEN)])
+r_cw = post(dup_path, with_flag(dup_body), [(CAPTURE_TOKEN_HEADER, TOKEN), (CAPTURE_TOKEN_HEADER, WRONG_SAME_LEN)])
+check("[duplicate headers] [wrong, correct]: the first value wins, so NOT honoured", r_wc.json().get("calls") is None, r_wc.text[:120])
+check("[duplicate headers] [correct, wrong]: the first value wins, so honoured", bool(r_cw.json().get("calls")), r_cw.text[:120])
+
+# --- (scope) the authorization is removed when the request ends, on success, on error, and even from another context
+import asyncio  # noqa: E402
+from core.capture import _AUTHORIZED, reset_capture_authorized  # noqa: E402
+
+
+class _FakeRequest:
+    def __init__(self, value):
+        self.headers = {CAPTURE_TOKEN_HEADER: value} if value is not None else {}
+
+
+async def gate_lifecycle(header_value, raise_inside=False):
+    with patch.dict(os.environ, {CAPTURE_TOKEN_ENV: TOKEN}):
+        gen = main.capture_gate(_FakeRequest(header_value))
+        await gen.__anext__()
+        inside = _AUTHORIZED.get()
+        try:
+            if raise_inside:
+                await gen.athrow(RuntimeError("request body failed"))
+            else:
+                await gen.__anext__()
+        except (StopAsyncIteration, RuntimeError):
+            pass
+    return inside, _AUTHORIZED.get()
+
+
+ok_in, ok_after = asyncio.run(gate_lifecycle(TOKEN))
+bad_in, bad_after = asyncio.run(gate_lifecycle(WRONG_SAME_LEN))
+err_in, err_after = asyncio.run(gate_lifecycle(TOKEN, raise_inside=True))
+check("[scope] gate: authorized while the request runs, and the flag is False again after it ends", ok_in is True and ok_after is False, (ok_in, ok_after))
+check("[scope] gate: a wrong token is never authorized, and the flag stays False after", bad_in is False and bad_after is False, (bad_in, bad_after))
+check("[scope] gate: the flag is False after the request even when the request body raised", err_in is True and err_after is False, (err_in, err_after))
+
+foreign = contextvars.Context().run(lambda: _AUTHORIZED.set(True))
+_AUTHORIZED.set(True)
+reset_capture_authorized(foreign)
+check("[scope] a token that cannot be reset (from another context) falls back to DENY, never leaving the flag set", _AUTHORIZED.get() is False, _AUTHORIZED.get())
+
+from fastapi import Depends, FastAPI  # noqa: E402
+probe_app = FastAPI(dependencies=[Depends(main.capture_gate)])
+
+
+@probe_app.get("/probe")
+async def probe():
+    return {"authorized": _AUTHORIZED.get()}
+
+
+probe_client = TestClient(probe_app)
+with patch.dict(os.environ, {CAPTURE_TOKEN_ENV: TOKEN}):
+    p_good = probe_client.get("/probe", headers=AUTH).json()["authorized"]
+    p_bad = probe_client.get("/probe", headers={CAPTURE_TOKEN_HEADER: WRONG_SAME_LEN}).json()["authorized"]
+    p_none = probe_client.get("/probe").json()["authorized"]
+check("[scope] inside a real request the gate authorizes only the right token", p_good is True and p_bad is False and p_none is False, (p_good, p_bad, p_none))
+check("[scope] the test process's own context was never authorized by those requests", _AUTHORIZED.get() is False, _AUTHORIZED.get())
 
 # primitive: default deny without the gate
 from core.capture import set_capture_authorized  # noqa: E402

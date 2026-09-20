@@ -58,20 +58,47 @@ _CAPTURE = contextvars.ContextVar("kernel_capture", default=None)
 # A missing/wrong token is ignored silently (flag treated as false, no error,
 # nothing logged or echoed). The token, the header and the env value must never
 # be logged, returned or placed in a capture.
+# Both sides are stripped of surrounding whitespace before the compare (Secret
+# Manager values often carry a trailing newline, and an HTTP header cannot), and
+# a configured token shorter than MIN_TOKEN_LENGTH after stripping is treated as
+# unset: fail closed rather than run with a guessable secret. MIN_TOKEN_LENGTH is
+# a length floor only, not a measure of entropy; the secret must still be random.
+# After stripping, every character of a configured token must be in 0x21-0x7e
+# (visible ASCII: no interior whitespace, no control characters, no non-ASCII).
+# This is the same rule Backend applies to the token it sends. Starlette decodes
+# header bytes as latin-1, so a non-ASCII token could never match over HTTP; a
+# token outside the range is treated as unset (fail closed) instead of silently
+# never working.
 CAPTURE_TOKEN_HEADER = "X-Kernel-Capture-Token"
 CAPTURE_TOKEN_ENV = "KERNEL_CAPTURE_TOKEN"
+MIN_TOKEN_LENGTH = 16
 _AUTHORIZED = contextvars.ContextVar("kernel_capture_authorized", default=False)
 
 
+def _visible_ascii(text):
+    return all(0x21 <= ord(ch) <= 0x7E for ch in text)
+
+
 def capture_token_valid(presented):
-    expected = os.environ.get(CAPTURE_TOKEN_ENV) or ""
-    if not expected or not presented:
+    expected = (os.environ.get(CAPTURE_TOKEN_ENV) or "").strip()
+    if len(expected) < MIN_TOKEN_LENGTH or not _visible_ascii(expected) or not presented:
         return False
-    return hmac.compare_digest(str(presented).encode("utf-8"), expected.encode("utf-8"))
+    return hmac.compare_digest(str(presented).strip().encode("utf-8"), expected.encode("utf-8"))
 
 
 def set_capture_authorized(authorized):
-    _AUTHORIZED.set(bool(authorized))
+    """Returns the ContextVar token so the caller can end the authorization
+    with reset_capture_authorized when its request scope ends."""
+    return _AUTHORIZED.set(bool(authorized))
+
+
+def reset_capture_authorized(token):
+    """Ends an authorization. If the token cannot be reset (a different
+    context), fall back to denying: never leave the flag set."""
+    try:
+        _AUTHORIZED.reset(token)
+    except (ValueError, RuntimeError, TypeError):
+        _AUTHORIZED.set(False)
 
 
 def current_capture():

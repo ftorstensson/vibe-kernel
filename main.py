@@ -23,18 +23,24 @@ from core.ignition import confirm_launch_intent
 from core.composition import compose_function_identity, compose_agent_identity
 from core.map_summary import summarize_for_map
 from core.strike_launch import execute_strike_team_launch
-from core.capture import capture_calls, attach_capture, capture_token_valid, set_capture_authorized, CAPTURE_TOKEN_HEADER
+from core.capture import capture_calls, attach_capture, capture_token_valid, set_capture_authorized, reset_capture_authorized, CAPTURE_TOKEN_HEADER
 from pods.social.engine import SocialEngine
 import uvicorn
 import os
 
 async def capture_gate(request: Request):
     """Decides, once per request, whether include_briefing may be honoured
-    (see core/capture.py). Any failure means not authorized."""
+    (see core/capture.py). Any failure means not authorized. The authorization
+    is removed again when the request ends, so it can never outlive the
+    request that earned it."""
     try:
-        set_capture_authorized(capture_token_valid(request.headers.get(CAPTURE_TOKEN_HEADER)))
+        token = set_capture_authorized(capture_token_valid(request.headers.get(CAPTURE_TOKEN_HEADER)))
     except Exception:
-        set_capture_authorized(False)
+        token = set_capture_authorized(False)
+    try:
+        yield
+    finally:
+        reset_capture_authorized(token)
 
 
 app = FastAPI(title="Vibe Kernel: Sovereign Cartography v21.1", dependencies=[Depends(capture_gate)])
