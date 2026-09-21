@@ -143,6 +143,20 @@ for label, exc, category, retryable in ERROR_CASES:
     check(f"T4 {label}: status error, output null, category {category}", body["status"] == "error" and body["output"] is None and err.get("type") == category, body)
     check(f"T4 {label}: retryable {retryable}", err.get("retryable") is retryable, err)
 
+# the provider's status decides when the litellm class is generic (real Vertex 403 arrives as a BadRequestError)
+for status, category, retryable in ((403, "provider_auth", False), (401, "provider_auth", False), (404, "model_not_found", False), (429, "rate_limited", True), (503, "provider_unavailable", True), (400, "bad_request", False)):
+    exc = mk(litellm.exceptions.BadRequestError)
+    exc.status_code = status
+    body = one_call(exc, name=f"BadRequestError carrying status {status}")
+    check(f"T4 a BadRequestError with provider status {status} is category {category} (retryable {retryable}), status kept", body["error"]["type"] == category and body["error"]["retryable"] is retryable and body["error"]["provider_status"] == status, body["error"])
+exc = litellm.exceptions.APIError(status_code=502, message="raw", llm_provider="vertex_ai", model="m")
+body = one_call(exc, name="APIError carrying status 502")
+check("T4 a generic APIError with provider status 502 is provider_unavailable", body["error"]["type"] == "provider_unavailable" and body["error"]["provider_status"] == 502, body["error"])
+exc = mk(litellm.exceptions.ContentPolicyViolationError)
+exc.status_code = 403
+body = one_call(exc, name="ContentPolicyViolationError carrying status 403")
+check("T4 a specific class is NOT overridden by status (content policy stays content_blocked)", body["error"]["type"] == "content_blocked", body["error"])
+
 # a timeout: Kernel's own wall-clock limit (fake sleeps past timeout_s)
 async def slow(kw):
     await asyncio.sleep(5)

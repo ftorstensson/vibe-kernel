@@ -52,6 +52,12 @@ _ORDERED = tuple((cls, category) for name, category in _ORDERED_NAMES
                  if isinstance(cls := getattr(litellm.exceptions, name, None), type))
 
 
+_GENERIC_STATUS = {
+    401: "provider_auth", 403: "provider_auth", 404: "model_not_found", 408: "timeout", 429: "rate_limited",
+    500: "provider_unavailable", 502: "provider_unavailable", 503: "provider_unavailable", 504: "provider_unavailable",
+}
+
+
 def classify(exc):
     """(category, provider_status) for an exception raised by the model call."""
     if isinstance(exc, (asyncio.TimeoutError, TimeoutError)):
@@ -59,10 +65,17 @@ def classify(exc):
     status = getattr(exc, "status_code", None)
     if type(status) is not int:
         status = None
-    for cls, category in _ORDERED:
+    category = "provider_error"
+    for cls, matched in _ORDERED:
         if isinstance(exc, cls):
-            return category, status
-    return "provider_error", status
+            category = matched
+            break
+    # The class is not always specific: real Vertex answers a 403 (permission
+    # denied on the project) as a litellm.BadRequestError, observed 2026-09-21.
+    # For the two generic categories the provider's own status decides.
+    if category in ("bad_request", "provider_error") and status in _GENERIC_STATUS:
+        category = _GENERIC_STATUS[status]
+    return category, status
 
 
 def error_object(category, provider_status):

@@ -51,6 +51,8 @@ MUTANTS = [
     ("a generic message is wrong (timeout wording)", "executor/errors.py", '"The model call timed out."', '"Timed out."'),
     ("provider_auth treated as retryable", "executor/errors.py", '"provider_auth": (False,', '"provider_auth": (True,'),
     ("content policy error classified as bad_request", "executor/errors.py", "    (litellm.exceptions.ContentPolicyViolationError, \"content_blocked\"),\n", ""),
+    ("the provider status no longer refines a generic BadRequestError", "executor/errors.py", 'if category in ("bad_request", "provider_error") and status in _GENERIC_STATUS:', "if False:"),
+    ("a specific class is overridden by the status", "executor/errors.py", 'if category in ("bad_request", "provider_error") and status in _GENERIC_STATUS:', "if status in _GENERIC_STATUS:"),
     ("timeout classified as provider_unavailable", "executor/errors.py", "    (litellm.exceptions.Timeout, \"timeout\"),\n", ""),
     ("the auth token is compared with ==", "executor/auth.py", "return hmac.compare_digest(presented.encode(\"latin-1\"), expected.encode(\"utf-8\"))", "return presented == expected"),
     ("auth accepts an unconfigured server", "executor/auth.py", "    if expected is None or not presented:\n        return False", "    if expected is None:\n        return True\n    if not presented:\n        return False"),
