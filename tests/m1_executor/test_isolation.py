@@ -80,4 +80,25 @@ with fake_model() as fake:
     post(client, same)
     check("T6c the same Briefing (same attempt_id) sent twice makes two model calls", len(fake.calls) == 2, len(fake.calls))
 
+# ---- (d) deployment guards
+dockerfile = open(os.path.join(ROOT, "Dockerfile")).read()
+check("T6d the Dockerfile copies the executor package into the image (without it Kernel fails at import)", re.search(r"^COPY executor/ executor/$", dockerfile, re.M) is not None, dockerfile)
+imports = re.findall(r"^(?:from|import) (\w+)", open(os.path.join(ROOT, "main.py")).read(), re.M)
+local_pkgs = {d for d in os.listdir(ROOT) if os.path.isdir(os.path.join(ROOT, d)) and os.path.exists(os.path.join(ROOT, d, "__init__.py"))}
+missing = sorted(p for p in set(imports) & local_pkgs if not re.search(rf"^COPY {p}/ {p}/$", dockerfile, re.M))
+check("T6d every local package main.py imports is COPYed by the Dockerfile", missing == [], missing)
+import litellm  # noqa: E402
+from unittest.mock import patch as _patch  # noqa: E402
+import importlib  # noqa: E402
+import executor.errors as _errors  # noqa: E402
+_saved = litellm.exceptions.BadGatewayError
+try:
+    del litellm.exceptions.BadGatewayError
+    _reloaded = importlib.reload(_errors)
+    check("T6d a litellm release without one of the exception classes does not stop executor.errors from importing (it falls through)", len(_reloaded._ORDERED) == len(_reloaded._ORDERED_NAMES) - 1, len(_reloaded._ORDERED))
+    check("T6d ...and an unknown exception is still classified provider_error", _reloaded.classify(ValueError("x"))[0] == "provider_error", "")
+finally:
+    litellm.exceptions.BadGatewayError = _saved
+    importlib.reload(_errors)
+
 sys.exit(report("T6 the executor composes nothing"))

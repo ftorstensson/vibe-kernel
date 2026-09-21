@@ -30,21 +30,26 @@ CATEGORIES = {
 
 # Subclasses first: in litellm, ContextWindowExceededError and
 # ContentPolicyViolationError are BadRequestErrors, and Timeout is an
-# APITimeoutError / APIConnectionError.
-_ORDERED = (
-    (litellm.exceptions.Timeout, "timeout"),
-    (litellm.exceptions.ContextWindowExceededError, "context_too_long"),
-    (litellm.exceptions.ContentPolicyViolationError, "content_blocked"),
-    (litellm.exceptions.NotFoundError, "model_not_found"),
-    (litellm.exceptions.BadRequestError, "bad_request"),
-    (litellm.exceptions.RateLimitError, "rate_limited"),
-    (litellm.exceptions.AuthenticationError, "provider_auth"),
-    (litellm.exceptions.PermissionDeniedError, "provider_auth"),
-    (litellm.exceptions.ServiceUnavailableError, "provider_unavailable"),
-    (litellm.exceptions.InternalServerError, "provider_unavailable"),
-    (litellm.exceptions.BadGatewayError, "provider_unavailable"),
-    (litellm.exceptions.APIConnectionError, "provider_unavailable"),
+# APITimeoutError / APIConnectionError. Names are looked up defensively (a
+# litellm release that renames or drops one must not stop Kernel from
+# starting: requirements.txt does not pin litellm); a missing class simply
+# falls through to the next rule and finally to provider_error.
+_ORDERED_NAMES = (
+    ("Timeout", "timeout"),
+    ("ContextWindowExceededError", "context_too_long"),
+    ("ContentPolicyViolationError", "content_blocked"),
+    ("NotFoundError", "model_not_found"),
+    ("BadRequestError", "bad_request"),
+    ("RateLimitError", "rate_limited"),
+    ("AuthenticationError", "provider_auth"),
+    ("PermissionDeniedError", "provider_auth"),
+    ("ServiceUnavailableError", "provider_unavailable"),
+    ("InternalServerError", "provider_unavailable"),
+    ("BadGatewayError", "provider_unavailable"),
+    ("APIConnectionError", "provider_unavailable"),
 )
+_ORDERED = tuple((cls, category) for name, category in _ORDERED_NAMES
+                 if isinstance(cls := getattr(litellm.exceptions, name, None), type))
 
 
 def classify(exc):

@@ -14,6 +14,7 @@ COPY pods/ pods/
 COPY registry/ registry/
 COPY schema/ schema/
 COPY utils/ utils/
+COPY executor/ executor/
 COPY Brain/ Brain/
 COPY main.py .
 
