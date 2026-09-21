@@ -25,6 +25,7 @@ from core.map_summary import summarize_for_map
 from core.strike_launch import execute_strike_team_launch
 from core.capture import capture_calls, attach_capture, capture_token_valid, set_capture_authorized, reset_capture_authorized, CAPTURE_TOKEN_HEADER
 from pods.social.engine import SocialEngine
+from executor.routes import router as executor_router
 import uvicorn
 import os
 
@@ -44,6 +45,11 @@ async def capture_gate(request: Request):
 
 
 app = FastAPI(title="Vibe Kernel: Sovereign Cartography v21.1", dependencies=[Depends(capture_gate)])
+
+# Milestone 1 executor (docs/m0/C1, K1): POST /kernel/execute, GET /kernel/capabilities,
+# GET /kernel/health. Self-contained package; the legacy routes below are untouched
+# and stay until the M1b cutover.
+app.include_router(executor_router)
 
 # Stateless executor: given a complete input, Kernel composes/calls the
 # model/returns a result -- it never reaches into Firestore for its own
