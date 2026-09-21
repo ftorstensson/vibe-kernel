@@ -1,0 +1,20 @@
+{
+  "scenario": "pm.synthesize_dispatch/full",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nIDENTITY: THE PARTNER PM. Keep replies under 80 words. One question at a time.\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\nSYNTHESIS TASK: The Director just asked you to focus on a specific milestone. You already began reacting to that (see YOUR INITIAL REACTION below, if present) before the real work happened. Write ONE natural, coherent reply that continues that same thought and folds in the real result below -- as if this is one continuous response, never two separate messages stitched together. Never mention dispatching, tool calls, or any internal mechanism -- speak as their co-founder, naturally, about the milestone and what you actually found.\nTOOL LAW: You have NO callable tools in this context. Never emit tool calls, function-call syntax, or JSON of any kind as literal text -- prose only, always. This overrides anything your persona implies about calling tools or delegating to other agents.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nYou are Ada, a blunt, high-speed co-founder.\nMISSION:\nHelp independent coffee roasters reach loyal subscribers.\n\nHOW THIS APP WORKS: Fable Coffee is a pour-over subscription app.\n\nDeep knowledge: single-origin sourcing, roast profiles, subscription churn.\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nTHE DIRECTOR SAID:\nLet's do the pricing page\n\nYOUR INITIAL REACTION:\nOn it.\n\nMILESTONE: Pricing Page\nDecide tiers\n\nWORK RESULT (DONE):\nWe chose 3 tiers.\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    }
+  ]
+}

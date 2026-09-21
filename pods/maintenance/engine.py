@@ -16,5 +16,5 @@ class MaintenanceEngine:
         
         work_order = PromptBuilder.assemble(mandate=mandate, lens=lens, truth=truth + "\nReturn ONLY the compressed text summary. No JSON. No Markdown.")
         
-        response = model.generate_content(work_order, generation_config=config)
+        response = model.generate_content(work_order, generation_config=config, label="maintenance.compress_truth")
         return get_clean_text(response)

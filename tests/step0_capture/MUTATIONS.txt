@@ -1,0 +1,155 @@
+Step 0 mutation evidence: every mutation must be DETECTED (suite fails); controls must PASS.
+
+PASS (no failures)   control_goldens  [goldens]  no mutation (must PASS)
+                       230 checks, ALL PASS
+PASS (no failures)   control_capture  [capture]  no mutation (must PASS)
+                       999 checks, ALL PASS
+DETECTED             g1_prompt_heading  [goldens]  PromptBuilder heading 'THE MANDATE' -> 'THE MANDATE.' (+1 char in every PromptBuilder prompt)
+                       failing checks: 52; distinct scenarios/areas: 52
+                       e.g. [FAIL] pm.run_turn/base: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/physics_open: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/kaiser: requests byte-identical to golden (order-sensitive)
+DETECTED             g2_tool_description  [goldens]  REPLY_TOOL description +2 chars
+                       failing checks: 8; distinct scenarios/areas: 8
+                       e.g. [FAIL] pm.run_global_turn_answer/default: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_global_turn_answer/reply_only: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_global_turn_answer/reply_completion: requests byte-identical to golden (order-sensitive)
+DETECTED             g3_reasoning_effort_dropped  [goldens]  build_request omits reasoning_effort
+                       failing checks: 56; distinct scenarios/areas: 56
+                       e.g. [FAIL] pm.run_turn/base: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/physics_open: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/kaiser: requests byte-identical to golden (order-sensitive)
+DETECTED             g4_pm_temperature  [goldens]  PM temperature 0.4 -> 0.5
+                       failing checks: 44; distinct scenarios/areas: 44
+                       e.g. [FAIL] pm.run_turn/base: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/physics_open: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/kaiser: requests byte-identical to golden (order-sensitive)
+DETECTED             g5_reconcile_mandate_word  [goldens]  one word changed inside the hardcoded reconcile mandate
+                       failing checks: 9; distinct scenarios/areas: 9
+                       e.g. [FAIL] chat_manager.reconcile_fact/existing_and_new: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] chat_manager.build_chat_summary/extract_then_reconcile_per_fact: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] process_turn/gatekeeper_keymaster_real_turns/turn_1: requests byte-identical to golden (order-sensitive)
+DETECTED             g6_dispatch_tool_law  [goldens]  DISPATCH_TOOL_LAW +2 chars
+                       failing checks: 5; distinct scenarios/areas: 5
+                       e.g. [FAIL] pm.run_global_turn/with_project_map: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_global_turn/chat_whisper_and_protocol: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_global_turn/compiled_l1_l3: requests byte-identical to golden (order-sensitive)
+DETECTED             g7_vertex_location  [goldens]  vertex_location us-central1 -> us-east5
+                       failing checks: 57; distinct scenarios/areas: 57
+                       e.g. [FAIL] pm.run_turn/base: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/physics_open: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/kaiser: requests byte-identical to golden (order-sensitive)
+DETECTED             g8_schema_property_order  [goldens]  COVERAGE_SCHEMA properties re-ordered (same keys, different order)
+                       failing checks: 7; distinct scenarios/areas: 7
+                       e.g. [FAIL] gatekeeper.assess_coverage/default_schema: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] gatekeeper.assess_coverage/custom_shape_no_facts: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] process_turn/gatekeeper_keymaster_real_turns/turn_1: requests byte-identical to golden (order-sensitive)
+DETECTED             g9_l1_trailing_space  [goldens]  compose_l1_lines output gains a trailing space (PM prompts only)
+                       failing checks: 33; distinct scenarios/areas: 33
+                       e.g. [FAIL] pm.run_turn/base: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/physics_open: requests byte-identical to golden (order-sensitive)
+                       e.g. [FAIL] pm.run_turn/kaiser: requests byte-identical to golden (order-sensitive)
+DETECTED             c1_second_copy  [capture]  generate_content sends a modified COPY of build_request's dict (temperature 0.123)
+                       failing checks: 163; distinct scenarios/areas: 58
+                       e.g. [FAIL] pm.run_turn/base: [no second copy] one build_request per completion, identical dicts -- builder=1 completion=1
+                       e.g. [FAIL] pm.run_turn/base: [transparent] requests sent WITH capture on are byte-identical to the goldens -- capture changed what was sent
+                       e.g. [FAIL] pm.run_turn/base: [faithful] every entry field equals the request litellm received, in order -- field mismatch
+DETECTED             c2_segment_offset  [capture]  every segment start is off by one
+                       failing checks: 180; distinct scenarios/areas: 82
+                       e.g. [FAIL] pm.run_turn/base/pm.run_turn: [segments] every uncovered range is exactly template scaffolding (gap rule) -- (['\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nI', '
+                       e.g. [FAIL] pm.run_turn/base/pm.run_turn: [segments] every segment's bytes is the UTF-8 size of its block -- [(446, 445), (255, 254), (282, 281)]
+                       e.g. [FAIL] pm.run_turn/physics_open/pm.run_turn: [segments] every uncovered range is exactly template scaffolding (gap rule) -- (['\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW
+DETECTED             c3_thread_context  [capture]  collector stored thread-locally instead of in a ContextVar
+                       failing checks: 12; distinct scenarios/areas: 8
+                       e.g. [FAIL] strike.run_industrial_strike/two_specialists: [faithful] one captured entry per model call (10) -- 4 vs 10
+                       e.g. [FAIL] strike.run_industrial_strike/two_specialists: [faithful] entry prompts equal received prompts (order-insensitive) -- prompt mismatch
+                       e.g. [FAIL] strike.execute_strike_team_launch/full_chain: [faithful] one captured entry per model call (12) -- 6 vs 12
+DETECTED             c4_no_precall_copy  [capture]  capture keeps the request by reference (no deepcopy at begin)
+                       failing checks: 1; distinct scenarios/areas: 1
+                       e.g. [FAIL] [pre-call] a provider mutating messages/tools in place does not change the captured record -- ('original prompt MUTATED-IN-PLACE', [{'type': 'function', 'function'
+DETECTED             c5_collector_not_reset  [capture]  capture_calls never resets the ContextVar (leaks into later requests)
+                       failing checks: 3; distinct scenarios/areas: 3
+                       e.g. [FAIL] [scope] capture is installed inside capture_calls and gone right after it, in the same context -- <core.capture.CallCapture object at 0x10fff9860>
+                       e.g. [FAIL] [scope] capture is removed even when the request body raises -- <core.capture.CallCapture object at 0x10fff9b00>
+                       e.g. [FAIL] [scope] capture_calls(False) installs nothing and yields None -- <core.capture.CallCapture object at 0x10fff9b00>
+DETECTED             c6_calls_always_present  [capture]  attach_capture adds calls/kernel_version even when not requested
+                       failing checks: 13; distinct scenarios/areas: 13
+                       e.g. [FAIL] /kernel/invoke: [opt-in] calls and kernel_version are null unless requested -- {'calls': [], 'kernel_version': {'revision': None, 'git_sha': None}}
+                       e.g. [FAIL] /kernel/functions/derive_requirements: [opt-in] calls and kernel_version are null unless requested -- {'calls': [], 'kernel_version': {'revision': None, 'git_sha':
+                       e.g. [FAIL] /kernel/functions/confirm_launch_intent: [opt-in] calls and kernel_version are null unless requested -- {'calls': [], 'kernel_version': {'revision': None, 'git_sha
+DETECTED             c7_segment_bytes_wrong  [capture]  segment bytes = character count instead of UTF-8 bytes
+                       failing checks: 39; distinct scenarios/areas: 39
+                       e.g. [FAIL] pm.run_turn/base/pm.run_turn: [segments] every segment's bytes is the UTF-8 size of its block -- [(446, 446), (255, 255), (277, 282)]
+                       e.g. [FAIL] pm.run_turn/physics_open/pm.run_turn: [segments] every segment's bytes is the UTF-8 size of its block -- [(448, 448), (255, 255), (277, 282)]
+                       e.g. [FAIL] pm.run_turn/kaiser/pm.run_turn: [segments] every segment's bytes is the UTF-8 size of its block -- [(503, 503), (255, 255), (277, 282)]
+DETECTED             c8_stub_drops_segments  [capture]  oversize stub drops its segments
+                       failing checks: 3; distinct scenarios/areas: 3
+                       e.g. [FAIL] [oversize] the stub KEEPS its segments, identical to the full entry's (offsets + bytes), so the big layer is identifiable -- []
+                       e.g. [FAIL] [oversize] segment bytes account for most of the withheld prompt (only scaffolding is uncounted) -- (0, 919)
+                       e.g. [FAIL] [oversize] over HTTP the stub still carries segments with bytes and the call's usage -- []
+PASS (no failures)   control_token  [token]  no mutation (must PASS)
+                       342 checks, ALL PASS
+DETECTED             t1_gate_always_authorizes  [token]  token check always returns True (any/no token honoured)
+                       failing checks: 254; distinct scenarios/areas: 37
+                       e.g. [FAIL] /kernel/invoke: wrong token (same length) -> response IDENTICAL to a request that never asked (status, body, content-type) -- (200, '{"calls":[{"seq":0,"label":"pm
+                       e.g. [FAIL] /kernel/invoke: wrong token (same length) -> calls and kernel_version null -- 
+                       e.g. [FAIL] /kernel/invoke: wrong token (shorter) -> response IDENTICAL to a request that never asked (status, body, content-type) -- (200, '{"calls":[{"seq":0,"label":"pm.run
+DETECTED             t2_empty_matches_empty  [token]  empty-env guard removed (empty header == empty env authorizes)
+                       failing checks: 32; distinct scenarios/areas: 20
+                       e.g. [FAIL] /kernel/invoke: env EMPTY and header EMPTY (two empties must not match) -> response IDENTICAL to a request that never asked (status, body, content-type) -- (200, '
+                       e.g. [FAIL] /kernel/invoke: env EMPTY and header EMPTY (two empties must not match) -> calls and kernel_version null -- 
+                       e.g. [FAIL] /kernel/functions/derive_requirements: env EMPTY and header EMPTY (two empties must not match) -> response IDENTICAL to a request that never asked (status, body, c
+DETECTED             t3_gate_ignored  [token]  everything authorized regardless of header (flag honoured with no token)
+                       failing checks: 233; distinct scenarios/areas: 16
+                       e.g. [FAIL] /kernel/invoke: wrong token (same length) -> response IDENTICAL to a request that never asked (status, body, content-type) -- (200, '{"calls":[{"seq":0,"label":"pm
+                       e.g. [FAIL] /kernel/invoke: wrong token (same length) -> calls and kernel_version null -- 
+                       e.g. [FAIL] /kernel/invoke: wrong token (shorter) -> response IDENTICAL to a request that never asked (status, body, content-type) -- (200, '{"calls":[{"seq":0,"label":"pm.run
+DETECTED             t4_token_echoed_in_response  [token]  attach_capture echoes the env token into a declared response field (kernel_version.revision)
+                       failing checks: 1; distinct scenarios/areas: 1
+                       e.g. [FAIL] [leak] the correct token never appears in response bodies / stdout / stderr (156572 chars searched) -- FOUND in response bodies / stdout / stderr
+DETECTED             t5_plain_equality  [token]  token compared with == so hmac.compare_digest is no longer what runs (an invocation-spy check, not a timing test)
+                       failing checks: 1; distinct scenarios/areas: 1
+                       e.g. [FAIL] [unit] hmac.compare_digest is what runs (an invocation spy, not a timing test), and it is skipped when the env is unset/empty -- (0, 0)
+DETECTED             t6_token_printed  [token]  token check prints the presented token to stdout (a log leak)
+                       failing checks: 3; distinct scenarios/areas: 3
+                       e.g. [FAIL] [leak] the correct token never appears in response bodies / stdout / stderr (161009 chars searched) -- FOUND in response bodies / stdout / stderr
+                       e.g. [FAIL] [leak] the wrong token (same length) never appears in response bodies / stdout / stderr (161009 chars searched) -- FOUND in response bodies / stdout / stderr
+                       e.g. [FAIL] [leak] the wrong token (longer) never appears in response bodies / stdout / stderr (161009 chars searched) -- FOUND in response bodies / stdout / stderr
+DETECTED             t7_unset_env_authorizes  [token]  fail-open: an unset env var authorizes any request
+                       failing checks: 23; distinct scenarios/areas: 12
+                       e.g. [FAIL] /kernel/invoke: env var UNSET, correct-looking header sent -> response IDENTICAL to a request that never asked (status, body, content-type) -- (200, '{"calls":[{"s
+                       e.g. [FAIL] /kernel/invoke: env var UNSET, correct-looking header sent -> calls and kernel_version null -- 
+                       e.g. [FAIL] /kernel/functions/derive_requirements: env var UNSET, correct-looking header sent -> response IDENTICAL to a request that never asked (status, body, content-type) 
+DETECTED             t8_env_not_stripped  [token]  env value is not stripped (a Secret Manager trailing newline breaks the match)
+                       failing checks: 9; distinct scenarios/areas: 9
+                       e.g. [FAIL] [strip] env value with trailing \n + the stripped header value -> valid -- 'T0ken-Correct-7c1e9b52a4d8\n'
+                       e.g. [FAIL] [strip] env value with trailing \r\n + the stripped header value -> valid -- 'T0ken-Correct-7c1e9b52a4d8\r\n'
+                       e.g. [FAIL] [strip] env value with leading and trailing whitespace + the stripped header value -> valid -- '  T0ken-Correct-7c1e9b52a4d8 \t\n'
+DETECTED             t9_no_min_length  [token]  minimum token length removed (a 15-character token is accepted)
+                       failing checks: 7; distinct scenarios/areas: 7
+                       e.g. [FAIL] [ascii] the boundary characters 0x21 (!) and 0x7e (~) are allowed; 0x20 (space) and 0x7f (DEL) are not -- 
+                       e.g. [FAIL] [min-length] a 15-character token never authorizes, even with a matching header -- 
+                       e.g. [FAIL] [min-length] length is measured AFTER stripping: 16 chars + newline is valid, 15 chars + newline is not -- 
+DETECTED             t10_presented_not_stripped  [token]  presented header value is not stripped
+                       failing checks: 1; distinct scenarios/areas: 1
+                       e.g. [FAIL] [strip] the presented value is stripped the same way (trailing newline on the header side) -- 
+DETECTED             t11_authorization_never_reset  [token]  capture_gate never removes the authorization when the request ends
+                       failing checks: 4; distinct scenarios/areas: 3
+                       e.g. [FAIL] [scope] gate: authorized while the request runs, and the flag is False again after it ends -- (True, True)
+                       e.g. [FAIL] [scope] gate: the flag is False after the request even when the request body raised -- (True, True)
+                       e.g. [FAIL] [scope] a token that cannot be reset (from another context) falls back to DENY, never leaving the flag set -- True
+DETECTED             t12_non_ascii_token_accepted  [token]  the visible-ASCII requirement on the configured token is removed entirely
+                       failing checks: 7; distinct scenarios/areas: 7
+                       e.g. [FAIL] [ascii] a non-ASCII configured token is treated as unset: it never authorizes, even with the identical header (Starlette decodes headers as latin-1, so it could ne
+                       e.g. [FAIL] [ascii] a configured token with an INTERIOR space is treated as unset (visible ASCII 0x21-0x7e only, same as Backend) -- 
+                       e.g. [FAIL] [ascii] interior tab, newline or carriage return also make the configured token unset -- 
+DETECTED             t14_interior_space_allowed  [token]  looser rule: isascii() and isprintable() (allows an interior space) instead of visible ASCII 0x21-0x7e
+                       failing checks: 3; distinct scenarios/areas: 3
+                       e.g. [FAIL] [ascii] a configured token with an INTERIOR space is treated as unset (visible ASCII 0x21-0x7e only, same as Backend) -- 
+                       e.g. [FAIL] [ascii] the boundary characters 0x21 (!) and 0x7e (~) are allowed; 0x20 (space) and 0x7f (DEL) are not -- 
+                       e.g. [FAIL] /kernel/agents/run_turn: a configured token with an interior space (matching header) -> fails closed, response identical to a request that never asked -- {"calls":
+DETECTED             t13_reset_without_fallback  [token]  reset_capture_authorized has no deny-fallback for a token from another context
+                       failing checks: 1; distinct scenarios/areas: 1
+                       e.g. [FAIL] suite crashed: ValueError: <Token var=<ContextVar name='kernel_capture_authorized' default=False at 0x107aa59e0> at 0x114c29ec0> was created in a different Context
+
+RESULT: ALL MUTATIONS DETECTED, CONTROLS CLEAN

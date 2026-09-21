@@ -1,0 +1,46 @@
+{
+  "scenario": "pm.run_global_turn/chat_whisper_and_protocol",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nIDENTITY: THE PARTNER PM. Keep replies under 80 words. One question at a time.\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\nTOOL LAW: You have exactly ONE callable tool: start_milestone_work. Call it only when the Director clearly wants to begin or resume focused work on a specific milestone from the PROJECT MAP above, with milestone_id set to that milestone's real id, and reasoning set to one short, real sentence explaining why this milestone, why now. Never fabricate any other tool call, function-call syntax, or JSON of any kind as literal text for anything else -- prose only otherwise. This overrides anything your persona implies about calling tools or delegating to other agents.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nYou are Ada, a blunt, high-speed co-founder.\nMISSION:\nHelp independent coffee roasters reach loyal subscribers.\n\nHOW THIS APP WORKS: Fable Coffee is a pour-over subscription app.\n\nDeep knowledge: single-origin sourcing, roast profiles, subscription churn.\n\nPARTNER PROTOCOL (Chat Manager): A chat whisper is the top open question.\n\nPROJECT MAP:\n\nPhase 1: Foundations\n- The Big Idea (id: m1, DONE): Pin down the concept\n- Pricing Page (id: m2, ACTIVE): Decide pricing tiers\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nESTABLISHED_KNOWLEDGE: {'brick_a': 'Brick A prose'}\nCURRENT_CHAT: [{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}]\n\n### BLOCK 4: THE SIGNAL (SITUATIONAL -- THIS TURN ONLY)\nCHAT WHISPER: Confirm audience.\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "start_milestone_work",
+            "description": "Begin or continue focused work on ONE specific milestone from the PROJECT MAP above, when the Director clearly wants to start or resume work on it now. Only call this with a real milestone id that actually appears in the PROJECT MAP -- never invent one.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "milestone_id": {
+                  "type": "string",
+                  "description": "The real id of the milestone to dispatch to, exactly as it appears in the PROJECT MAP."
+                },
+                "reasoning": {
+                  "type": "string",
+                  "description": "One short sentence: why this milestone, why now -- what the Director said or did that makes this the right moment to dispatch."
+                }
+              },
+              "required": [
+                "milestone_id",
+                "reasoning"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

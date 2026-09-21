@@ -72,7 +72,8 @@ class SynthesisEngine:
         response = model.generate_content(
             work_order,
             generation_config=config,
-            response_schema=_build_synthesis_schema(architecture)
+            response_schema=_build_synthesis_schema(architecture),
+            label="synthesis.forge_truth",
         )
         bricks = hammer_json(get_clean_text(response))
 

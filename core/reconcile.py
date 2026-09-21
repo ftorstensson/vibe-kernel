@@ -118,7 +118,7 @@ def reconcile_fact(existing_facts, new_item):
     )
 
     work_order = PromptBuilder.assemble(mandate=mandate, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=RECONCILE_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=RECONCILE_SCHEMA, label="chat_manager.reconcile_fact", meta={"turn_index": new_item.get("turn_index")})
     verdict = hammer_json(get_clean_text(response))
     if verdict.get("merged_content"):
         # Belt-and-suspenders alongside the prompt fix above: strip any leading

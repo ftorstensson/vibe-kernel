@@ -1,0 +1,20 @@
+{
+  "scenario": "strike.specialist_analyze/with_identity",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Market Analyst\n        # THE ELI PROTOCOL\n- [E]vidence: Cite a real fact, product, or user behavior.\n- [L]ogic: Explain why this matters for THIS specific product.\n- [I]mplication: State what the NEXT team must do with this.\n\n\n        ### THE IDENTITY (WHO YOU ARE)\n        ARCHETYPE: analyst\n\nVoice: dry.\n\nKB: markets\n\n        ### THE TRUTH (DATA)\n        raw findings\n\n        ### THE LENS (CITATIONS)\n        AVAILABLE_SOURCE_IDS: [1, 2]\n        LAW: You MUST cite your claims using [ID] notation.\n        LAW: If you mention a market fact, follow it with the ID (e.g., \"The market is growing [1]\").\n        LAW: Use only the IDs provided. Do not invent links.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    }
+  ]
+}

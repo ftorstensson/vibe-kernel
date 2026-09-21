@@ -3,6 +3,9 @@ import os
 from dotenv import load_dotenv
 import litellm
 
+from core.capture import current_capture
+from core.prompt_builder import AssembledPrompt
+
 load_dotenv()
 
 # Regional Physics (Advisor Mandate)
@@ -39,6 +42,11 @@ class LiteLLMResponse:
     def __init__(self, litellm_response):
         message = litellm_response.choices[0].message
         self.text = message.content or ""
+        usage = getattr(litellm_response, "usage", None)
+        self.usage = None if usage is None else {
+            "prompt_tokens": getattr(usage, "prompt_tokens", None),
+            "completion_tokens": getattr(usage, "completion_tokens", None),
+        }
         self.grounding_sources = []
         for annotation in (getattr(message, "annotations", None) or []):
             if annotation.get("type") == "url_citation":
@@ -56,13 +64,55 @@ class LiteLLMResponse:
             self.tool_calls.append({"name": tool_call.function.name, "args": args})
 
 
+def _assembled_prompt(prompt):
+    """The AssembledPrompt (segments source) behind a prompt argument, which
+    callers pass either bare or as a one-element list -- None for raw
+    f-string sites, which get no segments."""
+    if isinstance(prompt, AssembledPrompt):
+        return prompt
+    if isinstance(prompt, (list, tuple)) and len(prompt) == 1 and isinstance(prompt[0], AssembledPrompt):
+        return prompt[0]
+    return None
+
+
 class LiteLLMModel:
     def __init__(self, model_name, tools=None):
         self.model_name = model_name
         self.tools = tools
 
-    def generate_content(self, prompt, generation_config=None, response_schema=None, tools=None, tool_choice=None):
-        """tools (per-call) lets one shared model config (e.g.
+    def build_request(self, prompt, generation_config=None, response_schema=None, tools=None, tool_choice=None):
+        """The one place litellm's kwargs are built -- pure (no I/O, no model
+        call), and exactly what generate_content sends, so a capture of it
+        is the real input, not a second copy."""
+        content = prompt if isinstance(prompt, str) else "\n".join(str(p) for p in prompt)
+        kwargs = {
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": str(content)}],
+            "vertex_project": PROJECT_ID,
+            "vertex_location": LOCATION,
+        }
+        if generation_config is not None:
+            kwargs["temperature"] = generation_config.temperature
+            if generation_config.reasoning_effort:
+                kwargs["reasoning_effort"] = generation_config.reasoning_effort
+        effective_tools = tools or self.tools
+        if effective_tools:
+            kwargs["tools"] = effective_tools
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+        if response_schema is not None:
+            kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {"name": "structured_output", "schema": response_schema, "strict": True},
+            }
+        return kwargs
+
+    def generate_content(self, prompt, generation_config=None, response_schema=None, tools=None, tool_choice=None, label=None, meta=None):
+        """label/meta (Step 0 capture, core/capture.py): a stable call-site id
+        and an optional disambiguator, used only when the request opted into
+        capture -- they never reach litellm.
+
+        tools (per-call) lets one shared model config (e.g.
         AgentFactory.get_partner_pm(), used by both run_turn and
         run_global_turn) offer a real tool on only SOME calls -- run_turn
         never passes this, run_global_turn does, without needing a second
@@ -83,29 +133,18 @@ class LiteLLMModel:
         against the same adapter source and empirically against the real
         API -- see core/orchestrator_answer.py's own module docstring for
         the full trace of why tool_choice="required" is used instead."""
-        content = prompt if isinstance(prompt, str) else "\n".join(str(p) for p in prompt)
-        kwargs = {
-            "model": self.model_name,
-            "messages": [{"role": "user", "content": content}],
-            "vertex_project": PROJECT_ID,
-            "vertex_location": LOCATION,
-        }
-        if generation_config is not None:
-            kwargs["temperature"] = generation_config.temperature
-            if generation_config.reasoning_effort:
-                kwargs["reasoning_effort"] = generation_config.reasoning_effort
-        effective_tools = tools or self.tools
-        if effective_tools:
-            kwargs["tools"] = effective_tools
-        if tool_choice is not None:
-            kwargs["tool_choice"] = tool_choice
-        if response_schema is not None:
-            kwargs["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {"name": "structured_output", "schema": response_schema, "strict": True},
-            }
-        response = litellm.completion(**kwargs)
-        return LiteLLMResponse(response)
+        request = self.build_request(prompt, generation_config, response_schema, tools, tool_choice)
+        capture = current_capture()
+        call = capture.begin(label, meta, request, _assembled_prompt(prompt)) if capture is not None else None
+        try:
+            response = LiteLLMResponse(litellm.completion(**request))
+        except Exception as exc:
+            if call is not None:
+                capture.fail(call, exc)
+            raise
+        if call is not None:
+            capture.finish(call, response)
+        return response
 
 
 class AgentFactory:

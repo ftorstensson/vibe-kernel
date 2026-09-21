@@ -1,0 +1,38 @@
+{
+  "scenario": "keymaster.confirm_launch_intent/default_schema",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nKM L1\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nKM SKILL\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nRECENT CONVERSATION (last message is the Director's reply to judge):\n[{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}]\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "confirmed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "confirmed"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

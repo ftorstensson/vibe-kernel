@@ -36,7 +36,7 @@ def build_envelope(**overrides):
 async def run_and_capture_prompt(envelope):
     captured = {}
 
-    def fake_generate_content(contents, generation_config=None):
+    def fake_generate_content(contents, generation_config=None, **kwargs):
         captured["prompt"] = contents[0]
         response = MagicMock()
         response.text = "ok"

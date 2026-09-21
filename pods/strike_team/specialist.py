@@ -66,7 +66,7 @@ class Specialist:
         ### THE TRUTH (THE SETTLED BRIEF)
         {brief}
         """
-        response = model.generate_content(system_instruction, generation_config=config, response_schema=QUESTIONS_SCHEMA)
+        response = model.generate_content(system_instruction, generation_config=config, response_schema=QUESTIONS_SCHEMA, label="strike.specialist_questions", meta={"role": role_name})
         result = hammer_json(get_clean_text(response))
         return result.get("questions", [])
 
@@ -113,5 +113,5 @@ class Specialist:
         LAW: Use only the IDs provided. Do not invent links.
         """
 
-        response = model.generate_content(system_instruction, generation_config=config)
+        response = model.generate_content(system_instruction, generation_config=config, label="strike.specialist_analyze", meta={"role": role_name})
         return get_clean_text(response)

@@ -49,7 +49,7 @@ async def run_always_offered_tests():
     captured = {}
 
     class _FakeModel:
-        def generate_content(self, work_order, generation_config=None, tools=None, tool_choice=None):
+        def generate_content(self, work_order, generation_config=None, tools=None, tool_choice=None, **kwargs):
             captured["tools"] = tools
             return SimpleNamespace(text="", tool_calls=[{"name": "reply", "args": {"message": "hi"}}])
 

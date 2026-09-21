@@ -59,5 +59,5 @@ def summarize_for_map(text):
     model, config = AgentFactory.get_summarizer()
     truth = f"TEXT TO SUMMARIZE:\n{text}"
     work_order = PromptBuilder.assemble(mandate=MANDATE, truth=truth)
-    response = model.generate_content(work_order, generation_config=config)
+    response = model.generate_content(work_order, generation_config=config, label="map_summary.summarize_for_map")
     return get_clean_text(response)

@@ -1,0 +1,532 @@
+{
+  "scenario": "process_turn/global_dispatched_milestone_gate_loop",
+  "order_insensitive": true,
+  "request_count": 14,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 1"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 2"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 3"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Market Analyst\n        # RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\n        Given the settled brief below, identify the 3 most critical, specific\n        questions the Hounds must go research to ground your analysis in real\n        evidence. State the specific intent before searching, per the protocol\n        above -- each question must be concrete and search-optimized, not\n        generic market-research boilerplate, and grounded in what THIS role\n        specifically needs verified, not a shared checklist every specialist\n        would ask the same way.\n\n        ### THE IDENTITY (WHO YOU ARE)\n        No specific identity provided. Act as a generic specialist.\n\n        ### THE TRUTH (THE SETTLED BRIEF)\n        canned narrative paragraph one.\n\ncanned paragraph two.\n\nIN THE DIRECTOR'S OWN WORDS:\n- \"canned quote a\"\n- \"canned quote b\"\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "questions"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Market Analyst\n        # THE ELI PROTOCOL\n- [E]vidence: Cite a real fact, product, or user behavior.\n- [L]ogic: Explain why this matters for THIS specific product.\n- [I]mplication: State what the NEXT team must do with this.\n\n\n        ### THE IDENTITY (WHO YOU ARE)\n        No specific identity provided. Act as a generic specialist.\n\n        ### THE TRUTH (DATA)\n        \ncanned grounded research text\ncanned grounded research text\ncanned grounded research text\n\n        ### THE LENS (CITATIONS)\n        AVAILABLE_SOURCE_IDS: [1, 2, 3]\n        LAW: You MUST cite your claims using [ID] notation.\n        LAW: If you mention a market fact, follow it with the ID (e.g., \"The market is growing [1]\").\n        LAW: Use only the IDs provided. Do not invent links.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nCM ARCHETYPE MANDATE\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nMISSION:\nHelp independent coffee roasters reach loyal subscribers.\n\nHOW THIS APP WORKS: Fable Coffee is a pour-over subscription app.\n\nCM SKILL\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nCONVERSATION (numbered):\n0: [user] I want to sell pour-over coffee subscriptions.\n1: [assistant] Nice. Who is it for?\n2: [user] Cafe owners in Fremont, café ☕ 😀 lovers.\n3: [user] Yes, go ahead and launch it\n\nMILESTONE PURPOSE:\nConcept\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "preference",
+                        "decision",
+                        "fact",
+                        "story",
+                        "agreement"
+                      ]
+                    },
+                    "speaker": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "assistant"
+                      ]
+                    },
+                    "turn_index": {
+                      "type": "integer"
+                    },
+                    "bucket": {
+                      "type": "string",
+                      "enum": [
+                        "Core Topic",
+                        "Sub Topics",
+                        "Miscellaneous"
+                      ]
+                    },
+                    "resolution_status": {
+                      "type": "string",
+                      "enum": [
+                        "unresolved",
+                        "settled"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "content",
+                    "type",
+                    "speaker",
+                    "turn_index",
+                    "bucket",
+                    "resolution_status"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "items"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nGK ARCHETYPE MANDATE\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nMISSION:\nHelp independent coffee roasters reach loyal subscribers.\n\nHOW THIS APP WORKS: Fable Coffee is a pour-over subscription app.\n\nGK SKILL\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nREQUIRED QUESTIONS (GATES):\n['Who is the customer?']\n\nCHAT SUMMARY:\n- [fact] canned fact one (turn 0, user)\n- [decision] canned fact two (turn 1, user)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "assessments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "question": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "RED",
+                        "AMBER",
+                        "GREEN"
+                      ]
+                    },
+                    "is_satisfied": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "question",
+                    "status",
+                    "is_satisfied"
+                  ]
+                }
+              },
+              "gate_status": {
+                "type": "string",
+                "enum": [
+                  "RED",
+                  "GREEN"
+                ]
+              },
+              "whisper": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "assessments",
+              "gate_status",
+              "whisper"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nIDENTITY: THE PARTNER PM. Keep replies under 80 words. One question at a time.\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\nTOOL LAW: You have exactly ONE callable tool: start_milestone_work. Call it only when the Director clearly wants to begin or resume focused work on a specific milestone from the PROJECT MAP above, with milestone_id set to that milestone's real id, and reasoning set to one short, real sentence explaining why this milestone, why now. Never fabricate any other tool call, function-call syntax, or JSON of any kind as literal text for anything else -- prose only otherwise. This overrides anything your persona implies about calling tools or delegating to other agents.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nYou are Ada, a blunt, high-speed co-founder.\nMISSION:\nHelp independent coffee roasters reach loyal subscribers.\n\nHOW THIS APP WORKS: Fable Coffee is a pour-over subscription app.\n\nDeep knowledge: single-origin sourcing, roast profiles, subscription churn.\n\nPROJECT MAP:\n\nPhase 1: Foundations\n- The Big Idea (id: m1, DONE): Pin down the concept\n- Pricing Page (id: m2, ACTIVE): Decide pricing tiers\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nESTABLISHED_KNOWLEDGE: {'brick_a': 'Brick A prose'}\nCURRENT_CHAT: [{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}, {'role': 'user', 'content': 'Yes, go ahead and launch it'}]\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "start_milestone_work",
+            "description": "Begin or continue focused work on ONE specific milestone from the PROJECT MAP above, when the Director clearly wants to start or resume work on it now. Only call this with a real milestone id that actually appears in the PROJECT MAP -- never invent one.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "milestone_id": {
+                  "type": "string",
+                  "description": "The real id of the milestone to dispatch to, exactly as it appears in the PROJECT MAP."
+                },
+                "reasoning": {
+                  "type": "string",
+                  "description": "One short sentence: why this milestone, why now -- what the Director said or did that makes this the right moment to dispatch."
+                }
+              },
+              "required": [
+                "milestone_id",
+                "reasoning"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nIDENTITY: THE PARTNER PM. Keep replies under 80 words. One question at a time.\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\n[STATUS: GREEN]\nKAISER MANDATE: RESEARCH COMPLETE. Discuss the new findings.\nTOOL LAW: You have NO callable tools in this context. Never emit tool calls, function-call syntax, or JSON of any kind as literal text -- prose only, always. This overrides anything your persona implies about calling tools or delegating to other agents.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nYou are Ada, a blunt, high-speed co-founder.\nMISSION:\nHelp independent coffee roasters reach loyal subscribers.\n\nHOW THIS APP WORKS: Fable Coffee is a pour-over subscription app.\n\nDeep knowledge: single-origin sourcing, roast profiles, subscription churn.\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nESTABLISHED_KNOWLEDGE: {'brick_a': 'Brick A prose', 'b1': 'canned synthesized text for b1', 'b2': 'canned synthesized text for b2'}\nCURRENT_CHAT: [{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}, {'role': 'user', 'content': 'Yes, go ahead and launch it'}]\n\n### BLOCK 4: THE SIGNAL (SITUATIONAL -- THIS TURN ONLY)\nGATEKEEPER WHISPER: Ready.\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nKM ARCHETYPE MANDATE\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nKM SKILL\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nRECENT CONVERSATION (last message is the Director's reply to judge):\n[{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}, {'role': 'user', 'content': 'Yes, go ahead and launch it'}]\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "confirmed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "confirmed"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are a fact-reconciliation function. Given a list of existing durable facts/decisions (each with an id) and one newly extracted item, decide exactly one classification:\n1. NEW: the item doesn't touch anything existing -- a genuinely separate fact/decision/preference/story. matched_fact_id: null, merged_content: null.\n2. REVISION: the item is about the exact same specific claim as an existing entry -- correcting it, quantifying it, or adding a missing detail to that SAME thing -- not a change of mind. Set matched_fact_id to that entry's id, and merged_content to the enriched content combining the old entry with the new detail.\n   NOT ENOUGH FOR REVISION: being about the same broader idea or project, coming up near each other in the conversation, or sharing a topic. Two genuinely separate pieces of information about the same idea -- e.g. the core mechanic, who it's for, and a guiding principle -- are three separate facts, not revisions of one another, no matter how related or close together they came up. Test: strip away the surrounding conversation -- would this item and the existing entry be answering the exact same specific question? If not, it's NEW. When genuinely unsure, prefer NEW over REVISION -- a wrongly-split fact only costs a little redundancy; a wrongly-merged fact permanently loses the ability to tell which specific thing was actually settled.\n3. CONTRADICTION: the item genuinely conflicts with an existing entry -- a real change, not an elaboration. Set matched_fact_id to the entry it conflicts with. merged_content: null.\nneeds_confirmation is true ONLY for CONTRADICTION -- never silently auto-resolve a real conflict. In that case also give a short clarifying_question the PM should ask the user, e.g. 'we'd decided X before, this sounds different -- still the plan, or has it changed?' For NEW and REVISION, needs_confirmation is false and clarifying_question is null.\nNOTE ON FORMATTING: 'id=... status=... type=...' in EXISTING FACTS below is metadata for you to read, not literal text -- merged_content must be clean prose only, never prefixed with a type tag or any of this bookkeeping notation.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nEXISTING FACTS:\n- id=00000000-0000-0000-0000-000000000001 status=current type=fact: canned fact one\n\nNEW ITEM: type=decision: canned fact two (speaker: user, turn 1)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "revision",
+                  "contradiction"
+                ]
+              },
+              "matched_fact_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "merged_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "needs_confirmation": {
+                "type": "boolean"
+              },
+              "clarifying_question": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "classification",
+              "matched_fact_id",
+              "merged_content",
+              "needs_confirmation",
+              "clarifying_question"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are a fact-reconciliation function. Given a list of existing durable facts/decisions (each with an id) and one newly extracted item, decide exactly one classification:\n1. NEW: the item doesn't touch anything existing -- a genuinely separate fact/decision/preference/story. matched_fact_id: null, merged_content: null.\n2. REVISION: the item is about the exact same specific claim as an existing entry -- correcting it, quantifying it, or adding a missing detail to that SAME thing -- not a change of mind. Set matched_fact_id to that entry's id, and merged_content to the enriched content combining the old entry with the new detail.\n   NOT ENOUGH FOR REVISION: being about the same broader idea or project, coming up near each other in the conversation, or sharing a topic. Two genuinely separate pieces of information about the same idea -- e.g. the core mechanic, who it's for, and a guiding principle -- are three separate facts, not revisions of one another, no matter how related or close together they came up. Test: strip away the surrounding conversation -- would this item and the existing entry be answering the exact same specific question? If not, it's NEW. When genuinely unsure, prefer NEW over REVISION -- a wrongly-split fact only costs a little redundancy; a wrongly-merged fact permanently loses the ability to tell which specific thing was actually settled.\n3. CONTRADICTION: the item genuinely conflicts with an existing entry -- a real change, not an elaboration. Set matched_fact_id to the entry it conflicts with. merged_content: null.\nneeds_confirmation is true ONLY for CONTRADICTION -- never silently auto-resolve a real conflict. In that case also give a short clarifying_question the PM should ask the user, e.g. 'we'd decided X before, this sounds different -- still the plan, or has it changed?' For NEW and REVISION, needs_confirmation is false and clarifying_question is null.\nNOTE ON FORMATTING: 'id=... status=... type=...' in EXISTING FACTS below is metadata for you to read, not literal text -- merged_content must be clean prose only, never prefixed with a type tag or any of this bookkeeping notation.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nEXISTING FACTS:\n\n\nNEW ITEM: type=fact: canned fact one (speaker: user, turn 0)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "revision",
+                  "contradiction"
+                ]
+              },
+              "matched_fact_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "merged_content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "needs_confirmation": {
+                "type": "boolean"
+              },
+              "clarifying_question": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "classification",
+              "matched_fact_id",
+              "merged_content",
+              "needs_confirmation",
+              "clarifying_question"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nYou are the Author: a dedicated brief-writing function. Given the milestone's purpose and the Director's settled chat summary for it (already deduplicated and revision-merged -- treat this as the complete, current truth), produce two things for the AI Specialists who will research this milestone next. They will never see the raw conversation -- this is the only context they get, so it must carry the real substance forward, not a thin restatement.\n1. identity_narrative: exactly two paragraphs of plain prose. No bullet points, no headers, no bolding, no JSON, no meta-commentary about being a brief -- just the brief itself.\n   POSITIVE ANCHOR: state plainly what this actually is -- the specific idea, the audience, the twist, the model. Keep the Director's own grit and specificity; do not sand it down into a generic pitch.\n   NEGATIVE CONSTRAINTS (THE DUAL-BRIEF): also state what this is explicitly NOT -- the nearby generic category a model would default to if left unconstrained (e.g. 'this is NOT a generic B2B SaaS tool'), named directly from what actually distinguishes this idea. Skip this only if there is truly nothing in the facts to draw a negative constraint from.\n2. founding_voice: 2-4 short quotes taken close to verbatim from the Director's OWN chat summary (speaker=user only) -- not paraphrased into your own voice, not invented. Pick the lines that carry the real personal conviction or grit behind the idea. If fewer than 2 user-spoken facts genuinely qualify, return fewer rather than padding with weak material.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\n\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nMILESTONE PURPOSE:\nConcept\n\nCHAT SUMMARY:\n- [fact, speaker=user] canned fact one\n- [decision, speaker=user] canned fact two\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "identity_narrative": {
+                "type": "string"
+              },
+              "founding_voice": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "identity_narrative",
+              "founding_voice"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\n\n        ACT AS THE EDITOR-IN-CHIEF.\n        Synthesize the raw specialist research into the named sections below.\n        Write real content for every section id listed, grounded in its\n        headline and intent -- not a generic restatement of the brief.\n\n        LAW: You MUST check the TYPE of each section.\n        - If TYPE is 'TEXT': Write a dense, strategic summary.\n        - If TYPE is 'VISUAL_SPEC': Write a high-fidelity TECHNICAL SPECIFICATION (Markdown) that a designer or UI agent can use to build an image/component.\n\n        LAW: Preserve [ID] citations. Return ONLY JSON.\n        \n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nSECTIONS:\n- id=b1 type=TEXT: Market -- size the market\n- id=b2 type=VISUAL_SPEC: Logo -- logo spec\nTONE: Goldsmith (Venture-Grade).\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nRAW_SPECIALIST_REPORTS: [{'role': 'Market Analyst', 'content': 'canned model text', 'questions': ['canned question 1', 'canned question 2', 'canned question 3'], 'sources': {'1': {'title': 'Canned Source', 'url': 'https://example.com/canned'}, '2': {'title': 'Canned Source', 'url': 'https://example.com/canned'}, '3': {'title': 'Canned Source', 'url': 'https://example.com/canned'}}}]\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "b1": {
+                "type": "string"
+              },
+              "b2": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b1",
+              "b2"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

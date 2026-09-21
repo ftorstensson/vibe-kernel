@@ -1,0 +1,203 @@
+{
+  "scenario": "strike.run_industrial_strike/two_specialists",
+  "order_insensitive": true,
+  "request_count": 10,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 1"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 1"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 2"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 2"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 3"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "# RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\nTASK: Find evidence for: canned question 3"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.1,
+      "tools": [
+        {
+          "googleSearch": {}
+        }
+      ]
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Brand Strategist\n        # RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\n        Given the settled brief below, identify the 3 most critical, specific\n        questions the Hounds must go research to ground your analysis in real\n        evidence. State the specific intent before searching, per the protocol\n        above -- each question must be concrete and search-optimized, not\n        generic market-research boilerplate, and grounded in what THIS role\n        specifically needs verified, not a shared checklist every specialist\n        would ask the same way.\n\n        ### THE IDENTITY (WHO YOU ARE)\n        ARCHETYPE: analyst\n\nVoice: dry.\n\nKB: markets\n\n        ### THE TRUTH (THE SETTLED BRIEF)\n        The settled brief text.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "questions"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Brand Strategist\n        # THE ELI PROTOCOL\n- [E]vidence: Cite a real fact, product, or user behavior.\n- [L]ogic: Explain why this matters for THIS specific product.\n- [I]mplication: State what the NEXT team must do with this.\n\n\n        ### THE IDENTITY (WHO YOU ARE)\n        ARCHETYPE: analyst\n\nVoice: dry.\n\nKB: markets\n\n        ### THE TRUTH (DATA)\n        \ncanned grounded research text\ncanned grounded research text\ncanned grounded research text\n\n        ### THE LENS (CITATIONS)\n        AVAILABLE_SOURCE_IDS: [4, 5, 6]\n        LAW: You MUST cite your claims using [ID] notation.\n        LAW: If you mention a market fact, follow it with the ID (e.g., \"The market is growing [1]\").\n        LAW: Use only the IDs provided. Do not invent links.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Market Analyst\n        # RESEARCH RULES — SHARED AGENT PROTOCOL (v1.2)\n## 1. THE INTERNAL LOOP (VOLUME)\n- Broad Scanning: Scan up to 50 sources.\n- Intent-First: State your specific question before searching.\n## 2. THE TRUST FILTER (NUANCE)\n- Primary Over Secondary: SEC filings, App Store data, academic papers are Gold.\n- Recency: Market data must be < 24 months old.\n## 3. THE DISTILLATION RULE (UX)\n- The Sacred 3-5: Distill findings into the 3-5 most load-bearing sources.\n- Citation Format: claim [Source Name, URL].\n## 4. STOP CONDITIONS\n- The 3-Attempt Law: If 3 strategies fail, flag as \"Unverified Assumption.\"\n\n\n        Given the settled brief below, identify the 3 most critical, specific\n        questions the Hounds must go research to ground your analysis in real\n        evidence. State the specific intent before searching, per the protocol\n        above -- each question must be concrete and search-optimized, not\n        generic market-research boilerplate, and grounded in what THIS role\n        specifically needs verified, not a shared checklist every specialist\n        would ask the same way.\n\n        ### THE IDENTITY (WHO YOU ARE)\n        No specific identity provided. Act as a generic specialist.\n\n        ### THE TRUTH (THE SETTLED BRIEF)\n        The settled brief text.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "questions"
+            ]
+          },
+          "strict": true
+        }
+      }
+    },
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n        ### THE MANDATE\n        ROLE: Market Analyst\n        # THE ELI PROTOCOL\n- [E]vidence: Cite a real fact, product, or user behavior.\n- [L]ogic: Explain why this matters for THIS specific product.\n- [I]mplication: State what the NEXT team must do with this.\n\n\n        ### THE IDENTITY (WHO YOU ARE)\n        No specific identity provided. Act as a generic specialist.\n\n        ### THE TRUTH (DATA)\n        \ncanned grounded research text\ncanned grounded research text\ncanned grounded research text\n\n        ### THE LENS (CITATIONS)\n        AVAILABLE_SOURCE_IDS: [1, 2, 3]\n        LAW: You MUST cite your claims using [ID] notation.\n        LAW: If you mention a market fact, follow it with the ID (e.g., \"The market is growing [1]\").\n        LAW: Use only the IDs provided. Do not invent links.\n        "
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal"
+    }
+  ]
+}

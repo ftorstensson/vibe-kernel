@@ -1,0 +1,74 @@
+{
+  "scenario": "gatekeeper.assess_coverage/default_schema",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nGK L1\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nGK L3\n\nGK SKILL\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nREQUIRED QUESTIONS (GATES):\n['Who is the customer?', 'What is the price?']\n\nCHAT SUMMARY:\n- [fact] Target customer is small landlords (turn 0, user)\n- [decision] Pricing is $20 per month (turn 1, user)\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.0,
+      "reasoning_effort": "disable",
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "structured_output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "assessments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "question": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "RED",
+                        "AMBER",
+                        "GREEN"
+                      ]
+                    },
+                    "is_satisfied": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "question",
+                    "status",
+                    "is_satisfied"
+                  ]
+                }
+              },
+              "gate_status": {
+                "type": "string",
+                "enum": [
+                  "RED",
+                  "GREEN"
+                ]
+              },
+              "whisper": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "assessments",
+              "gate_status",
+              "whisper"
+            ]
+          },
+          "strict": true
+        }
+      }
+    }
+  ]
+}

@@ -83,5 +83,5 @@ def derive_requirements(purpose, target_structure, l1, l3, skill, output_shape=N
     lens = compose_l4_lens(l3, skill)
 
     work_order = PromptBuilder.assemble(mandate=l1, lens=lens, truth=truth)
-    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or REQUIREMENTS_SCHEMA)
+    response = model.generate_content(work_order, generation_config=config, response_schema=output_shape or REQUIREMENTS_SCHEMA, label="gate_maker.derive_requirements")
     return hammer_json(get_clean_text(response))

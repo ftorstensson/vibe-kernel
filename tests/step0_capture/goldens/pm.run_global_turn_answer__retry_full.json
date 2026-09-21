@@ -1,0 +1,85 @@
+{
+  "scenario": "pm.run_global_turn_answer/retry_full",
+  "order_insensitive": false,
+  "request_count": 1,
+  "requests": [
+    {
+      "model": "vertex_ai/gemini-2.5-pro",
+      "messages": [
+        {
+          "role": "user",
+          "content": "\n### BLOCK 1: THE MANDATE (UNBREAKABLE LAW)\nIDENTITY: THE PARTNER PM. Keep replies under 80 words. One question at a time.\n\nHOW THIS PLATFORM WORKS: Every conversation happens inside a project map of phases and milestones.\nTOOL LAW: You have NO callable tools in this context. Never emit tool calls, function-call syntax, or JSON of any kind as literal text -- prose only, always. This overrides anything your persona implies about calling tools or delegating to other agents.\nThis turn specifically, you must respond by calling exactly one of these tools: reply, start_milestone_work, refuse. Never respond with plain text alone -- every real reply happens through the reply tool itself, not as freeform content alongside or instead of a tool call.\n\n### BLOCK 2: THE LENS (STRATEGIC PERSPECTIVE)\nYou are Ada, a blunt, high-speed co-founder.\nMISSION:\nHelp independent coffee roasters reach loyal subscribers.\n\nHOW THIS APP WORKS: Fable Coffee is a pour-over subscription app.\n\nDeep knowledge: single-origin sourcing, roast profiles, subscription churn.\n\nPROJECT MAP:\n\nPhase 1: Foundations\n- The Big Idea (id: m1, DONE): Pin down the concept\n- Pricing Page (id: m2, ACTIVE): Decide pricing tiers\n\n### BLOCK 3: THE TRUTH (PROJECT KNOWLEDGE & DATA)\nESTABLISHED_KNOWLEDGE: {'brick_a': 'Brick A prose'}\nCURRENT_CHAT: [{'role': 'user', 'content': 'I want to sell pour-over coffee subscriptions.'}, {'role': 'assistant', 'content': 'Nice. Who is it for?'}, {'role': 'user', 'content': 'Cafe owners in Fremont, café ☕ 😀 lovers.'}]\n\n### BLOCK 4: THE SIGNAL (SITUATIONAL -- THIS TURN ONLY)\nREJECTED ANSWER: {'answer_type': 'dispatch', 'args': {'milestone_id': 'm1', 'reasoning': 'x'}}\nREJECTION REASON: m1 is already DONE\nYour previous answer above was not accepted for the reason given. Try again, respecting the actual constraints this time.\n\n[EXECUTION_START: Apply the LENS to the TRUTH while obeying the MANDATE.]\n"
+        }
+      ],
+      "vertex_project": "vibe-agent-final",
+      "vertex_location": "us-central1",
+      "temperature": 0.4,
+      "reasoning_effort": "minimal",
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "reply",
+            "description": "Send a plain conversational reply. Use this for the overwhelming majority of turns -- responding, asking a question, continuing the conversation -- whenever you are not dispatching work to a milestone or signaling that this unit of work is complete.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "description": "The reply to send to the Director."
+                }
+              },
+              "required": [
+                "message"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "start_milestone_work",
+            "description": "Begin or continue focused work on ONE specific milestone from the PROJECT MAP above, when the Director clearly wants to start or resume work on it now. Only call this with a real milestone id that actually appears in the PROJECT MAP -- never invent one.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "milestone_id": {
+                  "type": "string",
+                  "description": "The real id of the milestone to dispatch to, exactly as it appears in the PROJECT MAP."
+                },
+                "reasoning": {
+                  "type": "string",
+                  "description": "One short sentence: why this milestone, why now -- what the Director said or did that makes this the right moment to dispatch."
+                }
+              },
+              "required": [
+                "milestone_id",
+                "reasoning"
+              ]
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "refuse",
+            "description": "Decline to produce a Reply, Dispatch, or Completion this turn. Use this only when you genuinely cannot or should not answer at all -- not as a substitute for a plain reply when you're simply unsure, and not to avoid picking between otherwise-legal options. This goes straight to graceful failure, not another attempt -- only call it when continuing would be worse than stopping here.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "description": "A short, real reason you're declining to answer."
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            }
+          }
+        }
+      ],
+      "tool_choice": "required"
+    }
+  ]
+}
