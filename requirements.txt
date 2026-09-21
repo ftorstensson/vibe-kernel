@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 pydantic
-litellm
+litellm==1.99.0
 orjson
 google-cloud-firestore
 python-dotenv
