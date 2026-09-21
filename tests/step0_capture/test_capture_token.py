@@ -27,6 +27,9 @@ from core.capture import CAPTURE_TOKEN_HEADER, CAPTURE_TOKEN_ENV, capture_calls,
 from endpoint_payloads import ENDPOINTS, EXPECT_LABEL  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 import main  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from legacy_routes import enable_legacy_routes  # noqa: E402
+enable_legacy_routes(main.app)   # the nine old turn routes answer 410 after the M1b cutover; this suite exercises the legacy handlers (deleted at M4)
 
 TOKEN = "T0ken-Correct-7c1e9b52a4d8"
 WRONG_SAME_LEN = "T0ken-Wrongg-7c1e9b52a4d8"
