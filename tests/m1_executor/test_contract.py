@@ -29,12 +29,16 @@ def mk(cls, message="raw provider text"):
 
 TOOL = {"type": "function", "function": {"name": "reply", "description": "Send a reply.",
         "parameters": {"type": "object", "properties": {"message": {"type": "string"}}, "required": ["message"]}}}
+TOOL2 = {"type": "function", "function": {"name": "refuse", "description": "Decline.",
+        "parameters": {"type": "object", "properties": {"reason": {"type": "string"}}, "required": ["reason"]}}}
 SCHEMA = {"type": "json_schema", "json_schema": {"name": "structured_output", "strict": True,
           "schema": {"type": "object", "properties": {"confirmed": {"type": "boolean"}}, "required": ["confirmed"]}}}
 
 # ------------------------------------------------------------------ T1 one in, one out
+# Two function tools, not one function tool plus googleSearch: a Briefing may not mix a
+# function tool with googleSearch in the same call (section 2, "not_allowed"; T8 below).
 full = briefing("Prompt A\nline two", model="vertex_ai/gemini-2.5-pro", temperature=0.4, reasoning_effort="minimal",
-                max_output_tokens=2048, tools=[TOOL, {"googleSearch": {}}], tool_choice="required",
+                max_output_tokens=2048, tools=[TOOL, TOOL2], tool_choice="required",
                 response_format=SCHEMA, parse_mode="json_strict", timeout_s=120,
                 segments=[{"start": 0, "end": 8, "scaffold": False, "layer": "l1", "provenance": None}],
                 attempt_id="a-full", call_label="t.full")
@@ -47,7 +51,7 @@ with fake_model() as fake:
         "model": "vertex_ai/gemini-2.5-pro", "messages": [{"role": "user", "content": "Prompt A\nline two"}],
         "vertex_project": os.getenv("GOOGLE_CLOUD_PROJECT", "vibe-agent-final"), "vertex_location": "us-central1",
         "timeout": 120, "temperature": 0.4, "reasoning_effort": "minimal", "max_tokens": 2048,
-        "tools": [TOOL, {"googleSearch": {}}], "tool_choice": "required", "response_format": SCHEMA,
+        "tools": [TOOL, TOOL2], "tool_choice": "required", "response_format": SCHEMA,
     }
     check("T1 kwargs deep-equal exactly the C1 2.1 mapping (same keys, same values)", fake.calls[0] == expected, fake.calls[0])
     check("T1 messages is exactly one user message with the prompt", fake.calls[0]["messages"] == [{"role": "user", "content": "Prompt A\nline two"}], "")
@@ -204,6 +208,9 @@ cases = [
     ("googleSearch with a body", {**good, "tools": [{"googleSearch": {"x": 1}}]}, "not_allowed"),
     ("function tool with an extra key", {**good, "tools": [{**TOOL, "extra": 1}]}, "not_allowed"),
     ("function tool without parameters", {**good, "tools": [{"type": "function", "function": {"name": "x"}}]}, "not_allowed"),
+    ("googleSearch mixed with a function tool (litellm silently drops googleSearch for this shape)", {**good, "tools": [TOOL, {"googleSearch": {}}]}, "not_allowed"),
+    ("googleSearch mixed with a function tool, reverse order", {**good, "tools": [{"googleSearch": {}}, TOOL]}, "not_allowed"),
+    ("googleSearch mixed with two function tools", {**good, "tools": [TOOL, {**TOOL, "function": {**TOOL["function"], "name": "other"}}, {"googleSearch": {}}]}, "not_allowed"),
     ("tool_choice unknown", {**good, "tool_choice": "any"}, "invalid_value"),
     ("response_format not an object", {**good, "response_format": "json"}, "invalid_type"),
     ("parse_mode unknown", {**good, "parse_mode": "json"}, "invalid_value"),

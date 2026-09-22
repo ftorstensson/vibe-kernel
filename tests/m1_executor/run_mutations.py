@@ -35,6 +35,7 @@ MUTANTS = [
     ("a bool accepted as a number", "executor/schema.py", "return type(value) is int or type(value) is float", "return isinstance(value, (int, float))"),
     ("model allowlist ignored", "executor/schema.py", 'if obj["model"] not in config.ALLOWED_MODELS:', 'if False:'),
     ("tool allowlist ignored", "executor/schema.py", "if not all(_tool_ok(t) for t in tools):", "if False:"),
+    ("googleSearch mixed with a function tool is accepted (litellm silently drops the grounding tool)", "executor/schema.py", 'if _has_google_search(tools) and _has_function_tool(tools):', "if False:"),
     ("prompt cap off by one (allows 4 MiB + 1)", "executor/schema.py", "    if len(encoded) > config.MAX_PROMPT_BYTES:", "    if len(encoded) > config.MAX_PROMPT_BYTES + 1:"),
     ("the cap counts characters, not bytes", "executor/schema.py", "    if len(encoded) > config.MAX_PROMPT_BYTES:", "    if len(prompt) > config.MAX_PROMPT_BYTES:"),
     ("timeout above the maximum accepted", "executor/schema.py", "if not 1 <= timeout <= config.MAX_TIMEOUT_S:", "if not 1 <= timeout:"),

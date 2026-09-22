@@ -102,6 +102,14 @@ def _tool_ok(tool):
     return _function_tool_ok(tool)
 
 
+def _has_google_search(tools):
+    return any(set(t) == {"googleSearch"} for t in tools)
+
+
+def _has_function_tool(tools):
+    return any(set(t) != {"googleSearch"} for t in tools)
+
+
 def canonical_json(value):
     """The one serialization both sides hash (C1 5.2). ensure_ascii=False so
     non-ASCII text hashes as itself; allow_nan=False so a non-finite number is
@@ -235,6 +243,8 @@ def validate(obj):
         if not tools:
             raise BriefingError("out_of_range", "tools")
         if not all(_tool_ok(t) for t in tools):
+            raise BriefingError("not_allowed", "tools")
+        if _has_google_search(tools) and _has_function_tool(tools):
             raise BriefingError("not_allowed", "tools")
 
     choice = obj["tool_choice"]
