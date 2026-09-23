@@ -26,6 +26,7 @@ from core.strike_launch import execute_strike_team_launch
 from core.capture import capture_calls, attach_capture, capture_token_valid, set_capture_authorized, reset_capture_authorized, CAPTURE_TOKEN_HEADER
 from pods.social.engine import SocialEngine
 from executor.routes import router as executor_router
+from executor.cutover import router as cutover_router
 import uvicorn
 import os
 
@@ -50,6 +51,10 @@ app = FastAPI(title="Vibe Kernel: Sovereign Cartography v21.1", dependencies=[De
 # GET /kernel/health. Self-contained package; the legacy routes below are untouched
 # and stay until the M1b cutover.
 app.include_router(executor_router)
+
+# M1b cutover: the nine old turn routes answer 410. Registered BEFORE the legacy
+# handlers below, so it wins; the handlers stay until M4 (executor/cutover.py).
+app.include_router(cutover_router)
 
 # Stateless executor: given a complete input, Kernel composes/calls the
 # model/returns a result -- it never reaches into Firestore for its own

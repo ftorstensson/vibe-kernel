@@ -4,7 +4,7 @@ that the contract forbids, in a throwaway COPY of the repository (the real tree 
 never touched). A mutant is KILLED if at least one suite fails. A surviving mutant
 means a test is missing.
 
-Run: python3 tests/m1_executor/run_mutations.py [--only N]
+Run: python3 tests/m1_executor/run_mutations.py [--only N | --from N]
 """
 import concurrent.futures
 import os
@@ -14,7 +14,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SUITES = ["tests/m1_executor/test_contract.py", "tests/m1_executor/test_endpoint.py", "tests/m1_executor/test_isolation.py", "tests/m1_executor/conformance/run_conformance.py"]
+SUITES = ["tests/m1_executor/test_contract.py", "tests/m1_executor/test_endpoint.py", "tests/m1_executor/test_isolation.py", "tests/m1_executor/conformance/run_conformance.py", "tests/m1_executor/test_cutover.py"]
 
 MUTANTS = [
     ("prompt is stripped before the call", "executor/schema.py", '"messages": [{"role": "user", "content": b.prompt}]', '"messages": [{"role": "user", "content": b.prompt.strip()}]'),
@@ -68,6 +68,15 @@ MUTANTS = [
     ("the strict parse strips fences too", "executor/parse.py", "            parsed = json.loads(text)", "            parsed = parse_json_lenient(text)"),
     ("the lenient parse no longer takes the first list element", "executor/parse.py", "        return parsed[0] if parsed else {}", "        return parsed"),
     ("a non-finite parsed value crashes instead of being reported", "executor/parse.py", "    if not json_safe(parsed):", "    if False:"),
+    # ---- the M1b cutover (executor/cutover.py; main.py)
+    ("cutover: /kernel/chat_summary left out of the 410 routes", "executor/cutover.py", '    "/kernel/chat_summary",\n', ''),
+    ("cutover: /kernel/invoke left out of the 410 routes", "executor/cutover.py", '    "/kernel/invoke",\n', ''),
+    ("cutover: a Publish-time route (derive_requirements) is also gone", "executor/cutover.py", '    "/kernel/functions/launch_strike_team",\n', '    "/kernel/functions/launch_strike_team",\n    "/kernel/functions/derive_requirements",\n'),
+    ("cutover: the status is 200, not 410", "executor/cutover.py", "JSONResponse(GONE_BODY, status_code=410)", "JSONResponse(GONE_BODY, status_code=200)"),
+    ("cutover: the body echoes the request path", "executor/cutover.py", "JSONResponse(GONE_BODY, status_code=410)", "JSONResponse({**GONE_BODY, 'path': str(request.url.path)}, status_code=410)"),
+    ("cutover: only POST is gone (GET falls through to a 405)", "executor/cutover.py", 'methods=["GET", "POST", "PUT", "PATCH", "DELETE"]', 'methods=["POST"]'),
+    ("cutover: the router is not mounted", "main.py", "app.include_router(cutover_router)\n", "pass\n"),
+    ("cutover: the router is mounted AFTER the legacy handlers", "main.py", [("app.include_router(cutover_router)\n", "pass\n"), ('if __name__ == "__main__":', 'app.include_router(cutover_router)\nif __name__ == "__main__":')], None),
 ]
 
 # mutants that need a helper name to exist
@@ -93,8 +102,11 @@ def run_suites(workdir):
 
 def main():
     only = None
+    first = 1
     if "--only" in sys.argv:
         only = int(sys.argv[sys.argv.index("--only") + 1])
+    if "--from" in sys.argv:
+        first = int(sys.argv[sys.argv.index("--from") + 1])
     tmp = tempfile.mkdtemp(prefix="m1_mut_")
     work = os.path.join(tmp, "repo")
     shutil.copytree(ROOT, work, ignore=shutil.ignore_patterns(".git", "docs", "__pycache__", ".claude", "node_modules"))
@@ -105,15 +117,21 @@ def main():
         return 1
     survivors = []
     for i, (name, rel, old, new) in enumerate(MUTANTS, 1):
-        if only is not None and i != only:
+        if (only is not None and i != only) or i < first:
             continue
         path = os.path.join(work, rel)
         original = open(path).read()
-        if original.count(old) != 1:
-            print(f"[{i:02d}] SKIPPED (pattern matches {original.count(old)}x): {name}")
+        pairs = old if isinstance(old, list) else [(old, new)]
+        mutated, bad = original, None
+        for o, n in pairs:
+            if mutated.count(o) != 1:
+                bad = mutated.count(o)
+                break
+            mutated = mutated.replace(o, n)
+        if bad is not None:
+            print(f"[{i:02d}] SKIPPED (pattern matches {bad}x): {name}")
             survivors.append((i, name + " (pattern)"))
             continue
-        mutated = original.replace(old, new)
         if rel in PRE:
             mutated = mutated + PRE[rel] if not mutated.endswith(PRE[rel]) else mutated
         open(path, "w").write(mutated)
@@ -126,7 +144,7 @@ def main():
         if not killed:
             survivors.append((i, name))
     shutil.rmtree(tmp, ignore_errors=True)
-    print(f"\n{len(MUTANTS) if only is None else 1} mutants, {len(survivors)} survived")
+    print(f"\n{1 if only is not None else len(MUTANTS) - first + 1} mutants, {len(survivors)} survived")
     for i, name in survivors:
         print(f"  SURVIVOR [{i:02d}] {name}")
     return 1 if survivors else 0
