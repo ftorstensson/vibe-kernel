@@ -253,6 +253,17 @@ def validate(obj):
 
     if obj["response_format"] is not None and type(obj["response_format"]) is not dict:
         raise BriefingError("invalid_type", "response_format")
+    if tools is not None and obj["response_format"] is not None and _has_google_search(tools):
+        # Real Vertex/Gemini constraint, confirmed against the live API 2026-09-25:
+        # "Unable to submit request because controlled generation is not supported
+        # with Search tool." "Controlled generation" covers BOTH forms Kernel could
+        # otherwise send: function-tool declarations (rejected above) and
+        # response_format (a JSON schema). googleSearch cannot be combined with
+        # either. response_format is named here because it is the newer, more
+        # specific violation and the one whose removal actually fixes a grounded
+        # call (a Function that wants both must drop response_format and parse the
+        # model's plain text instead).
+        raise BriefingError("not_allowed", "response_format")
 
     if type(obj["parse_mode"]) is not str or obj["parse_mode"] not in PARSE_MODES:
         raise BriefingError("invalid_value", "parse_mode")
