@@ -29,12 +29,16 @@ def mk(cls, message="raw provider text"):
 
 TOOL = {"type": "function", "function": {"name": "reply", "description": "Send a reply.",
         "parameters": {"type": "object", "properties": {"message": {"type": "string"}}, "required": ["message"]}}}
+TOOL2 = {"type": "function", "function": {"name": "refuse", "description": "Decline.",
+        "parameters": {"type": "object", "properties": {"reason": {"type": "string"}}, "required": ["reason"]}}}
 SCHEMA = {"type": "json_schema", "json_schema": {"name": "structured_output", "strict": True,
           "schema": {"type": "object", "properties": {"confirmed": {"type": "boolean"}}, "required": ["confirmed"]}}}
 
 # ------------------------------------------------------------------ T1 one in, one out
+# Two function tools, not one function tool plus googleSearch: a Briefing may not mix a
+# function tool with googleSearch in the same call (section 2, "not_allowed"; T8 below).
 full = briefing("Prompt A\nline two", model="vertex_ai/gemini-2.5-pro", temperature=0.4, reasoning_effort="minimal",
-                max_output_tokens=2048, tools=[TOOL, {"googleSearch": {}}], tool_choice="required",
+                max_output_tokens=2048, tools=[TOOL, TOOL2], tool_choice="required",
                 response_format=SCHEMA, parse_mode="json_strict", timeout_s=120,
                 segments=[{"start": 0, "end": 8, "scaffold": False, "layer": "l1", "provenance": None}],
                 attempt_id="a-full", call_label="t.full")
@@ -47,7 +51,7 @@ with fake_model() as fake:
         "model": "vertex_ai/gemini-2.5-pro", "messages": [{"role": "user", "content": "Prompt A\nline two"}],
         "vertex_project": os.getenv("GOOGLE_CLOUD_PROJECT", "vibe-agent-final"), "vertex_location": "us-central1",
         "timeout": 120, "temperature": 0.4, "reasoning_effort": "minimal", "max_tokens": 2048,
-        "tools": [TOOL, {"googleSearch": {}}], "tool_choice": "required", "response_format": SCHEMA,
+        "tools": [TOOL, TOOL2], "tool_choice": "required", "response_format": SCHEMA,
     }
     check("T1 kwargs deep-equal exactly the C1 2.1 mapping (same keys, same values)", fake.calls[0] == expected, fake.calls[0])
     check("T1 messages is exactly one user message with the prompt", fake.calls[0]["messages"] == [{"role": "user", "content": "Prompt A\nline two"}], "")
@@ -204,6 +208,17 @@ cases = [
     ("googleSearch with a body", {**good, "tools": [{"googleSearch": {"x": 1}}]}, "not_allowed"),
     ("function tool with an extra key", {**good, "tools": [{**TOOL, "extra": 1}]}, "not_allowed"),
     ("function tool without parameters", {**good, "tools": [{"type": "function", "function": {"name": "x"}}]}, "not_allowed"),
+    ("googleSearch mixed with a function tool (litellm silently drops googleSearch for this shape)", {**good, "tools": [TOOL, {"googleSearch": {}}]}, "not_allowed"),
+    ("googleSearch mixed with a function tool, reverse order", {**good, "tools": [{"googleSearch": {}}, TOOL]}, "not_allowed"),
+    ("googleSearch mixed with two function tools", {**good, "tools": [TOOL, {**TOOL, "function": {**TOOL["function"], "name": "other"}}, {"googleSearch": {}}]}, "not_allowed"),
+    ("googleSearch with response_format (real Vertex rejects this as \"controlled generation is not supported with Search tool\", confirmed 2026-09-25)",
+     {**good, "tools": [{"googleSearch": {}}], "response_format": SCHEMA}, "not_allowed"),
+    ("googleSearch, a function tool AND response_format all together", {**good, "tools": [TOOL, {"googleSearch": {}}], "response_format": SCHEMA}, "not_allowed"),
+    ("the exact production Hound shape that failed live (design_lab_sandbox run 46e1c79a345c, hunt_0-5, 2026-09-24)",
+     {**good, "model": "vertex_ai/gemini-2.5-flash", "temperature": 0.1, "reasoning_effort": None, "tools": [{"googleSearch": {}}],
+      "response_format": {"type": "json_schema", "json_schema": {"name": "structured_output", "strict": True,
+      "schema": {"properties": {"findings": {"type": "string"}}, "required": ["findings"], "type": "object"}}},
+      "parse_mode": "text", "timeout_s": 150}, "not_allowed"),
     ("tool_choice unknown", {**good, "tool_choice": "any"}, "invalid_value"),
     ("response_format not an object", {**good, "response_format": "json"}, "invalid_type"),
     ("parse_mode unknown", {**good, "parse_mode": "json"}, "invalid_value"),
@@ -220,6 +235,13 @@ for name, body_, code in cases:
         r = post(client, body_)
         err = r.json().get("error", {})
         check(f"T8 {name}: 422 {code}, zero calls", r.status_code == 422 and err.get("code") == code and len(fake.calls) == 0, (r.status_code, err, len(fake.calls)))
+with fake_model() as fake:
+    r = post(client, briefing("t8", tools=[{"googleSearch": {}}], response_format=None))
+    check("T8 googleSearch alone (no response_format): still accepted", r.status_code == 200 and fake.calls[0]["tools"] == [{"googleSearch": {}}], r.status_code)
+    r = post(client, briefing("t8", tools=None, response_format=SCHEMA))
+    check("T8 response_format alone (no tools): still accepted", r.status_code == 200 and fake.calls[-1]["response_format"] == SCHEMA, r.status_code)
+    r = post(client, briefing("t8", tools=[TOOL], response_format=None))
+    check("T8 a function tool alone (no response_format, no googleSearch): still accepted", r.status_code == 200 and fake.calls[-1]["tools"] == [TOOL], r.status_code)
 with fake_model() as fake:
     for key in ("contract_version", "attempt_id", "call_label", "prompt", "model", "temperature", "reasoning_effort", "max_output_tokens", "tools", "tool_choice", "response_format", "parse_mode", "timeout_s", "segments"):
         incomplete = {k: v for k, v in good.items() if k != key}

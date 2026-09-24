@@ -102,6 +102,14 @@ def _tool_ok(tool):
     return _function_tool_ok(tool)
 
 
+def _has_google_search(tools):
+    return any(set(t) == {"googleSearch"} for t in tools)
+
+
+def _has_function_tool(tools):
+    return any(set(t) != {"googleSearch"} for t in tools)
+
+
 def canonical_json(value):
     """The one serialization both sides hash (C1 5.2). ensure_ascii=False so
     non-ASCII text hashes as itself; allow_nan=False so a non-finite number is
@@ -236,6 +244,8 @@ def validate(obj):
             raise BriefingError("out_of_range", "tools")
         if not all(_tool_ok(t) for t in tools):
             raise BriefingError("not_allowed", "tools")
+        if _has_google_search(tools) and _has_function_tool(tools):
+            raise BriefingError("not_allowed", "tools")
 
     choice = obj["tool_choice"]
     if choice is not None and (type(choice) is not str or choice not in TOOL_CHOICES):
@@ -243,6 +253,17 @@ def validate(obj):
 
     if obj["response_format"] is not None and type(obj["response_format"]) is not dict:
         raise BriefingError("invalid_type", "response_format")
+    if tools is not None and obj["response_format"] is not None and _has_google_search(tools):
+        # Real Vertex/Gemini constraint, confirmed against the live API 2026-09-25:
+        # "Unable to submit request because controlled generation is not supported
+        # with Search tool." "Controlled generation" covers BOTH forms Kernel could
+        # otherwise send: function-tool declarations (rejected above) and
+        # response_format (a JSON schema). googleSearch cannot be combined with
+        # either. response_format is named here because it is the newer, more
+        # specific violation and the one whose removal actually fixes a grounded
+        # call (a Function that wants both must drop response_format and parse the
+        # model's plain text instead).
+        raise BriefingError("not_allowed", "response_format")
 
     if type(obj["parse_mode"]) is not str or obj["parse_mode"] not in PARSE_MODES:
         raise BriefingError("invalid_value", "parse_mode")
