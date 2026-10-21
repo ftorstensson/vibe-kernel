@@ -80,6 +80,14 @@ with fake_model() as fake:
     post(client, same)
     check("T6c the same Briefing (same attempt_id) sent twice makes two model calls", len(fake.calls) == 2, len(fake.calls))
 
+# ---- (c2) the one place the executor makes a request that is not the model call
+httpx_users = sorted(f for f, src in code.items() if "httpx" in src)
+check("T6c the only HTTP client in the executor (httpx) is used in links.py and nowhere else", httpx_users == ["links.py"], httpx_users)
+check("T6c links.py is the only module that can make a request, and it names exactly one host to request",
+      code["links.py"].count("vertexaisearch.cloud.google.com") == 1 and "grounding-api-redirect" in code["links.py"], "")
+check("T6c the resolver never follows a redirect, sends no body and no credential",
+      "follow_redirects': False" in code["links.py"].replace('"', "'") and ".post(" not in code["links.py"] and "Authorization" not in code["links.py"] and "X-Kernel-Auth-Token" not in code["links.py"], "")
+
 # ---- (d) deployment guards
 dockerfile = open(os.path.join(ROOT, "Dockerfile")).read()
 check("T6d the Dockerfile copies the executor package into the image (without it Kernel fails at import)", re.search(r"^COPY executor/ executor/$", dockerfile, re.M) is not None, dockerfile)

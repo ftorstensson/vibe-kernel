@@ -14,7 +14,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SUITES = ["tests/m1_executor/test_contract.py", "tests/m1_executor/test_endpoint.py", "tests/m1_executor/test_isolation.py", "tests/m1_executor/conformance/run_conformance.py", "tests/m1_executor/test_cutover.py"]
+SUITES = ["tests/m1_executor/test_contract.py", "tests/m1_executor/test_endpoint.py", "tests/m1_executor/test_isolation.py", "tests/m1_executor/conformance/run_conformance.py", "tests/m1_executor/test_cutover.py", "tests/m1_executor/test_links.py"]
 
 MUTANTS = [
     ("prompt is stripped before the call", "executor/schema.py", '"messages": [{"role": "user", "content": b.prompt}]', '"messages": [{"role": "user", "content": b.prompt.strip()}]'),
@@ -79,6 +79,32 @@ MUTANTS = [
     ("cutover: only POST is gone (GET falls through to a 405)", "executor/cutover.py", 'methods=["GET", "POST", "PUT", "PATCH", "DELETE"]', 'methods=["POST"]'),
     ("cutover: the router is not mounted", "main.py", "app.include_router(cutover_router)\n", "pass\n"),
     ("cutover: the router is mounted AFTER the legacy handlers", "main.py", [("app.include_router(cutover_router)\n", "pass\n"), ('if __name__ == "__main__":', 'app.include_router(cutover_router)\nif __name__ == "__main__":')], None),
+    # ---- grounding-link resolution (executor/links.py, service.py, model.py)
+    ("links: the host check is dropped (any https URL with the path is requested)", "executor/links.py", 'parsed.host == REDIRECT_HOST and parsed.port is None', 'parsed.port is None'),
+    ("links: the https check is dropped (http redirects are requested)", "executor/links.py", 'parsed.scheme == "https" and parsed.host == REDIRECT_HOST', 'parsed.host == REDIRECT_HOST'),
+    ("links: the path-prefix check is dropped", "executor/links.py", 'and not parsed.userinfo and parsed.path.startswith(REDIRECT_PATH_PREFIX))', 'and not parsed.userinfo)'),
+    ("links: the userinfo check is dropped", "executor/links.py", 'and not parsed.userinfo and', 'and'),
+    ("links: the port check is dropped", "executor/links.py", ' and parsed.port is None\n', '\n'),
+    ("links: redirects are followed", "executor/links.py", '"follow_redirects": False', '"follow_redirects": True'),
+    ("links: any status is read for a Location (304 included)", "executor/links.py", '        if response.status_code not in _REDIRECT_STATUSES:\n            return None\n', ''),
+    ("links: a javascript:/data:/ftp: Location is accepted", "executor/links.py", 'parsed.scheme not in ("http", "https") or ', ''),
+    ("links: a Location on Google's own redirect host is accepted", "executor/links.py", '    if parsed.host == REDIRECT_HOST:\n        return None\n', ''),
+    ("links: whitespace in a Location is accepted", "executor/links.py", 'any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in location)', 'False'),
+    ("links: the Location is lower-cased", "executor/links.py", '    return location\n\n\nasync def _locate(', '    return location.lower()\n\n\nasync def _locate('),
+    ("links: the per-source timeout is not enforced", "executor/links.py", 'return await asyncio.wait_for(_locate(client, url), timeout=PER_SOURCE_TIMEOUT_S)', 'return await _locate(client, url)'),
+    ("links: the total cap is not enforced", "executor/links.py", 'await asyncio.wait(tasks, timeout=TOTAL_TIMEOUT_S)', 'await asyncio.wait(tasks, timeout=None)'),
+    ("links: lookups run one after another, not in parallel", "executor/links.py", '        tasks = {asyncio.ensure_future(_locate_bounded(client, url)): url for url in urls}\n', '        tasks = {}\n        for url in urls:\n            t = asyncio.ensure_future(_locate_bounded(client, url))\n            await t\n            tasks[t] = url\n'),
+    ("links: the same redirect is requested once per source, not once", "executor/links.py", 'and url not in urls and len(urls) < MAX_FETCHES', 'and len(urls) < MAX_FETCHES'),
+    ("links: no cap on the number of redirects requested", "executor/links.py", 'and url not in urls and len(urls) < MAX_FETCHES', 'and url not in urls'),
+    ("links: the original redirect is lost when a source resolves", "executor/links.py", 's["url"], s["resolved"] = target, True', 's["url"], s["redirect_url"], s["resolved"] = target, target, True'),
+    ("links: an unresolved source loses its url", "executor/links.py", '            if target:\n', '            if True:\n'),
+    ("links: a failure before any lookup raises into the call", "executor/links.py", '    except Exception:  # noqa: BLE001 -- never fail the call over a link\n        return [dict(s) for s in sources]', '    except Exception:  # noqa: BLE001 -- never fail the call over a link\n        raise'),
+    ("links: the lookup carries a credential header", "executor/links.py", '"headers": {"Accept": "*/*"}', '"headers": {"Accept": "*/*", "X-Kernel-Auth-Token": "leak"}'),
+    ("links: the lookup sends a body", "executor/links.py", 'client.stream("GET", url)', 'client.stream("GET", url, content=b"x")'),
+    ("service: the sources are never resolved", "executor/service.py", 'await links.resolve_sources(result["output"]["grounding_sources"])', 'result["output"]["grounding_sources"]'),
+    ("service: resolution time is added to timing.duration_ms", "executor/service.py", '        link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))', '        link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))\n        result["timing"]["duration_ms"] += link_stats[2]'),
+    ("service: the resolved URLs are written to the log", "executor/service.py", '        resolved, total = links.summary(result["output"]["grounding_sources"])\n', '        resolved, total = links.summary(result["output"]["grounding_sources"])\n        logger.info("links " + str(result["output"]["grounding_sources"]))\n'),
+    ("model: a source loses redirect_url and resolved", "executor/model.py", 'links.source(citation.get("title") or "Source", citation.get("url"))', '{"title": citation.get("title") or "Source", "url": citation.get("url")}'),
 ]
 
 # mutants that need a helper name to exist

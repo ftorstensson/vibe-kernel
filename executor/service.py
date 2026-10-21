@@ -7,7 +7,9 @@ the failed call's sha, timing and error are never lost.
 """
 import logging
 
-from executor import config, errors
+import time
+
+from executor import config, errors, links
 from executor.auth import configured_token
 from executor.model import call_model, normalize
 from executor.parse import parse_output
@@ -16,7 +18,7 @@ from executor.schema import Briefing
 logger = logging.getLogger("uvicorn.error")
 
 
-def _log_call(b, sent, status, duration_ms, usage, error_type, provider_status, raw_error_text):
+def _log_call(b, sent, status, duration_ms, usage, error_type, provider_status, raw_error_text, link_stats=None):
     """One line per call: identifiers, sha, sizes, duration, usage and outcome.
     Never the prompt, the output, tool arguments or a credential. Raw provider
     text appears ONLY here, scrubbed and capped (C1 4.4)."""
@@ -31,6 +33,8 @@ def _log_call(b, sent, status, duration_ms, usage, error_type, provider_status, 
     ]
     if usage is not None:
         parts.append(f"usage={usage}")
+    if link_stats is not None:
+        parts.append(f"links_resolved={link_stats[0]}/{link_stats[1]} links_ms={link_stats[2]}")   # counts only, never a URL
     if error_type is not None:
         parts.append(f"error_type={error_type}")
         parts.append(f"provider_status={provider_status}")
@@ -74,5 +78,15 @@ async def execute(b: Briefing, kwargs):
         error_type, raw_error_text = category, f"{type(exception).__name__}: {exception}"
         result.update(status="error", error=errors.error_object(category, provider_status))
 
-    _log_call(b, sent, result["status"], duration_ms, result["usage"], error_type, provider_status, raw_error_text)
+    link_stats = None
+    if result["status"] == "ok" and result["output"]["grounding_sources"]:
+        # Not a model call and not part of timing.duration_ms (the model call only). resolve_sources
+        # never raises and never takes longer than links.TOTAL_TIMEOUT_S; a source it cannot
+        # resolve keeps its redirect (C1 4.1).
+        started = time.perf_counter()
+        result["output"]["grounding_sources"] = await links.resolve_sources(result["output"]["grounding_sources"])
+        resolved, total = links.summary(result["output"]["grounding_sources"])
+        link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))
+
+    _log_call(b, sent, result["status"], duration_ms, result["usage"], error_type, provider_status, raw_error_text, link_stats)
     return result

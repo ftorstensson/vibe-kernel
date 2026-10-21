@@ -11,7 +11,8 @@ Fake behaviors (by call_label):
     conf.echo                 the model returns the prompt text it received, byte for byte
     conf.tool_calls           no text; two tool calls, the second one malformed
     conf.length               finish_reason "length"
-    conf.grounded             url_citation annotations (one without a title)
+    conf.grounded             url_citation annotations (one without a title, one direct URL, and two Google
+                              redirects: .../CONF-OK resolves to https://real.example/page, .../CONF-FAIL does not)
     conf.json.plain           text {"a": 1}
     conf.json.fenced          text in a ```json fence
     conf.json.list            text [{"a": 1}, {"a": 2}]
@@ -34,6 +35,7 @@ sys.path.insert(0, ROOT)
 import httpx  # noqa: E402
 import litellm  # noqa: E402
 
+GOOGLE_REDIRECT = "https://vertexaisearch.cloud.google.com/grounding-api-redirect/"
 RAW = "SECRET-PROVIDER-TEXT: Publisher Model `projects/vibe-agent-final/locations/us-central1/x` failed"
 
 
@@ -86,7 +88,9 @@ async def fake_acompletion(**kwargs):
     if label == "conf.grounded":
         return response("grounded", annotations=[
             {"type": "url_citation", "url_citation": {"title": "Alpha", "url": "https://a.example"}},
-            {"type": "url_citation", "url_citation": {"url": "https://b.example"}}])
+            {"type": "url_citation", "url_citation": {"url": "https://b.example"}},
+            {"type": "url_citation", "url_citation": {"title": "real.example", "url": GOOGLE_REDIRECT + "CONF-OK"}},
+            {"type": "url_citation", "url_citation": {"title": "gone.example", "url": GOOGLE_REDIRECT + "CONF-FAIL"}}])
     if label == "conf.json.plain":
         return response('{"a": 1}')
     if label == "conf.json.fenced":
@@ -122,6 +126,17 @@ def install():
     service.execute = execute_with_label
     routes.execute = execute_with_label
     litellm.acompletion = fake_acompletion
+
+    # The grounding-link resolver's network: a mock. It never reaches the real internet; it answers
+    # CONF-OK with a 302 to a real-looking page and everything else with 404.
+    from executor import links
+
+    def answer(request):
+        if str(request.url) == GOOGLE_REDIRECT + "CONF-OK":
+            return httpx.Response(302, headers={"location": "https://real.example/page"})
+        return httpx.Response(404)
+
+    links._transport = httpx.MockTransport(answer)
 
 
 if __name__ == "__main__":

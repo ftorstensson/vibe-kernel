@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 
 import litellm
 
+from executor import links
 from executor.schema import utf16_units
 
 
@@ -90,7 +91,7 @@ def normalize(response):
     for annotation in (getattr(message, "annotations", None) or []):
         if annotation.get("type") == "url_citation":
             citation = annotation.get("url_citation", {})
-            grounding_sources.append({"title": citation.get("title") or "Source", "url": citation.get("url")})
+            grounding_sources.append(links.source(citation.get("title") or "Source", citation.get("url")))
 
     tool_calls = [_tool_call(tc) for tc in (getattr(message, "tool_calls", None) or [])]
 
