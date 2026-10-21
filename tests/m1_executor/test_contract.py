@@ -345,8 +345,10 @@ check("T10 a valid tool call: args parsed, raw kept, no parse_error", tc[0]["arg
 check("T10 a malformed tool call is kept with args null, raw kept and a parse_error", tc[1]["args"] is None and tc[1]["arguments_raw"] == "{not json" and tc[1]["parse_error"], tc[1])
 check("T10 tool arguments that are not an object: args null with a parse_error", tc[2]["args"] is None and tc[2]["parse_error"], tc[2])
 check("T10 empty arguments: args null with a parse_error", tc[3]["args"] is None and tc[3]["parse_error"], tc[3])
-check("T10 grounding sources: url_citation only, title defaults to Source",
-      body["output"]["grounding_sources"] == [{"title": "Alpha", "url": "https://a.example"}, {"title": "Source", "url": "https://b.example"}], body["output"]["grounding_sources"])
+check("T10 grounding sources: url_citation only, title defaults to Source; each is {title, url, redirect_url, resolved}; a non-Google URL is never fetched, so it stays unresolved",
+      body["output"]["grounding_sources"] == [{"title": "Alpha", "url": "https://a.example", "redirect_url": "https://a.example", "resolved": False},
+                                              {"title": "Source", "url": "https://b.example", "redirect_url": "https://b.example", "resolved": False}]
+      and fake.fetches == [], (body["output"]["grounding_sources"], fake.fetches))
 check("T10 text returned as the model sent it", body["output"]["text"] == "some text", body["output"])
 check("T10 every ExecutionResult key is present", set(body) == {"contract_version", "attempt_id", "call_label", "status", "prompt_sha256", "prompt_utf8_bytes", "prompt_utf16_units", "request_sha256", "output", "usage", "finish_reason", "effective_model", "error", "timing", "kernel", "segments"}, sorted(body))
 check("T10 timing has started_at (UTC ISO 8601) and duration_ms", body["timing"]["started_at"].endswith("Z") and isinstance(body["timing"]["duration_ms"], int), body["timing"])

@@ -107,6 +107,10 @@ class FakeModel:
     def __init__(self, behavior=None):
         self.calls = []
         self.behavior = behavior if behavior is not None else (lambda kw: fake_response("ok"))
+        # the grounding-link resolver's network (executor/links.py): never live in tests
+        self.fetches = []        # every URL the resolver requested
+        self.redirects = {}      # redirect URL -> Location header to answer with; anything else answers 404
+        self.net_handler = None  # optional callable(httpx.Request) -> httpx.Response (may be async) overriding the above
 
     async def __call__(self, **kwargs):
         self.calls.append(kwargs)
@@ -124,13 +128,32 @@ def _no_sync_completion(*a, **k):
     raise AssertionError("the executor must never call the synchronous litellm.completion")
 
 
+def _network_for(fake):
+    """The only network the executor can reach in a test: a mock that records every request and
+    answers from fake.redirects (302) or 404. No test can make a live request."""
+    import httpx
+
+    async def handler(request):
+        fake.fetches.append(str(request.url))
+        if fake.net_handler is not None:
+            out = fake.net_handler(request)
+            if hasattr(out, "__await__"):
+                out = await out
+            return out
+        location = fake.redirects.get(str(request.url))
+        return httpx.Response(302, headers={"location": location}) if location else httpx.Response(404)
+
+    return httpx.MockTransport(handler)
+
+
 @contextmanager
 def fake_model(fake=None, token=TOKEN, extra_env=None):
+    from executor import links
     fake = fake or FakeModel()
     env = {"KERNEL_AUTH_TOKEN": token if token is not None else ""}
     env.update(extra_env or {})
     with patch.object(litellm, "acompletion", fake), patch.object(litellm, "completion", _no_sync_completion), \
-            patch.dict(os.environ, env):
+            patch.object(links, "_transport", _network_for(fake)), patch.dict(os.environ, env):
         yield fake
 
 

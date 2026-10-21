@@ -263,7 +263,15 @@ def run_checks(c, rep, fake, model_calls):
               j["finish_reason"] == "tool_calls" and [t["name"] for t in tc] == ["reply", "broken"] and tc[0]["args"] == {"message": "hi"} and tc[0]["parse_error"] is None
               and tc[1]["args"] is None and tc[1]["arguments_raw"] == "{not json" and tc[1]["parse_error"], tc)
     s, j = c.json("POST", "/kernel/execute", body=make_briefing("x", call_label="conf.grounded"))
-    rep.check("E6", "C1 4.1", "grounding_sources come from url_citation annotations; a missing title becomes \"Source\"", j["output"]["grounding_sources"] == [{"title": "Alpha", "url": "https://a.example"}, {"title": "Source", "url": "https://b.example"}], j["output"]["grounding_sources"])
+    rep.check("E6", "C1 4.1", "grounding_sources: each is {title, url, redirect_url, resolved}; a missing title becomes \"Source\"; a direct URL stays as it is with resolved false",
+              j["output"]["grounding_sources"][:2] == [{"title": "Alpha", "url": "https://a.example", "redirect_url": "https://a.example", "resolved": False},
+                                                       {"title": "Source", "url": "https://b.example", "redirect_url": "https://b.example", "resolved": False}], j["output"]["grounding_sources"])
+    GR = "https://vertexaisearch.cloud.google.com/grounding-api-redirect/"
+    rep.check("E6b", "C1 4.1", "a Google grounding redirect that resolves: url is the real page, redirect_url the original, resolved true",
+              j["output"]["grounding_sources"][2] == {"title": "real.example", "url": "https://real.example/page", "redirect_url": GR + "CONF-OK", "resolved": True}, j["output"]["grounding_sources"][2:])
+    rep.check("E6c", "C1 4.1", "one that does not resolve keeps its redirect as url, resolved false, and the call is still a success",
+              j["output"]["grounding_sources"][3] == {"title": "gone.example", "url": GR + "CONF-FAIL", "redirect_url": GR + "CONF-FAIL", "resolved": False}
+              and j["status"] == "ok" and j["error"] is None, j["output"]["grounding_sources"][3:])
     s, j = c.json("POST", "/kernel/execute", body=make_briefing("x", call_label="conf.length"))
     rep.check("E7", "C1 4", "finish_reason length is status ok with the field set (Backend's Runner decides whether that is a failure)", s == 200 and j["status"] == "ok" and j["finish_reason"] == "length", (s, j.get("status"), j.get("finish_reason")))
 
