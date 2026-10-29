@@ -22,6 +22,11 @@ Offsets (docs/m0 C1 section 4.1):
     or the offsets are unusable (not integers, not on a character boundary, out of range, end
     missing), `start` and `end` are null and the segment is still kept.
   - The provider omits `startIndex` when it is 0 (seen in a real response): missing start = 0.
+  - The offsets are measured within ONE response Part, the one `segment.partIndex` names (missing =
+    the first). litellm joins all non-thought text parts into `output.text`, so offsets from any
+    Part after the first have the wrong origin, and on a repeated sentence the slice check could pass
+    against the wrong occurrence. A support whose `partIndex` is present and not 0 therefore gets
+    `start` and `end` null (text and source_indices kept). Parts are not mapped.
 """
 from executor import links
 
@@ -117,7 +122,11 @@ def extract_supports(text, metadata):
         segment = segment if isinstance(segment, dict) else {}
         segment_text = segment.get("text")
         segment_text = segment_text if isinstance(segment_text, str) else ""
-        start, end = convert_offsets(text, segment.get("startIndex"), segment.get("endIndex"), segment_text, boundaries or None) if boundaries else (None, None)
+        part_index = segment.get("partIndex")
+        if part_index is not None and not (type(part_index) is int and part_index == 0):
+            start, end = None, None       # offsets are within another response Part than the first; see the module docstring
+        else:
+            start, end = convert_offsets(text, segment.get("startIndex"), segment.get("endIndex"), segment_text, boundaries or None) if boundaries else (None, None)
         indices, seen = [], set()
         raw_indices = support.get("groundingChunkIndices")
         for index in (raw_indices if isinstance(raw_indices, list) else []):
