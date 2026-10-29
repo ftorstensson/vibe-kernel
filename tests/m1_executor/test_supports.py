@@ -115,6 +115,23 @@ check("S4 a start offset inside a multi-byte character is not rounded to the cha
 out = supports.extract_supports(T, meta([{"segment": {"startIndex": a0, "endIndex": b0, "text": "é is nice."}, "groundingChunkIndices": [0]}]))
 check("S4 ...while the same segment with the true byte offsets converts", out[0]["start"] == 3 and T[out[0]["start"]:out[0]["end"]] == "é is nice.", out)
 
+# ------------------------------------------------------------------ offsets are within one response Part: a support on a later Part gets null offsets
+PT = "Alpha is first. Beta is second. Alpha is first."          # litellm joined two parts: "Alpha is first. Beta is second. " + "Alpha is first."
+p1_start, p1_end = byte_offsets(PT, "Alpha is first.", 0)        # where the sentence is in part 0
+plain = {"segment": {"startIndex": p1_start, "endIndex": p1_end, "text": "Alpha is first."}, "groundingChunkIndices": [0, 1]}
+on_part1 = {"segment": {"startIndex": 0, "endIndex": p1_end, "partIndex": 1, "text": "Alpha is first."}, "groundingChunkIndices": [2]}   # offsets from the start of part 1, which would still match text[0:15]
+out = supports.extract_supports(PT, meta([plain, on_part1]))
+check("S3b a support with partIndex 1: start and end null although the slice check against the joined text would pass; text and source_indices kept",
+      out[1]["start"] is None and out[1]["end"] is None and out[1]["text"] == "Alpha is first." and out[1]["source_indices"] == [2] and PT[0:15] == "Alpha is first.", out[1])
+for label, extra in (("partIndex 0", {"partIndex": 0}), ("a missing partIndex", {}), ("partIndex null", {"partIndex": None})):
+    seg = {"startIndex": p1_start, "endIndex": p1_end, "text": "Alpha is first.", **extra}
+    o = supports.extract_supports(PT, meta([{"segment": seg, "groundingChunkIndices": [0]}]))[0]
+    check(f"S3b {label}: converted as before", o["start"] == 0 and o["end"] == 15, o)
+for label, pi in (("partIndex 2", 2), ("partIndex 1.0", 1.0), ("partIndex \"1\"", "1"), ("partIndex True", True), ("partIndex -1", -1), ("partIndex 0.0", 0.0)):
+    seg = {"startIndex": p1_start, "endIndex": p1_end, "partIndex": pi, "text": "Alpha is first."}
+    o = supports.extract_supports(PT, meta([{"segment": seg, "groundingChunkIndices": [0]}]))[0]
+    check(f"S3b {label}: not provably the first Part, so null offsets", o["start"] is None and o["end"] is None and o["source_indices"] == [0], o)
+# through the endpoint
 # ------------------------------------------------------------------ the provider omits startIndex when it is 0
 T = "Canberra is the capital. Sydney is big."
 out = run(T, [{"segment": {"endIndex": 24, "text": "Canberra is the capital."}, "groundingChunkIndices": [0]}])
