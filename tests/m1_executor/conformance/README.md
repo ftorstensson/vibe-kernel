@@ -18,7 +18,7 @@ From the Kernel repository root, with Kernel's dependencies installed (`pip inst
 
 That starts the REAL executor (`main.app`, the code that is deployed) on a free localhost port with a
 throwaway random token that is never printed, and with **one** thing replaced: `litellm.acompletion` is
-a deterministic fake (`serve_fake.py`). Expected last line: `102 checks, 0 failed, 0 skipped -> CONFORMANT`
+a deterministic fake (`serve_fake.py`). Expected last line: `108 checks, 0 failed, 0 skipped -> CONFORMANT`
 and exit code 0. A failure prints the check id, the C1/K1 section it comes from and what was received.
 
 Options: `--json report.json` writes the results.
@@ -40,7 +40,7 @@ and echo checks are skipped (they need the fake, which chooses its behavior from
 
 It chooses from the Briefing's `call_label` (Backend never uses these labels in production):
 `conf.echo` returns the prompt text it received byte for byte; `conf.tool_calls`, `conf.length`,
-`conf.grounded`, `conf.reasoning`, `conf.json.plain|fenced|list|invalid`, `conf.slow` (5 s, use `timeout_s: 1`); the fake's only network is a mock that resolves `.../CONF-OK` and answers 404 for any other grounding redirect,
+`conf.grounded`, `conf.grounded.supports`, `conf.reasoning`, `conf.json.plain|fenced|list|invalid`, `conf.slow` (5 s, use `timeout_s: 1`); the fake's only network is a mock that resolves `.../CONF-OK` and answers 404 for any other grounding redirect,
 and `conf.error.<category>` for the nine error categories (the raw exception text contains
 `SECRET-PROVIDER-TEXT` and a `projects/<id>` path, so a leak into a response body is caught).
 
@@ -52,7 +52,7 @@ and `conf.error.<category>` for the nine error categories (the raw exception tex
 | B authentication | 401 with no header, a wrong token, the token in `Authorization`, an empty header; all bodies byte-identical; garbage body gets 401 not 422 | K1 2, K-T7 |
 | C the four vectors | your `prompt_sha256` and `request_sha256` equal the literals V1-V4; wrong shas give 422 `prompt_sha_mismatch` / `request_sha_mismatch` with Kernel's computed value; the accepted Briefing returns the literals | C1 5.1, 5.2 |
 | D every 422 code | `unknown_field`, `missing_field`, `invalid_type`, `invalid_value`, `invalid_format`, `out_of_range`, `not_allowed`, `too_large`, `invalid_json`, `not_an_object`, `invalid_prompt`, `invalid_text`, `prompt_sha_mismatch`, `request_sha_mismatch`, each with the right `field` | C1 2, 5.4 |
-| E result shape | all sixteen keys; echoes; timing; `reasoning_tokens`; tool calls kept in order (malformed one too); grounding sources (each `{title, url, redirect_url, resolved}`; one Google redirect resolves, one does not, a direct URL is left alone); `finish_reason: length` is still `status: ok` | C1 4 |
+| E result shape | all sixteen keys; echoes; timing; `reasoning_tokens`; tool calls kept in order (malformed one too); grounding sources (each `{title, url, redirect_url, resolved}`; one Google redirect resolves, one does not, a direct URL is left alone); `grounding_chunks` and `grounding_supports` (offsets in characters, a sentence citing several pages keeps them all); `finish_reason: length` is still `status: ok` | C1 4 |
 | F provider errors | for each category: HTTP 200, `status: error`, the fixed generic message, retryable flag, provider status, no provider text, shas still returned; Kernel's own timeout has `provider_status: null` | C1 4.4 |
 | G parse modes | strict, fenced, lenient, list, invalid, text | C1 4.3 |
 | H byte exactness | a six-layer prompt with CRLF, emoji, NUL, U+2028/2029 reaches the model unchanged; sizes and shas match; `60` vs `60.0` hash differently; a 4 MiB prompt is accepted | C1 2.2, 5 |

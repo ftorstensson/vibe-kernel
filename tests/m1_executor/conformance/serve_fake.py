@@ -13,6 +13,8 @@ Fake behaviors (by call_label):
     conf.length               finish_reason "length"
     conf.grounded             url_citation annotations (one without a title, one direct URL, and two Google
                               redirects: .../CONF-OK resolves to https://real.example/page, .../CONF-FAIL does not)
+    conf.grounded.supports    the text "Café prices rose. Wages did not. Nobody cared." with the provider's raw
+                              groundingMetadata (4 chunks, 3 supports, offsets in UTF-8 bytes) next to one annotation
     conf.json.plain           text {"a": 1}
     conf.json.fenced          text in a ```json fence
     conf.json.list            text [{"a": 1}, {"a": 2}]
@@ -63,7 +65,7 @@ def error_for(category):
     return table[category]()
 
 
-def response(text="", tool_calls=None, annotations=None, finish_reason="stop", usage=(6, 1, 0), model="gemini-2.5-flash"):
+def response(text="", tool_calls=None, annotations=None, finish_reason="stop", usage=(6, 1, 0), model="gemini-2.5-flash", grounding_metadata=None):
     tcs = None
     if tool_calls is not None:
         tcs = [types.SimpleNamespace(function=types.SimpleNamespace(name=n, arguments=a)) for n, a in tool_calls]
@@ -71,7 +73,34 @@ def response(text="", tool_calls=None, annotations=None, finish_reason="stop", u
     choice = types.SimpleNamespace(message=message, finish_reason=finish_reason)
     u = types.SimpleNamespace(prompt_tokens=usage[0], completion_tokens=usage[1],
                               completion_tokens_details=types.SimpleNamespace(reasoning_tokens=usage[2]))
-    return types.SimpleNamespace(choices=[choice], usage=u, model=model)
+    out = types.SimpleNamespace(choices=[choice], usage=u, model=model)
+    if grounding_metadata is not None:
+        out.vertex_ai_grounding_metadata = [grounding_metadata]
+    return out
+
+
+GROUNDED_TEXT = "Café prices rose. Wages did not. Nobody cared."
+
+
+def _span(piece):
+    """The provider's offsets are UTF-8 BYTES of the text."""
+    i = GROUNDED_TEXT.index(piece)
+    return len(GROUNDED_TEXT[:i].encode("utf-8")), len(GROUNDED_TEXT[:i + len(piece)].encode("utf-8"))
+
+
+def _support(piece, chunks):
+    a, b = _span(piece)
+    return {"segment": {"startIndex": a, "endIndex": b, "text": piece}, "groundingChunkIndices": chunks}
+
+
+GROUNDED_METADATA = {
+    "groundingChunks": [{"web": {"uri": GOOGLE_REDIRECT + "CONF-OK", "title": "real.example"}},
+                        {"web": {"uri": GOOGLE_REDIRECT + "CONF-FAIL", "title": "gone.example"}},
+                        {"web": {"uri": "https://direct.example/p", "title": "direct.example"}},
+                        {"web": {"uri": GOOGLE_REDIRECT + "CONF-UNUSED", "title": "unused.example"}}],
+    "groundingSupports": [_support("Café prices rose.", [0, 1, 2]), _support("Wages did not.", [2]), _support("Nobody cared.", [])],
+    "webSearchQueries": ["x"],
+}
 
 
 async def fake_acompletion(**kwargs):
@@ -91,6 +120,9 @@ async def fake_acompletion(**kwargs):
             {"type": "url_citation", "url_citation": {"url": "https://b.example"}},
             {"type": "url_citation", "url_citation": {"title": "real.example", "url": GOOGLE_REDIRECT + "CONF-OK"}},
             {"type": "url_citation", "url_citation": {"title": "gone.example", "url": GOOGLE_REDIRECT + "CONF-FAIL"}}])
+    if label == "conf.grounded.supports":
+        return response(GROUNDED_TEXT, annotations=[
+            {"type": "url_citation", "url_citation": {"title": "real.example", "url": GOOGLE_REDIRECT + "CONF-OK"}}], grounding_metadata=GROUNDED_METADATA)
     if label == "conf.json.plain":
         return response('{"a": 1}')
     if label == "conf.json.fenced":

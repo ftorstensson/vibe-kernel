@@ -86,7 +86,7 @@ def briefing(prompt="Say hello.", **overrides):
 
 # ---------------------------------------------------------------- fake model
 def fake_response(text="ok", tool_calls=None, annotations=None, finish_reason="stop",
-                  usage=(6, 1, 0), model="gemini-2.5-flash"):
+                  usage=(6, 1, 0), model="gemini-2.5-flash", grounding_metadata=None):
     tcs = None
     if tool_calls is not None:
         tcs = [types.SimpleNamespace(function=types.SimpleNamespace(name=n, arguments=a)) for n, a in tool_calls]
@@ -96,7 +96,10 @@ def fake_response(text="ok", tool_calls=None, annotations=None, finish_reason="s
     if usage is not None:
         u = types.SimpleNamespace(prompt_tokens=usage[0], completion_tokens=usage[1],
                                   completion_tokens_details=types.SimpleNamespace(reasoning_tokens=usage[2]))
-    return types.SimpleNamespace(choices=[choice], usage=u, model=model)
+    response = types.SimpleNamespace(choices=[choice], usage=u, model=model)
+    if grounding_metadata is not None:   # where litellm puts the provider's raw groundingMetadata: one dict per candidate
+        response.vertex_ai_grounding_metadata = [grounding_metadata]
+    return response
 
 
 class FakeModel:

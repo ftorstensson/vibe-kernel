@@ -231,7 +231,7 @@ check("L14 no model call is added by resolution: exactly one", len(fake.calls) =
 check("L14 only the two Google redirects were requested; the direct URL never was", sorted(fake.fetches) == sorted([GR + "ONE", GR + "TWO"]), fake.fetches)
 check("L14 nothing else in the response changed: same keys, text, usage, finish_reason, shas, echo",
       set(body) == {"contract_version", "attempt_id", "call_label", "status", "prompt_sha256", "prompt_utf8_bytes", "prompt_utf16_units", "request_sha256", "output", "usage", "finish_reason", "effective_model", "error", "timing", "kernel", "segments"}
-      and set(body["output"]) == {"text", "tool_calls", "grounding_sources", "parsed", "parse_error"} and body["output"]["text"] == "Findings with sources."
+      and set(body["output"]) == {"text", "tool_calls", "grounding_sources", "grounding_chunks", "grounding_supports", "parsed", "parse_error"} and body["output"]["text"] == "Findings with sources."
       and body["usage"] == {"prompt_tokens": 40, "completion_tokens": 12, "reasoning_tokens": 0} and body["finish_reason"] == "stop" and body["attempt_id"] == "att-h", body)
 log_text = "\n".join(logs.lines)
 check("L14 the log line records the counts (links_resolved=2/3) and no URL", "links_resolved=2/3" in log_text and "vertexaisearch" not in log_text and "example.org" not in log_text, [l for l in logs.lines if "executor.call" in l])
