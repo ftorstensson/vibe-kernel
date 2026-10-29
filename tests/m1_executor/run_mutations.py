@@ -14,7 +14,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SUITES = ["tests/m1_executor/test_contract.py", "tests/m1_executor/test_endpoint.py", "tests/m1_executor/test_isolation.py", "tests/m1_executor/conformance/run_conformance.py", "tests/m1_executor/test_cutover.py", "tests/m1_executor/test_links.py"]
+SUITES = ["tests/m1_executor/test_contract.py", "tests/m1_executor/test_endpoint.py", "tests/m1_executor/test_isolation.py", "tests/m1_executor/conformance/run_conformance.py", "tests/m1_executor/test_cutover.py", "tests/m1_executor/test_links.py", "tests/m1_executor/test_supports.py"]
 
 MUTANTS = [
     ("prompt is stripped before the call", "executor/schema.py", '"messages": [{"role": "user", "content": b.prompt}]', '"messages": [{"role": "user", "content": b.prompt.strip()}]'),
@@ -101,10 +101,33 @@ MUTANTS = [
     ("links: a failure before any lookup raises into the call", "executor/links.py", '    except Exception:  # noqa: BLE001 -- never fail the call over a link\n        return [dict(s) for s in sources]', '    except Exception:  # noqa: BLE001 -- never fail the call over a link\n        raise'),
     ("links: the lookup carries a credential header", "executor/links.py", '"headers": {"Accept": "*/*"}', '"headers": {"Accept": "*/*", "X-Kernel-Auth-Token": "leak"}'),
     ("links: the lookup sends a body", "executor/links.py", 'client.stream("GET", url)', 'client.stream("GET", url, content=b"x")'),
-    ("service: the sources are never resolved", "executor/service.py", 'await links.resolve_sources(result["output"]["grounding_sources"])', 'result["output"]["grounding_sources"]'),
-    ("service: resolution time is added to timing.duration_ms", "executor/service.py", '        link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))', '        link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))\n        result["timing"]["duration_ms"] += link_stats[2]'),
-    ("service: the resolved URLs are written to the log", "executor/service.py", '        resolved, total = links.summary(result["output"]["grounding_sources"])\n', '        resolved, total = links.summary(result["output"]["grounding_sources"])\n        logger.info("links " + str(result["output"]["grounding_sources"]))\n'),
+    ("service: nothing is resolved", "executor/service.py", 'await links.resolve_sources(output["grounding_sources"] + [output["grounding_chunks"][i] for i in wanted])', 'output["grounding_sources"] + [output["grounding_chunks"][i] for i in wanted]'),
+    ("service: resolution time is added to timing.duration_ms", "executor/service.py", '            link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))', '            link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))\n            result["timing"]["duration_ms"] += link_stats[2]'),
+    ("service: the resolved URLs are written to the log", "executor/service.py", '            resolved, total = links.summary(answered)\n', '            resolved, total = links.summary(answered)\n            logger.info("links " + str(answered))\n'),
     ("model: a source loses redirect_url and resolved", "executor/model.py", 'links.source(citation.get("title") or "Source", citation.get("url"))', '{"title": citation.get("title") or "Source", "url": citation.get("url")}'),
+    # ---- grounding chunks and supports (executor/supports.py, model.py, service.py)
+    ("model: grounding_chunks is never filled", "executor/model.py", '"grounding_chunks": supports.extract_chunks(metadata),', '"grounding_chunks": [],'),
+    ("model: grounding_supports is never filled", "executor/model.py", '"grounding_supports": supports.extract_supports(text, metadata)}', '"grounding_supports": []}'),
+    ("service: the referenced chunks are looked up but never stored", "executor/service.py", '            for i, chunk in zip(wanted, answered[n_sources:]):\n                output["grounding_chunks"][i] = chunk\n', '            pass\n'),
+    ("service: every chunk is resolved, not only those a support points at", "executor/service.py", 'wanted = supports.referenced_indices(output["grounding_supports"])', 'wanted = list(range(len(output["grounding_chunks"])))'),
+    ("service: a resolved chunk is stored at the wrong index", "executor/service.py", 'for i, chunk in zip(wanted, answered[n_sources:]):', 'for i, chunk in zip(range(len(wanted)), answered[n_sources:]):'),
+    ("service: chunks are resolved before the sources (the cap no longer favours the sources)", "executor/service.py", 'output["grounding_sources"] + [output["grounding_chunks"][i] for i in wanted])\n            output["grounding_sources"] = answered[:n_sources]', '[output["grounding_chunks"][i] for i in wanted] + output["grounding_sources"])\n            output["grounding_sources"] = answered[len(wanted):]'),
+    ("service: nothing is resolved when there are no sources (only chunks)", "executor/service.py", 'if output["grounding_sources"] or wanted:', 'if output["grounding_sources"]:'),
+    ("supports: offsets are used as the provider gave them (bytes)", "executor/supports.py", 'start, end = boundaries.get(start_byte), boundaries.get(end_byte)', 'start, end = start_byte, end_byte'),
+    ("supports: the slice-equals-text check is dropped (wrong offsets are returned)", "executor/supports.py", 'if text[start:end] != segment_text:', 'if False:'),
+    ("supports: a missing startIndex is treated as unusable, not 0", "executor/supports.py", '    if start_byte is None:\n        start_byte = 0\n', '    if start_byte is None:\n        return None, None\n'),
+    ("supports: an offset inside a multi-byte character is rounded instead of nulled", "executor/supports.py", '    if start is None or end is None:  # beyond the text', '    start = start if start is not None else boundaries.get(start_byte - 1)\n    if start is None or end is None:  # beyond the text'),
+    ("supports: a repeated chunk index is kept", "executor/supports.py", 'and index not in seen:', ':'),
+    ("supports: an index beyond the chunk list is kept", "executor/supports.py", 'if _is_index(index) and index < n_chunks and', 'if _is_index(index) and'),
+    ("supports: True is accepted as chunk index 1", "executor/supports.py", 'return type(value) is int and value >= 0', 'return isinstance(value, int) and value >= 0'),
+    ("supports: the indices are sorted instead of kept in the provider's order", "executor/supports.py", '"source_indices": indices})', '"source_indices": sorted(indices)})'),
+    ("supports: a support without chunk indices is dropped", "executor/supports.py", '        result.append({"text": segment_text', '        if not indices:\n            continue\n        result.append({"text": segment_text'),
+    ("supports: the supports are returned in reverse order", "executor/supports.py", '        result.append({"text": segment_text, "start": start, "end": end, "source_indices": indices})', '        result.insert(0, {"text": segment_text, "start": start, "end": end, "source_indices": indices})'),
+    ("chunks: a non-web chunk is dropped (every later index shifts)", "executor/supports.py", '        uri = web.get("uri")\n', '        if not web:\n            continue\n        uri = web.get("uri")\n'),
+    ("chunks: the title default is dropped", "executor/supports.py", 'if isinstance(title, str) and title else "Source"', 'if isinstance(title, str) and title else ""'),
+    ("chunks: the chunks are returned in reverse order", "executor/supports.py", '        result.append(links.source(title if', '        result.insert(0, links.source(title if'),
+    ("chunks: a chunk loses redirect_url and resolved", "executor/supports.py", 'result.append(links.source(title if isinstance(title, str) and title else "Source", uri if isinstance(uri, str) and uri else None))', 'result.append({"title": title, "url": uri})'),
+    ("raw metadata: the second candidate is read instead of the first", "executor/supports.py", 'return candidates[0]\n    return None', 'return candidates[-1]\n    return None'),
 ]
 
 # mutants that need a helper name to exist

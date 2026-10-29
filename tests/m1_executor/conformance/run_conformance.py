@@ -272,6 +272,24 @@ def run_checks(c, rep, fake, model_calls):
     rep.check("E6c", "C1 4.1", "one that does not resolve keeps its redirect as url, resolved false, and the call is still a success",
               j["output"]["grounding_sources"][3] == {"title": "gone.example", "url": GR + "CONF-FAIL", "redirect_url": GR + "CONF-FAIL", "resolved": False}
               and j["status"] == "ok" and j["error"] is None, j["output"]["grounding_sources"][3:])
+    rep.check("E6d", "C1 4.1", "a call whose provider reports no supports still has both new keys: grounding_chunks [] and grounding_supports []",
+              j["output"]["grounding_chunks"] == [] and j["output"]["grounding_supports"] == [], (j["output"]["grounding_chunks"], j["output"]["grounding_supports"]))
+    s, j = c.json("POST", "/kernel/execute", body=make_briefing("x", call_label="conf.grounded.supports"))
+    o = j["output"]
+    ch, sp = o["grounding_chunks"], o["grounding_supports"]
+    rep.check("E6e", "C1 4.1", "grounding_chunks: every chunk the provider returned, in the provider's order, each {title, url, redirect_url, resolved}",
+              [x["title"] for x in ch] == ["real.example", "gone.example", "direct.example", "unused.example"] and all(set(x) == {"title", "url", "redirect_url", "resolved"} for x in ch), ch)
+    rep.check("E6f", "C1 4.1", "the chunks a support points at are resolved: the resolvable one is, the failing one keeps its redirect, a direct URL is untouched; an unreferenced chunk is returned with its redirect",
+              ch[0] == {"title": "real.example", "url": "https://real.example/page", "redirect_url": GR + "CONF-OK", "resolved": True}
+              and ch[1] == {"title": "gone.example", "url": GR + "CONF-FAIL", "redirect_url": GR + "CONF-FAIL", "resolved": False}
+              and ch[2]["resolved"] is False and ch[3] == {"title": "unused.example", "url": GR + "CONF-UNUSED", "redirect_url": GR + "CONF-UNUSED", "resolved": False}, ch)
+    rep.check("E6g", "C1 4.1", "grounding_supports: in the provider's order, each {text, start, end, source_indices}; source_indices index grounding_chunks and a sentence citing several pages keeps all of them; a support with none keeps []",
+              [x["text"] for x in sp] == ["Café prices rose.", "Wages did not.", "Nobody cared."] and [x["source_indices"] for x in sp] == [[0, 1, 2], [2], []]
+              and all(set(x) == {"text", "start", "end", "source_indices"} for x in sp), sp)
+    rep.check("E6h", "C1 4.1", "start/end are CHARACTER (code point) offsets into output.text although the provider counted UTF-8 bytes: text[start:end] equals the segment text",
+              all(o["text"][x["start"]:x["end"]] == x["text"] for x in sp) and sp[1]["start"] == 18, [(x["start"], x["end"]) for x in sp])
+    rep.check("E6i", "C1 4.1", "grounding_sources is unaffected by the new fields: one entry per annotation, as before",
+              [x["title"] for x in o["grounding_sources"]] == ["real.example"] and o["grounding_sources"][0]["resolved"] is True, o["grounding_sources"])
     s, j = c.json("POST", "/kernel/execute", body=make_briefing("x", call_label="conf.length"))
     rep.check("E7", "C1 4", "finish_reason length is status ok with the field set (Backend's Runner decides whether that is a failure)", s == 200 and j["status"] == "ok" and j["finish_reason"] == "length", (s, j.get("status"), j.get("finish_reason")))
 

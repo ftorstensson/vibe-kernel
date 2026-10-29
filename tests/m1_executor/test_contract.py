@@ -349,6 +349,9 @@ check("T10 grounding sources: url_citation only, title defaults to Source; each 
       body["output"]["grounding_sources"] == [{"title": "Alpha", "url": "https://a.example", "redirect_url": "https://a.example", "resolved": False},
                                               {"title": "Source", "url": "https://b.example", "redirect_url": "https://b.example", "resolved": False}]
       and fake.fetches == [], (body["output"]["grounding_sources"], fake.fetches))
+check("T10 the output has exactly the documented keys; a call with no grounding metadata has grounding_chunks and grounding_supports as empty lists",
+      set(body["output"]) == {"text", "tool_calls", "grounding_sources", "grounding_chunks", "grounding_supports", "parsed", "parse_error"}
+      and body["output"]["grounding_chunks"] == [] and body["output"]["grounding_supports"] == [], sorted(body["output"]))
 check("T10 text returned as the model sent it", body["output"]["text"] == "some text", body["output"])
 check("T10 every ExecutionResult key is present", set(body) == {"contract_version", "attempt_id", "call_label", "status", "prompt_sha256", "prompt_utf8_bytes", "prompt_utf16_units", "request_sha256", "output", "usage", "finish_reason", "effective_model", "error", "timing", "kernel", "segments"}, sorted(body))
 check("T10 timing has started_at (UTC ISO 8601) and duration_ms", body["timing"]["started_at"].endswith("Z") and isinstance(body["timing"]["duration_ms"], int), body["timing"])

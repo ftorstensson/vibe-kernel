@@ -9,7 +9,7 @@ import logging
 
 import time
 
-from executor import config, errors, links
+from executor import config, errors, links, supports
 from executor.auth import configured_token
 from executor.model import call_model, normalize
 from executor.parse import parse_output
@@ -79,14 +79,22 @@ async def execute(b: Briefing, kwargs):
         result.update(status="error", error=errors.error_object(category, provider_status))
 
     link_stats = None
-    if result["status"] == "ok" and result["output"]["grounding_sources"]:
-        # Not a model call and not part of timing.duration_ms (the model call only). resolve_sources
-        # never raises and never takes longer than links.TOTAL_TIMEOUT_S; a source it cannot
-        # resolve keeps its redirect (C1 4.1).
-        started = time.perf_counter()
-        result["output"]["grounding_sources"] = await links.resolve_sources(result["output"]["grounding_sources"])
-        resolved, total = links.summary(result["output"]["grounding_sources"])
-        link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))
+    if result["status"] == "ok":
+        output = result["output"]
+        wanted = supports.referenced_indices(output["grounding_supports"])
+        if output["grounding_sources"] or wanted:
+            # Not a model call and not part of timing.duration_ms (the model call only). One pass over
+            # the sources, then the chunks some support points at (C1 4.5): the sources come first, so
+            # the per-call cap treats them exactly as before. resolve_sources never raises and never
+            # takes longer than links.TOTAL_TIMEOUT_S; a link it cannot resolve keeps its redirect.
+            started = time.perf_counter()
+            n_sources = len(output["grounding_sources"])
+            answered = await links.resolve_sources(output["grounding_sources"] + [output["grounding_chunks"][i] for i in wanted])
+            output["grounding_sources"] = answered[:n_sources]
+            for i, chunk in zip(wanted, answered[n_sources:]):
+                output["grounding_chunks"][i] = chunk
+            resolved, total = links.summary(answered)
+            link_stats = (resolved, total, int(round((time.perf_counter() - started) * 1000)))
 
     _log_call(b, sent, result["status"], duration_ms, result["usage"], error_type, provider_status, raw_error_text, link_stats)
     return result

@@ -17,6 +17,7 @@ SUITES = [
     "tests/m1_executor/conformance/run_conformance.py",
     "tests/m1_executor/test_cutover.py",
     "tests/m1_executor/test_links.py",
+    "tests/m1_executor/test_supports.py",
     "tests/step0_capture/run_goldens.py",
     "tests/step0_capture/test_capture.py",
     "tests/step0_capture/test_capture_token.py",

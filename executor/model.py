@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 
 import litellm
 
-from executor import links
+from executor import links, supports
 from executor.schema import utf16_units
 
 
@@ -105,6 +105,11 @@ def normalize(response):
             "reasoning_tokens": getattr(details, "reasoning_tokens", None) if details is not None else None,
         }
 
-    output = {"text": text, "tool_calls": tool_calls, "grounding_sources": grounding_sources}
+    # The search's own sentence-to-page links, read from the provider's raw metadata (C1 4.1).
+    # grounding_sources above is litellm's one-entry-per-sentence, first-page-only list and stays as is.
+    metadata = supports.raw_metadata(response)
+    output = {"text": text, "tool_calls": tool_calls, "grounding_sources": grounding_sources,
+              "grounding_chunks": supports.extract_chunks(metadata),
+              "grounding_supports": supports.extract_supports(text, metadata)}
     return output, usage, getattr(choice, "finish_reason", None), getattr(response, "model", None)
 
